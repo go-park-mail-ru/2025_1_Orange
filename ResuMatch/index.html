@@ -1,0 +1,52 @@
+<!-- <!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список вакансий</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { margin-bottom: 20px; padding: 10px; cursor: pointer; }
+        .vacancy { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Вакансии</h1>
+    <button id="load-vacancies">Загрузить вакансии</button>
+    <div id="vacancy-list"></div>
+
+    <script src="app.js"></script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список вакансий</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        nav { margin-bottom: 20px; }
+        a { margin-right: 10px; cursor: pointer; text-decoration: underline; }
+        button { margin-bottom: 20px; padding: 10px; cursor: pointer; }
+        .vacancy { border: 1px solid #ddd; padding: 10px; margin: 10px 0; width: 400px; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="/" onclick="navigate(event, '/')">Главная</a>
+        <a href="/vacs" onclick="navigate(event, '/vacs')">Вакансии</a>
+    </nav>
+
+    <h1 id="page-title">Добро пожаловать</h1>
+    <div id="content">
+        <p>Выберите раздел.</p>
+    </div>
+
+    <div id="vacancies-list"></div> <!-- Контейнер для вакансий -->
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -12,5 +12,6 @@ type Vacancy struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	Active      bool      `json:"active"`
-	PostedBy    int       `json:"posted_by"` // ID пользователя, разместившего вакансию
+	PostedBy    int       `json:"posted_by"`   // ID пользователя, разместившего вакансию
+	EmployerID  int       `json:"employer_id"` // ID компании-работодателя
 }

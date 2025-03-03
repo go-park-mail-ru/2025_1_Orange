@@ -3,6 +3,7 @@ package main
 import (
 	"ResuMatch/router"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -13,5 +14,6 @@ func main() {
 	// Запускаем сервер
 	port := ":8000"
 	fmt.Println("Сервер запущен на http://localhost" + port)
-	http.ListenAndServe(port, mux)
+	log.Fatal(http.ListenAndServe(port, mux))
+
 }

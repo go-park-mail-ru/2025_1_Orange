@@ -17,6 +17,7 @@ var Vacancies = []models.Vacancy{
 		UpdatedAt:   time.Now(),
 		Active:      true,
 		PostedBy:    101,
+		EmployerID:  1,
 	},
 	{
 		ID:          2,
@@ -29,6 +30,7 @@ var Vacancies = []models.Vacancy{
 		UpdatedAt:   time.Now(),
 		Active:      true,
 		PostedBy:    102,
+		EmployerID:  1,
 	},
 	{
 		ID:          3,
@@ -41,6 +43,7 @@ var Vacancies = []models.Vacancy{
 		UpdatedAt:   time.Now(),
 		Active:      true,
 		PostedBy:    103,
+		EmployerID:  2,
 	},
 	{
 		ID:          4,
@@ -53,6 +56,7 @@ var Vacancies = []models.Vacancy{
 		UpdatedAt:   time.Now(),
 		Active:      false, // Вакансия неактивна
 		PostedBy:    104,
+		EmployerID:  3,
 	},
 	{
 		ID:          5,
@@ -65,6 +69,7 @@ var Vacancies = []models.Vacancy{
 		UpdatedAt:   time.Now(),
 		Active:      true,
 		PostedBy:    105,
+		EmployerID:  4,
 	},
 	{
 		ID:          6,
@@ -77,5 +82,6 @@ var Vacancies = []models.Vacancy{
 		UpdatedAt:   time.Now(),
 		Active:      true,
 		PostedBy:    106,
+		EmployerID:  5,
 	},
 }

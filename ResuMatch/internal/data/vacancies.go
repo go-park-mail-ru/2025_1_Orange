@@ -1,7 +1,7 @@
 package data
 
 import (
-	"ResuMatch/models"
+	"ResuMatch/internal/models"
 	"time"
 )
 

@@ -1,7 +1,7 @@
 package router
 
 import (
-	"ResuMatch/handlers"
+	"ResuMatch/internal/handlers"
 	"net/http"
 )
 

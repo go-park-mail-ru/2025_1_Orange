@@ -16,8 +16,8 @@ func NewRouter() *http.ServeMux {
 	core := usecase.NewCore(sessionRepo, userRepo)
 
 	mux.HandleFunc("/login", handlers.NewMyHandler(core).Signin)
-	mux.HandleFunc("/login", handlers.NewMyHandler(core).Signup)
-	mux.HandleFunc("/login", handlers.NewMyHandler(core).Logout)
+	mux.HandleFunc("/signup", handlers.NewMyHandler(core).Signup)
+	mux.HandleFunc("/logout", handlers.NewMyHandler(core).Logout)
 	mux.HandleFunc("/vacancies", handlers.GetVacancies)
 
 	return mux

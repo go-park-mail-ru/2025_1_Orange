@@ -16,13 +16,13 @@ type ICore interface {
 	CreateSession(ctx context.Context, userID uint64) (string, error)
 	FindActiveSession(ctx context.Context, sid string) (uint64, error)
 	KillSession(ctx context.Context, sid string) error
-	CreateUserAccount(login string, password string, name string, birthDate string, email string) error
-	FindUserAccount(login string, password string) (*models.User, bool, error)
-	FindUserByLogin(login string) (bool, error)
+	CreateUserAccount(email string, password string, firstname string, lastname string, companyname string, companyaddress string) error
+	FindUserAccount(email string, password string) (*models.User, bool, error)
+	FindUserByEmail(email string) (bool, error)
 	GetUserName(ctx context.Context, sid string) (string, error)
-	GetUserProfile(login string) (*models.User, error)
-	GetUserRole(login string) (string, error)
-	FindUsers(login string, role string, first, limit uint64) ([]models.User, error)
+	GetUserProfile(email string) (*models.User, error)
+	GetUserCompany(email string) (string, error)
+	FindUsers(email string, role string, first, limit uint64) ([]models.User, error)
 }
 
 type Core struct {
@@ -87,19 +87,19 @@ func (core *Core) GetUserName(ctx context.Context, sid string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("GetUserName: can't get userID for session %s: %w", sid, err)
 	}
-	login, err := core.Users.GetLoginByID(userID)
+	email, err := core.Users.GetEmailByID(userID)
 	if err != nil {
 		return "", fmt.Errorf("GetUserName: can't get username for userID %d: %w", userID, err)
 	}
 
-	return login, nil
+	return email, nil
 }
 
-func (core *Core) CreateUserAccount(c context.Context, login string, password string, name string, birthDate string, email string) error {
+func (core *Core) CreateUserAccount(c context.Context, email string, password string, firstname string, lastname string, companyname string, companyaddress string) error {
 	if _, err := mail.ParseAddress(email); err != nil {
 		return InvalideEmail
 	}
-	err := core.Users.CreateUser(login, password, name, birthDate, email)
+	err := core.Users.CreateUser(email, password, firstname, lastname, companyname, companyaddress)
 	if err != nil {
 		return fmt.Errorf("CreateUserAccount err: %w", err)
 	}
@@ -107,18 +107,18 @@ func (core *Core) CreateUserAccount(c context.Context, login string, password st
 	return nil
 }
 
-func (core *Core) FindUserAccount(login string, password string) (*models.User, bool, error) {
-	user, found, err := core.Users.GetUser(login, password)
+func (core *Core) FindUserAccount(email string, password string) (*models.User, bool, error) {
+	user, found, err := core.Users.GetUser(email, password)
 	if err != nil {
 		return nil, false, fmt.Errorf("FindUserAccount err: %w", err)
 	}
 	return user, found, nil
 }
 
-func (core *Core) FindUserByLogin(login string) (bool, error) {
-	found, err := core.Users.FindUser(login)
+func (core *Core) FindUserByEmail(email string) (bool, error) {
+	found, err := core.Users.FindUser(email)
 	if err != nil {
-		return false, fmt.Errorf("FindUserByLogin err: %w", err)
+		return false, fmt.Errorf("FindUserByEmail err: %w", err)
 	}
 
 	return found, nil
@@ -132,8 +132,8 @@ func RandStringRunes(seed int) string {
 	return string(symbols)
 }
 
-func (core *Core) GetUserProfile(login string) (*models.User, error) {
-	profile, err := core.Users.GetUserProfile(login)
+func (core *Core) GetUserProfile(email string) (*models.User, error) {
+	profile, err := core.Users.GetUserProfile(email)
 	if err != nil {
 		return nil, fmt.Errorf("GetUserProfile err: %w", err)
 	}
@@ -141,8 +141,8 @@ func (core *Core) GetUserProfile(login string) (*models.User, error) {
 	return profile, nil
 }
 
-func (core *Core) GetUserRole(login string) (string, error) {
-	role, err := core.Users.GetUserRole(login)
+func (core *Core) GetUserCompany(email string) (string, error) {
+	role, err := core.Users.GetUserCompany(email)
 	if err != nil {
 		return "", fmt.Errorf("get user role err: %w", err)
 	}
@@ -150,8 +150,8 @@ func (core *Core) GetUserRole(login string) (string, error) {
 	return role, nil
 }
 
-func (core *Core) FindUsers(login string, role string, first, limit uint64) ([]models.User, error) {
-	users, err := core.Users.FindUsers(login, role, first, limit)
+func (core *Core) FindUsers(email string, role string, first, limit uint64) ([]models.User, error) {
+	users, err := core.Users.FindUsers(email, role, first, limit)
 	if err != nil {
 		return nil, fmt.Errorf("find user error: %w", err)
 	}

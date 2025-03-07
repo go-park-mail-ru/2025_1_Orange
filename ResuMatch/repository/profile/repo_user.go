@@ -10,30 +10,30 @@ import (
 )
 
 type IUserRepo interface {
-	GetUser(login string, password string) (*models.User, bool, error)
-	GetUserProfileId(login string) (int64, error)
-	FindUser(login string) (bool, error)
-	CreateUser(login string, password string, name string, birthDate string, email string) error
-	GetUserProfile(login string) (*models.User, error)
-	CheckUserPassword(login string, password string) (bool, error)
-	GetUserRole(login string) (string, error)
-	FindUsers(login string, role string, first, limit uint64) ([]models.User, error)
-	GetLoginByID(userID uint64) (string, error)
-	GetUserByLogin(login string) (*models.User, bool)
+	GetUser(email string, password string) (*models.User, bool, error)
+	GetUserProfileId(email string) (int64, error)
+	FindUser(email string) (bool, error)
+	CreateUser(email string, password string, name string, birthDate string) error
+	GetUserProfile(email string) (*models.User, error)
+	CheckUserPassword(email string, password string) (bool, error)
+	GetUserCompany(email string) (string, error)
+	FindUsers(email string, role string, first, limit uint64) ([]models.User, error)
+	GetEmailByID(userID uint64) (string, error)
+	GetUserByEmail(email string) (*models.User, bool)
 }
 
 type UserRepo struct{}
 
-func (r UserRepo) GetUserByLogin(login string) (*models.User, bool) {
-	user, ok := data.Users[login]
+func (r UserRepo) GetUserByEmail(email string) (*models.User, bool) {
+	user, ok := data.Users[email]
 	if !ok {
 		return nil, false
 	}
 	return &user, true
 }
-func (r UserRepo) GetUser(login string, password string) (*models.User, bool, error) {
+func (r UserRepo) GetUser(email string, password string) (*models.User, bool, error) {
 	for i := range data.Users {
-		if data.Users[i].Login == login && data.Users[i].Password == password {
+		if data.Users[i].Email == email && data.Users[i].Password == password {
 			user := data.Users[i]
 			return &user, true, nil
 		}
@@ -41,21 +41,21 @@ func (r UserRepo) GetUser(login string, password string) (*models.User, bool, er
 	return nil, false, fmt.Errorf("GetUser err")
 }
 
-func (r UserRepo) FindUser(login string) (bool, error) {
+func (r UserRepo) FindUser(email string) (bool, error) {
 	for i := range data.Users {
-		if data.Users[i].Login == login {
+		if data.Users[i].Email == email {
 			return true, nil
 		}
 	}
 	return false, fmt.Errorf("GetUserProfileId err")
 }
 
-func (r UserRepo) FindUsers(login string, role string, first, limit uint64) ([]models.User, error) {
+func (r UserRepo) FindUsers(email string, role string, first, limit uint64) ([]models.User, error) {
 	var foundUsers []models.User
 	count := uint64(0)
 
 	for _, user := range data.Users {
-		if login != "" && !strings.Contains(user.Login, login) {
+		if email != "" && !strings.Contains(user.Email, email) {
 			continue
 		}
 		if count >= first {
@@ -72,32 +72,30 @@ func (r UserRepo) FindUsers(login string, role string, first, limit uint64) ([]m
 
 	return foundUsers, nil
 }
-func (r UserRepo) CreateUser(login string, password string, name string, birthDate string, email string) error {
+func (r UserRepo) CreateUser(email string, password string, firstname string, lastname string, companyname string, companyaddress string) error {
 	for _, user := range data.Users {
-		if user.Login == login {
-			return errors.New("login already exists")
+		if user.Email == email {
+			return errors.New("email already exists")
 		}
 	}
 	newUser := models.User{
-		Id:               uint64(len(data.Users) + 1),
-		Name:             name,
-		Login:            login,
-		Password:         password,
-		Birthdate:        birthDate,
-		Photo:            "",
-		RegistrationDate: "2023-11-03",
-		Email:            email,
-		Role:             "user",
+		Id:             uint64(len(data.Users) + 1),
+		Email:          email,
+		Password:       password,
+		FirstName:      firstname,
+		LastName:       lastname,
+		CompanyName:    companyname,
+		CompanyAddress: companyaddress,
 	}
 
-	data.Users[login] = newUser
+	data.Users[email] = newUser
 
 	return nil
 }
 
-func (r UserRepo) GetUserProfile(login string) (*models.User, error) {
+func (r UserRepo) GetUserProfile(email string) (*models.User, error) {
 	for i := range data.Users {
-		if data.Users[i].Login == login {
+		if data.Users[i].Email == email {
 			user := data.Users[i]
 			return &user, nil
 		}
@@ -105,19 +103,19 @@ func (r UserRepo) GetUserProfile(login string) (*models.User, error) {
 	return nil, fmt.Errorf("GetUserProfileId err")
 }
 
-func (r UserRepo) GetUserRole(login string) (string, error) {
+func (r UserRepo) GetUserCompany(email string) (string, error) {
 	for i := range data.Users {
-		if data.Users[i].Login == login {
-			return data.Users[i].Role, nil
+		if data.Users[i].Email == email {
+			return data.Users[i].CompanyName, nil
 		}
 	}
 	return "", fmt.Errorf("GetUserRole err")
 }
 
-func (r UserRepo) GetLoginByID(userID uint64) (string, error) {
-	for login, user := range data.Users {
+func (r UserRepo) GetEmailByID(userID uint64) (string, error) {
+	for email, user := range data.Users {
 		if user.Id == userID {
-			return login, nil
+			return email, nil
 		}
 	}
 	return "", fmt.Errorf("user with ID %d not found", userID)

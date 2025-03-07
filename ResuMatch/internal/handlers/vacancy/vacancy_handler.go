@@ -1,4 +1,4 @@
-package handlers
+package vacancy
 
 import (
 	"ResuMatch/internal/data"

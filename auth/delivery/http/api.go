@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
+	"net/mail"
 	"time"
 )
 
@@ -74,7 +74,7 @@ func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if matched, _ := regexp.MatchString(`@`, req.Email); !matched {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
 		http.Error(w, `{"error": "Invalid email format"}`, http.StatusBadRequest)
 		return
 	}

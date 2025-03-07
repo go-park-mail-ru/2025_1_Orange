@@ -9,7 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"regexp"
+	"net/mail"
 )
 
 type ICore interface {
@@ -96,7 +96,7 @@ func (core *Core) GetUserName(ctx context.Context, sid string) (string, error) {
 }
 
 func (core *Core) CreateUserAccount(c context.Context, login string, password string, name string, birthDate string, email string) error {
-	if matched, _ := regexp.MatchString(`@`, email); !matched {
+	if _, err := mail.ParseAddress(email); err != nil {
 		return InvalideEmail
 	}
 	err := core.Users.CreateUser(login, password, name, birthDate, email)

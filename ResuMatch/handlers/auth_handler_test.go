@@ -39,7 +39,7 @@ func clearSessions() {
 
 func TestSignup_Success(t *testing.T) {
 
-	signupPayload := `{"login":"testuser", "password":"testpassword", "name":"Test User", "birthdate":"2000-01-01", "email":"test@example.com"}`
+	signupPayload := `{"email":"testuser@mail.ru", "password":"testpassword", "firstName":"Test User", "lastName": "test User", "companyName":"Company", "companyAddress": "Address" }`
 
 	req, err := newTestRequest("POST", "/signup", signupPayload)
 	if err != nil {
@@ -69,24 +69,24 @@ func TestSignup_Success(t *testing.T) {
 	}
 }
 
-func TestLogin_Success(t *testing.T) {
+func TestEmail_Success(t *testing.T) {
 
-	testLogin := "testlogin"
+	testEmail := "testlemail@examle.com"
 	testPass := "testpass"
-	data.Users[testLogin] = models.User{
-		Id:        100,
-		Login:     testLogin,
-		Password:  testPass,
-		Name:      "Test User",
-		Birthdate: "2000-01-01",
-		Email:     "test@example.com",
-		Role:      "user",
+	data.Users[testEmail] = models.User{
+		Id:             6,
+		Email:          testEmail,
+		Password:       testPass,
+		FirstName:      "Test Username",
+		LastName:       "Test Username2",
+		CompanyName:    "Test company",
+		CompanyAddress: "Test address",
 	}
-	defer delete(data.Users, testLogin)
+	defer delete(data.Users, testEmail)
 
-	loginPayload := `{"login":"testlogin", "password":"testpass"}`
+	emailPayload := `{"email":"testemail@example.com", "password":"testpass"}`
 
-	req, err := newTestRequest("POST", "/signin", loginPayload)
+	req, err := newTestRequest("POST", "/signin", emailPayload)
 	if err != nil {
 		t.Fatalf("Could not create request: %v", err)
 	}
@@ -130,18 +130,18 @@ func TestLogin_Success(t *testing.T) {
 }
 
 func TestLogout_Success(t *testing.T) {
-	testLogin := "testlogin"
+	testEmail := "testemail@example.com"
 	testPass := "testpass"
-	data.Users[testLogin] = models.User{
-		Id:        100,
-		Login:     testLogin,
-		Password:  testPass,
-		Name:      "Test User",
-		Birthdate: "2000-01-01",
-		Email:     "test@example.com",
-		Role:      "user",
+	data.Users[testEmail] = models.User{
+		Id:             6,
+		Email:          testEmail,
+		Password:       testPass,
+		FirstName:      "Test Username",
+		LastName:       "Test Username2",
+		CompanyName:    "Test company",
+		CompanyAddress: "Test address",
 	}
-	defer delete(data.Users, testLogin)
+	defer delete(data.Users, testEmail)
 
 	sid, err := usecase.CreateSessionID()
 	if err != nil {
@@ -215,28 +215,28 @@ func makeTestCoreAndHandler() (*usecase.Core, *MyHandler) {
 	return core, handler
 }
 
-func setUserInMap(login, password string, id uint64) {
-	data.Users[login] = models.User{
-		Id:        id,
-		Name:      "Test User",
-		Login:     login,
-		Password:  password,
-		Email:     "test@example.com",
-		Birthdate: "1990-01-01",
-		Role:      "user",
+func setUserInMap(email, password string, id uint64) {
+	data.Users[email] = models.User{
+		Id:             id,
+		Email:          email,
+		Password:       password,
+		FirstName:      "Test Username",
+		LastName:       "Test Username2",
+		CompanyName:    "Test company",
+		CompanyAddress: "Test address",
 	}
 }
 
 func TestSignin(t *testing.T) {
 
-	login := "testuser"
+	email := "testuser@example.com"
 	password := "testpassword"
 	userID := uint64(1)
 
-	setUserInMap(login, password, userID)
-	defer delete(data.Users, login)
+	setUserInMap(email, password, userID)
+	defer delete(data.Users, email)
 
-	jsonBody := []byte(`{"login":"testuser", "password":"testpassword"}`)
+	jsonBody := []byte(`{"email":"testuser", "password":"testpassword"}`)
 	req, err := makeHTTPReq("POST", "/signin", string(jsonBody))
 	if err != nil {
 		t.Fatalf("Could not create request: %v", err)
@@ -286,12 +286,12 @@ func TestSignin(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	login := "testuser"
+	email := "testuser@example.com"
 	password := "testpassword"
 	userID := uint64(1)
 
-	setUserInMap(login, password, userID)
-	defer delete(data.Users, login)
+	setUserInMap(email, password, userID)
+	defer delete(data.Users, email)
 
 	core, handler := makeTestCoreAndHandler()
 
@@ -352,8 +352,8 @@ func TestLogout(t *testing.T) {
 }
 
 func TestSignup(t *testing.T) {
-	login := "testuser"
-	jsonBody := []byte(`{"login":"` + login + `", "password":"testpassword", "name":"Test User", "birthdate":"1990-01-01", "email":"test@example.com"}`)
+	email := "testuser@example.com"
+	jsonBody := []byte(`{"email":"` + email + `", "password":"testpassword", "name":"Test User", "birthdate":"1990-01-01", "email":"test@example.com"}`)
 	req, err := makeHTTPReq("POST", "/signup", string(jsonBody))
 	if err != nil {
 		t.Fatalf("Could not create request: %v", err)
@@ -379,10 +379,10 @@ func TestSignup(t *testing.T) {
 		t.Errorf("handler returned unexpected body: got %v want %v", response["message"], expectedMessage)
 	}
 
-	_, userExists := data.Users[login]
+	_, userExists := data.Users[email]
 	if !userExists {
 		t.Errorf("User not found in Users map")
 	}
-	delete(data.Users, login)
+	delete(data.Users, email)
 
 }

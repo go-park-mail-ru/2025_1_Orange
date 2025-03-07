@@ -32,7 +32,7 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := api.core.Users.GetUserByLogin(req.Login)
+	user, ok := api.core.Users.GetUserByEmail(req.Email)
 	if !ok {
 		http.Error(w, `{"error": "no user"}`, http.StatusNotFound)
 		return
@@ -74,18 +74,23 @@ func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Password != req.RepeatPassword {
+		http.Error(w, `{"error": "Passwords do not match"}`, http.StatusBadRequest)
+		return
+	}
+
 	if _, err := mail.ParseAddress(req.Email); err != nil {
 		http.Error(w, `{"error": "Invalid email format"}`, http.StatusBadRequest)
 		return
 	}
 
-	_, exists := api.core.Users.GetUserByLogin(req.Login)
+	_, exists := api.core.Users.GetUserByEmail(req.Email)
 	if exists {
-		http.Error(w, `{"error": "Login already exists"}`, http.StatusConflict)
+		http.Error(w, `{"error": "Email already exists"}`, http.StatusConflict)
 		return
 	}
 
-	err := api.core.CreateUserAccount(r.Context(), req.Login, req.Password, req.Name, req.BirthDate, req.Email)
+	err := api.core.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create user: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)

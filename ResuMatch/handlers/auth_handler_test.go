@@ -1,11 +1,11 @@
-package main
+package handlers
 
 import (
-	"auth/data"
-	"auth/models"
-	"auth/repository/profile"
-	"auth/repository/session"
-	"auth/usecase"
+	"ResuMatch/data"
+	"ResuMatch/models"
+	"ResuMatch/repository/profile"
+	"ResuMatch/repository/session"
+	"ResuMatch/usecase"
 	"bytes"
 	"context"
 	"encoding/json"

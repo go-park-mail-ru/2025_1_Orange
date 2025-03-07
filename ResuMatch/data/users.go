@@ -1,7 +1,7 @@
 package data
 
 import (
-	"auth/models"
+	"ResuMatch/models"
 )
 
 var Users = map[string]models.User{

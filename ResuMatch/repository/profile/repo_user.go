@@ -1,13 +1,12 @@
 package profile
 
 import (
-	"auth/data"
-	"auth/models"
+	"ResuMatch/data"
+	"ResuMatch/models"
 	"errors"
 	"fmt"
 	"strings"
-
-	_ "github.com/jackc/pgx/stdlib"
+	//_ "github.com/jackc/pgx/stdlib"
 )
 
 type IUserRepo interface {

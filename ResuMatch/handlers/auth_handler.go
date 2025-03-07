@@ -1,8 +1,8 @@
-package main
+package handlers
 
 import (
-	request "auth/request"
-	"auth/usecase"
+	request "ResuMatch/request"
+	"ResuMatch/usecase"
 	"encoding/json"
 	"fmt"
 	"log"

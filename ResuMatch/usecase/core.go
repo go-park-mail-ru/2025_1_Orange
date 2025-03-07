@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"auth/models"
-	"auth/repository/profile"
-	"auth/repository/session"
+	"ResuMatch/models"
+	"ResuMatch/repository/profile"
+	"ResuMatch/repository/session"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -45,7 +45,7 @@ var (
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-func createSessionID() (string, error) {
+func CreateSessionID() (string, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
@@ -55,7 +55,7 @@ func createSessionID() (string, error) {
 }
 
 func (core *Core) CreateSession(ctx context.Context, userID uint64) (string, error) {
-	sid, err := createSessionID()
+	sid, err := CreateSessionID()
 	if err != nil {
 		return "", fmt.Errorf("CreateSession: can't generate session ID for user %d: %w", userID, err)
 	}

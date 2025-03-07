@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"ResuMatch/data"
+	"ResuMatch/internal/data"
 	"encoding/json"
 	"net/http"
 )

@@ -1,182 +1,121 @@
-package delivery
+package main
 
 import (
-	requests "auth/request"
+	request "auth/request"
 	"auth/usecase"
+	"encoding/json"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
+	"regexp"
 	"time"
-
-	"github.com/mailru/easyjson"
 )
 
-type IApi interface {
-	Signin(w http.ResponseWriter, r *http.Request)
-	Signup(w http.ResponseWriter, r *http.Request)
-	LogoutSession(w http.ResponseWriter, r *http.Request)
-	AuthAccept(w http.ResponseWriter, r *http.Request)
+type MyHandler struct {
+	core *usecase.Core
 }
 
-type API struct {
-	core usecase.ICore
-	mx   *http.ServeMux
+func NewMyHandler(core *usecase.Core) *MyHandler {
+	return &MyHandler{
+		core: core,
+	}
 }
 
-func (a *API) ListenAndServe() error {
-	err := http.ListenAndServe(":8081", a.mx)
+func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var req request.SigninRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
+	user, ok := api.core.Users.GetUserByLogin(req.Login)
+	if !ok {
+		http.Error(w, `{"error": "no user"}`, http.StatusNotFound)
+		return
+	}
+
+	if user.Password != req.Password {
+		http.Error(w, `{"error": "bad pass"}`, http.StatusUnauthorized)
+		return
+	}
+	sid, err := api.core.CreateSession(r.Context(), user.Id)
 	if err != nil {
-		return fmt.Errorf("listen and serve error: %w", err)
+		http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
+		log.Println(err)
+		return
 	}
 
-	return nil
-}
-
-func GetApi(c *usecase.Core) *API {
-	api := &API{
-		core: c,
-		mx:   http.NewServeMux(),
+	cookie := &http.Cookie{
+		Name:     "session_id",
+		Value:    sid,
+		Expires:  time.Now().Add(10 * time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
 	}
 
-	api.mx.HandleFunc("/signin", api.Signin)
-	api.mx.HandleFunc("/signup", api.Signup)
-	api.mx.HandleFunc("/logout", api.LogoutSession)
-	api.mx.HandleFunc("/authcheck", api.AuthAccept)
+	http.SetCookie(w, cookie)
 
-	return api
+	json.NewEncoder(w).Encode(map[string]string{"session_id": sid})
 }
 
-func (a *API) LogoutSession(w http.ResponseWriter, r *http.Request) {
+func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
-	session, err := r.Cookie("session_id")
+	var req request.SignupRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
+	if matched, _ := regexp.MatchString(`@`, req.Email); !matched {
+		http.Error(w, `{"error": "Invalid email format"}`, http.StatusBadRequest)
+		return
+	}
+
+	_, exists := api.core.Users.GetUserByLogin(req.Login)
+	if exists {
+		http.Error(w, `{"error": "Login already exists"}`, http.StatusConflict)
+		return
+	}
+
+	err := api.core.CreateUserAccount(r.Context(), req.Login, req.Password, req.Name, req.BirthDate, req.Email)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "failed to create user: %s"}`, err.Error()), http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"})
+}
+func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	sessionCookie, err := r.Cookie("session_id")
 	if err == http.ErrNoCookie {
+		http.Error(w, `{"error": "no session"}`, http.StatusUnauthorized)
 		return
 	}
 
-	found, _ := a.core.FindActiveSession(r.Context(), session.Value)
-	if !found {
+	sid := sessionCookie.Value
+
+	err = api.core.KillSession(r.Context(), sid)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "failed to kill session: %s"}`, err.Error()), http.StatusInternalServerError)
+		log.Println(err)
 		return
-	} else {
-		err := a.core.KillSession(r.Context(), session.Value)
-		if err != nil {
-			fmt.Printf("failed to kill session", err.Error())
-		}
-		session.Expires = time.Now().AddDate(0, 0, -1)
-		http.SetCookie(w, session)
 	}
-	w.Header().Set("Content-Type", "application/json")
+
+	sessionCookie.Expires = time.Now().AddDate(0, 0, -1)
+	http.SetCookie(w, sessionCookie)
+
 	w.WriteHeader(http.StatusOK)
-}
-
-func (a *API) AuthAccept(w http.ResponseWriter, r *http.Request) {
-
-	var authorized bool
-
-	session, err := r.Cookie("session_id")
-	if err == nil && session != nil {
-		authorized, _ = a.core.FindActiveSession(r.Context(), session.Value)
-	}
-
-	if !authorized {
-		return
-	}
-	login, err := a.core.GetUserName(r.Context(), session.Value)
-	if err != nil {
-		return
-	}
-
-	role, err := a.core.GetUserRole(login)
-	if err != nil {
-		return
-	}
-
-	jsonResponse, err := easyjson.Marshal(r)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(jsonResponse)
-	if err != nil {
-		fmt.Printf("failed to send response", err.Error())
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-}
-
-func (a *API) Signin(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodPost {
-		return
-	}
-
-	var request requests.SigninRequest
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-
-	if err = easyjson.Unmarshal(body, &request); err != nil {
-		return
-	}
-
-	user, found, err := a.core.FindUserAccount(request.Login, request.Password)
-	if err != nil {
-		return
-	}
-	if !found {
-		return
-	} else {
-		sid, session, _ := a.core.CreateSession(r.Context(), user.Login)
-		cookie := &http.Cookie{
-			Name:     "session_id",
-			Value:    sid,
-			Path:     "/",
-			Expires:  session.Expires,
-			HttpOnly: true,
-		}
-		http.SetCookie(w, cookie)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-}
-
-func (a *API) Signup(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		return
-	}
-
-	var request requests.SignupRequest
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println("Signup error", err.Error())
-		return
-	}
-
-	err = easyjson.Unmarshal(body, &request)
-	if err != nil {
-		return
-	}
-
-	found, err := a.core.FindUserByLogin(request.Login)
-	if err != nil {
-		return
-	}
-
-	if found {
-		return
-	}
-	err = a.core.CreateUserAccount(request.Login, request.Password, request.Name, request.BirthDate, request.Email)
-	if err == usecase.InvalideEmail {
-		w.WriteHeader(http.StatusBadRequest)
-	}
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
 }

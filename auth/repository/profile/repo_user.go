@@ -3,9 +3,9 @@ package profile
 import (
 	"auth/data"
 	"auth/models"
-	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	_ "github.com/jackc/pgx/stdlib"
 )
@@ -19,22 +19,30 @@ type IUserRepo interface {
 	CheckUserPassword(login string, password string) (bool, error)
 	GetUserRole(login string) (string, error)
 	FindUsers(login string, role string, first, limit uint64) ([]models.User, error)
+	GetLoginByID(userID uint64) (string, error)
+	GetUserByLogin(login string) (*models.User, bool)
 }
 
-type RepoPostgre struct {
-	db *sql.DB
-}
+type UserRepo struct{}
 
-func GetUser(login string, password string) (*models.User, bool, error) {
+func (r UserRepo) GetUserByLogin(login string) (*models.User, bool) {
+	user, ok := data.Users[login]
+	if !ok {
+		return nil, false
+	}
+	return &user, true
+}
+func (r UserRepo) GetUser(login string, password string) (*models.User, bool, error) {
 	for i := range data.Users {
 		if data.Users[i].Login == login && data.Users[i].Password == password {
-			return &data.Users[i], true, nil
+			user := data.Users[i]
+			return &user, true, nil
 		}
 	}
 	return nil, false, fmt.Errorf("GetUser err")
 }
 
-func FindUser(login string) (bool, error) {
+func (r UserRepo) FindUser(login string) (bool, error) {
 	for i := range data.Users {
 		if data.Users[i].Login == login {
 			return true, nil
@@ -43,16 +51,29 @@ func FindUser(login string) (bool, error) {
 	return false, fmt.Errorf("GetUserProfileId err")
 }
 
-func GetUserProfileId(login string) (int64, error) {
-	for i := range data.Users {
-		if data.Users[i].Login == login {
-			return &data.Users[i].Id, nil
+func (r UserRepo) FindUsers(login string, role string, first, limit uint64) ([]models.User, error) {
+	var foundUsers []models.User
+	count := uint64(0)
+
+	for _, user := range data.Users {
+		if login != "" && !strings.Contains(user.Login, login) {
+			continue
+		}
+		if count >= first {
+			foundUsers = append(foundUsers, user)
+		}
+		count++
+		if len(foundUsers) >= int(limit) {
+			break
 		}
 	}
-	return 0, fmt.Errorf("GetUserProfileId err")
-}
+	if len(foundUsers) == 0 {
+		return nil, fmt.Errorf("Users not found")
+	}
 
-func CreateUser(login string, password string, name string, birthDate string, email string) error {
+	return foundUsers, nil
+}
+func (r UserRepo) CreateUser(login string, password string, name string, birthDate string, email string) error {
 	for _, user := range data.Users {
 		if user.Login == login {
 			return errors.New("login already exists")
@@ -70,25 +91,35 @@ func CreateUser(login string, password string, name string, birthDate string, em
 		Role:             "user",
 	}
 
-	data.Users = append(data.Users, newUser)
+	data.Users[login] = newUser
 
 	return nil
 }
 
-func GetUserProfile(login string) (*models.User, error) {
+func (r UserRepo) GetUserProfile(login string) (*models.User, error) {
 	for i := range data.Users {
 		if data.Users[i].Login == login {
-			return data.Users[i], nil
+			user := data.Users[i]
+			return &user, nil
 		}
 	}
 	return nil, fmt.Errorf("GetUserProfileId err")
 }
 
-func GetUserRole(login string) (string, error) {
+func (r UserRepo) GetUserRole(login string) (string, error) {
 	for i := range data.Users {
 		if data.Users[i].Login == login {
-			return Users[i].Role, nil
+			return data.Users[i].Role, nil
 		}
 	}
 	return "", fmt.Errorf("GetUserRole err")
+}
+
+func (r UserRepo) GetLoginByID(userID uint64) (string, error) {
+	for login, user := range data.Users {
+		if user.Id == userID {
+			return login, nil
+		}
+	}
+	return "", fmt.Errorf("user with ID %d not found", userID)
 }

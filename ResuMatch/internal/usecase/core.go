@@ -5,10 +5,11 @@ import (
 	"ResuMatch/internal/repository/profile"
 	"ResuMatch/internal/repository/session"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"net/mail"
 )
 
@@ -127,7 +128,8 @@ func (core *Core) FindUserByEmail(email string) (bool, error) {
 func RandStringRunes(seed int) string {
 	symbols := make([]rune, seed)
 	for i := range symbols {
-		symbols[i] = letterRunes[rand.Intn(len(letterRunes))]
+		randomIndex, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterRunes))))
+		symbols[i] = letterRunes[randomIndex.Int64()]
 	}
 	return string(symbols)
 }

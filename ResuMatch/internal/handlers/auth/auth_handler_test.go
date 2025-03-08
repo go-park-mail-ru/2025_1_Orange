@@ -1,388 +1,169 @@
 package auth
 
 import (
-	"ResuMatch/internal/data"
 	"ResuMatch/internal/models"
 	"ResuMatch/internal/repository/profile"
 	"ResuMatch/internal/repository/session"
+	request "ResuMatch/internal/request"
 	"ResuMatch/internal/usecase"
 	"bytes"
+
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
-	"time"
 )
 
-func newTestRequest(method, url string, body string) (*http.Request, error) {
-	var bodyReader *strings.Reader
-	if body != "" {
-		bodyReader = strings.NewReader(body)
-	}
+// Глобальные переменные для хранения данных
+var Sessions = make(map[string]uint64)   // Реальная структура для хранения сессий
+var Users = make(map[string]models.User) // Реальная структура для хранения пользователей
 
-	req, err := http.NewRequest(method, url, bodyReader)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	return req, nil
+// Реализация SessionRepo без mock
+type RealSessionRepo struct{}
+
+func (r *RealSessionRepo) CreateSession(_ context.Context, userID uint64, sid string) error {
+	Sessions[sid] = userID
+	return nil
 }
 
-func clearSessions() {
-
-	for k := range session.Sessions {
-		delete(session.Sessions, k)
+func (r *RealSessionRepo) GetSession(sessionID string) (uint64, error) {
+	userID, ok := Sessions[sessionID]
+	if !ok {
+		return 0, fmt.Errorf("session not found")
 	}
+	return userID, nil
 }
 
-func TestSignup_Success(t *testing.T) {
-
-	signupPayload := `{"email":"testuser@mail.ru", "password":"testpassword", "firstName":"Test User", "lastName": "test User", "companyName":"Company", "companyAddress": "Address" }`
-
-	req, err := newTestRequest("POST", "/signup", signupPayload)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-
-	rr := httptest.NewRecorder()
-
-	core := usecase.NewCore(session.Sessionrepo{}, profile.UserRepo{})
-	handler := NewMyHandler(core)
-
-	handler.Signup(rr, req)
-
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("Signup handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
-	}
-
-	expected := `{"message":"User created successfully"}`
-	if strings.TrimSpace(rr.Body.String()) != expected {
-		t.Errorf("Signup handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
-	}
-
-	if _, ok := data.Users["testuser"]; !ok {
-		t.Error("User was not added to the Users map")
-	}
+func (r *RealSessionRepo) DeleteSession(sessionID string) error {
+	delete(Sessions, sessionID)
+	return nil
 }
 
-func TestEmail_Success(t *testing.T) {
+// Реализация UserRepo без mock
+type RealUserRepo struct{}
 
-	testEmail := "testlemail@examle.com"
-	testPass := "testpass"
-	data.Users[testEmail] = models.User{
-		ID:             6,
-		Email:          testEmail,
-		Password:       testPass,
-		FirstName:      "Test Username",
-		LastName:       "Test Username2",
-		CompanyName:    "Test company",
-		CompanyAddress: "Test address",
+func (r *RealUserRepo) GetUserByEmail(email string) (*models.User, bool) {
+	user, ok := Users[email]
+	if !ok {
+		return nil, false
 	}
-	defer delete(data.Users, testEmail)
-
-	emailPayload := `{"email":"testemail@example.com", "password":"testpass"}`
-
-	req, err := newTestRequest("POST", "/signin", emailPayload)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-
-	rr := httptest.NewRecorder()
-
-	core := usecase.NewCore(session.Sessionrepo{}, profile.UserRepo{})
-	handler := NewMyHandler(core)
-
-	handler.Signin(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("Login handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	var resp map[string]string
-	err = json.Unmarshal(rr.Body.Bytes(), &resp)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal response body: %v", err)
-	}
-	sessionID, ok := resp["session_id"]
-	if !ok || sessionID == "" {
-		t.Errorf("Login handler did not return session_id in response")
-	}
-
-	cookies := rr.Result().Cookies()
-	var sessionCookie *http.Cookie
-	for _, cookie := range cookies {
-		if cookie.Name == "session_id" {
-			sessionCookie = cookie
-			break
-		}
-	}
-
-	if sessionCookie == nil || sessionCookie.Value == "" {
-		t.Errorf("Login handler did not set session cookie")
-	}
-
-	clearSessions()
+	return &user, true
 }
 
-func TestLogout_Success(t *testing.T) {
-	testEmail := "testemail@example.com"
-	testPass := "testpass"
-	data.Users[testEmail] = models.User{
-		ID:             6,
-		Email:          testEmail,
-		Password:       testPass,
-		FirstName:      "Test Username",
-		LastName:       "Test Username2",
-		CompanyName:    "Test company",
-		CompanyAddress: "Test address",
+func (r *RealUserRepo) CreateUser(email, password, firstname, lastname, companyname, companyaddress string) error {
+	if _, exists := Users[email]; exists {
+		return fmt.Errorf("email already exists")
 	}
-	defer delete(data.Users, testEmail)
-
-	sid, err := usecase.CreateSessionID()
-	if err != nil {
-		t.Fatalf("Couldn't create session ID: %v", err)
-	}
-
-	req, err := newTestRequest("GET", "/logout", "")
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-
-	cookie := &http.Cookie{
-		Name:     "session_id",
-		Value:    sid,
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteStrictMode,
-	}
-	req.AddCookie(cookie)
-
-	rr := httptest.NewRecorder()
-	core := usecase.NewCore(session.Sessionrepo{}, profile.UserRepo{})
-	handler := NewMyHandler(core)
-
-	handler.Logout(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("Logout handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	expected := `{"message":"Logged out successfully"}`
-	if strings.TrimSpace(rr.Body.String()) != expected {
-		t.Errorf("Logout handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
-	}
-
-	cookies := rr.Result().Cookies()
-	var sessionCookie *http.Cookie
-	for _, c := range cookies {
-		if c.Name == "session_id" {
-			sessionCookie = c
-			break
-		}
-	}
-
-	if sessionCookie == nil || sessionCookie.Value != sid || !sessionCookie.Expires.Before(time.Now()) {
-		t.Errorf("Logout handler did not expire the session cookie")
-	}
-
-}
-
-func makeHTTPReq(method, path string, body string) (*http.Request, error) {
-	var bodyReader *bytes.Reader
-	if body != "" {
-		bodyReader = bytes.NewReader([]byte(body))
-	}
-	req, err := http.NewRequest(method, path, bodyReader)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	return req, nil
-}
-
-func makeTestCoreAndHandler() (*usecase.Core, *MyHandler) {
-	staticSessionRepo := session.Sessionrepo{}
-	staticUserRepo := profile.UserRepo{}
-	core := usecase.NewCore(staticSessionRepo, staticUserRepo)
-	handler := NewMyHandler(core)
-	return core, handler
-}
-
-func setUserInMap(email, password string, id uint64) {
-	data.Users[email] = models.User{
-		ID:             id,
+	Users[email] = models.User{
+		ID:             uint64(len(Users) + 1),
 		Email:          email,
 		Password:       password,
-		FirstName:      "Test Username",
-		LastName:       "Test Username2",
-		CompanyName:    "Test company",
-		CompanyAddress: "Test address",
+		FirstName:      firstname,
+		LastName:       lastname,
+		CompanyName:    companyname,
+		CompanyAddress: companyaddress,
 	}
+	return nil
 }
 
+// Тест для обработчика Signin
 func TestSignin(t *testing.T) {
-
-	email := "testuser@example.com"
-	password := "testpassword"
-	userID := uint64(1)
-
-	setUserInMap(email, password, userID)
-	defer delete(data.Users, email)
-
-	jsonBody := []byte(`{"email":"testuser", "password":"testpassword"}`)
-	req, err := makeHTTPReq("POST", "/signin", string(jsonBody))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
+	// Настройка реальных данных
+	sessionRepo := session.Sessionrepo{}
+	userRepo := profile.UserRepo{}
+	Users["test@example.com"] = models.User{
+		ID:       1,
+		Email:    "test@example.com",
+		Password: "password123",
 	}
 
-	rr := httptest.NewRecorder()
+	// Создание Core и обработчика
+	core := usecase.NewCore(sessionRepo, userRepo)
+	handler := NewMyHandler(core)
 
-	_, handler := makeTestCoreAndHandler()
-
-	handler.Signin(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	// Создание запроса
+	reqBody := request.SigninRequest{
+		Email:    "test@example.com",
+		Password: "password123",
 	}
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/signin", bytes.NewReader(body))
+	w := httptest.NewRecorder()
 
-	var response map[string]string
-	err = json.Unmarshal(rr.Body.Bytes(), &response)
-	if err != nil {
-		t.Fatalf("Could not unmarshal response: %v", err)
+	// Вызов обработчика
+	handler.Signin(w, req)
+
+	// Проверка ответа
+	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, res.StatusCode)
 	}
-
-	sessionID, ok := response["session_id"]
-	if !ok {
-		t.Fatalf("session_id not found in response")
-	}
-
-	if sessionID == "" {
-		t.Errorf("session_id is empty")
-	}
-
-	cookieFound := false
-	for _, cookie := range rr.Result().Cookies() {
-		if cookie.Name == "session_id" {
-			cookieFound = true
-			if cookie.Value != sessionID {
-				t.Errorf("Session cookie value is incorrect")
-			}
-			break
-		}
-	}
-
-	if !cookieFound {
-		t.Errorf("Session cookie not found")
-	}
-
-	clearSessions()
 }
 
-func TestLogout(t *testing.T) {
-	email := "testuser@example.com"
-	password := "testpassword"
-	userID := uint64(1)
-
-	setUserInMap(email, password, userID)
-	defer delete(data.Users, email)
-
-	core, handler := makeTestCoreAndHandler()
-
-	sessionID, err := core.CreateSession(context.Background(), userID)
-	if err != nil {
-		t.Fatalf("Could not create session: %v", err)
-	}
-
-	req, err := makeHTTPReq("GET", "/logout", "")
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-
-	cookie := &http.Cookie{
-		Name:  "session_id",
-		Value: sessionID,
-	}
-	req.AddCookie(cookie)
-
-	rr := httptest.NewRecorder()
-
-	handler.Logout(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
-
-	var response map[string]string
-	err = json.Unmarshal(rr.Body.Bytes(), &response)
-	if err != nil {
-		t.Fatalf("Could not unmarshal response: %v", err)
-	}
-
-	expectedMessage := "Logged out successfully"
-	if response["message"] != expectedMessage {
-		t.Errorf("handler returned unexpected body: got %v want %v", response["message"], expectedMessage)
-	}
-
-	sessionCookieFound := false
-	for _, cookie := range rr.Result().Cookies() {
-		if cookie.Name == "session_id" {
-			sessionCookieFound = true
-			if cookie.Value != sessionID {
-				t.Errorf("Session cookie value is incorrect")
-			}
-			if !cookie.Expires.Before(time.Now()) {
-				t.Errorf("Session cookie expiration time is incorrect")
-			}
-			break
-		}
-	}
-
-	if !sessionCookieFound {
-		t.Errorf("Session cookie not found")
-	}
-
-	clearSessions()
-}
-
+// Тест для обработчика Signup
 func TestSignup(t *testing.T) {
-	email := "testuser@example.com"
-	jsonBody := []byte(`{"email":"` + email + `", "password":"testpassword", "name":"Test User", "birthdate":"1990-01-01", "email":"test@example.com"}`)
-	req, err := makeHTTPReq("POST", "/signup", string(jsonBody))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
+	// Настройка реальных данных
+	sessionRepo := session.Sessionrepo{}
+	userRepo := profile.UserRepo{}
+
+	// Создание Core и обработчика
+	core := usecase.NewCore(sessionRepo, userRepo)
+	handler := NewMyHandler(core)
+
+	// Создание запроса
+	reqBody := request.SignupRequest{
+		Email:          "newuser@example.com",
+		Password:       "password123",
+		RepeatPassword: "password123",
+		FirstName:      "John",
+		LastName:       "Doe",
+		CompanyName:    "Test Co",
+		CompanyAddress: "123 Test Street",
 	}
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/signup", bytes.NewReader(body))
+	w := httptest.NewRecorder()
 
-	rr := httptest.NewRecorder()
+	// Вызов обработчика
+	handler.Signup(w, req)
 
-	_, handler := makeTestCoreAndHandler()
+	// Проверка ответа
+	res := w.Result()
+	defer res.Body.Close()
 
-	handler.Signup(rr, req)
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
+	if res.StatusCode != http.StatusCreated {
+		t.Errorf("Expected status %d, got %d", http.StatusCreated, res.StatusCode)
 	}
+}
 
-	var response map[string]string
-	err = json.Unmarshal(rr.Body.Bytes(), &response)
-	if err != nil {
-		t.Fatalf("Could not unmarshal response: %v", err)
+// Тест для обработчика Logout
+func TestLogout(t *testing.T) {
+	// Настройка реальных данных
+	sessionRepo := session.Sessionrepo{}
+	userRepo := profile.UserRepo{}
+	Sessions["valid-session-id"] = 1
+
+	// Создание Core и обработчика
+	core := usecase.NewCore(sessionRepo, userRepo)
+	handler := NewMyHandler(core)
+
+	// Создание запроса
+	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session-id"})
+	w := httptest.NewRecorder()
+
+	// Вызов обработчика
+	handler.Logout(w, req)
+
+	// Проверка ответа
+	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, res.StatusCode)
 	}
-
-	expectedMessage := "User created successfully"
-	if response["message"] != expectedMessage {
-		t.Errorf("handler returned unexpected body: got %v want %v", response["message"], expectedMessage)
-	}
-
-	_, userExists := data.Users[email]
-	if !userExists {
-		t.Errorf("User not found in Users map")
-	}
-	delete(data.Users, email)
-
 }

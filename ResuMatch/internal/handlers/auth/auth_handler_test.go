@@ -13,34 +13,6 @@ import (
 	"testing"
 )
 
-func TestSignin(t *testing.T) {
-
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-
-	existingUser := data.Users["user1"]
-
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
-
-	reqBody := request.SigninRequest{
-		Email:    existingUser.Email,
-		Password: existingUser.Password,
-	}
-	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/signin", bytes.NewReader(body))
-	w := httptest.NewRecorder()
-
-	handler.Signin(w, req)
-
-	res := w.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("Expected status %d, got %d", http.StatusOK, res.StatusCode)
-	}
-}
-
 func TestSignup(t *testing.T) {
 	userRepo := &profile.UserRepo{}
 	sessionRepo := &session.Sessionrepo{}
@@ -68,6 +40,32 @@ func TestSignup(t *testing.T) {
 
 	if res.StatusCode != http.StatusCreated {
 		t.Errorf("Expected status %d, got %d", http.StatusCreated, res.StatusCode)
+	}
+}
+func TestSignin(t *testing.T) {
+
+	userRepo := &profile.UserRepo{}
+	sessionRepo := &session.Sessionrepo{}
+
+	existingUser := data.Users["user1"]
+	core := usecase.NewCore(*sessionRepo, *userRepo)
+	handler := NewMyHandler(core)
+
+	reqBody := request.SigninRequest{
+		Email:    existingUser.Email,
+		Password: existingUser.Password,
+	}
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/signin", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	handler.Signin(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, res.StatusCode)
 	}
 }
 

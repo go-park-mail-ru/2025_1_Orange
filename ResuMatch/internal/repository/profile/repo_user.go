@@ -24,13 +24,24 @@ type IUserRepo interface {
 
 type UserRepo struct{}
 
+// func (r UserRepo) GetUserByEmail(email string) (*models.User, bool) {
+// 	user, ok := data.Users[email]
+// 	if !ok {
+// 		return nil, false
+// 	}
+// 	return &user, true
+// }
+
 func (r UserRepo) GetUserByEmail(email string) (*models.User, bool) {
-	user, ok := data.Users[email]
-	if !ok {
-		return nil, false
+	for i := range data.Users {
+		if data.Users[i].Email == email {
+			user := data.Users[i]
+			return &user, true
+		}
 	}
-	return &user, true
+	return nil, false
 }
+
 func (r UserRepo) GetUser(email string, password string) (*models.User, bool, error) {
 	for i := range data.Users {
 		if data.Users[i].Email == email && data.Users[i].Password == password {

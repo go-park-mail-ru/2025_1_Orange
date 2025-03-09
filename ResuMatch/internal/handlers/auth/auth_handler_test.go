@@ -2,11 +2,13 @@ package auth
 
 import (
 	"ResuMatch/internal/data"
+	"ResuMatch/internal/models"
 	"ResuMatch/internal/repository/profile"
 	"ResuMatch/internal/repository/session"
 	request "ResuMatch/internal/request"
 	"ResuMatch/internal/usecase"
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -91,5 +93,88 @@ func TestLogout(t *testing.T) {
 
 	if res.StatusCode != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, res.StatusCode)
+	}
+}
+
+func TestCheckEmail(t *testing.T) {
+	userRepo := &profile.UserRepo{}
+	sessionRepo := &session.Sessionrepo{}
+
+	core := usecase.NewCore(*sessionRepo, *userRepo)
+	handler := NewMyHandler(core)
+
+	existingEmail := data.Users["user1"].Email
+
+	reqBody := request.CheckUserRequest{
+		Email: existingEmail,
+	}
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	handler.CheckEmail(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Test Case 1 Failed: Expected status %d, got %d", http.StatusOK, res.StatusCode)
+	}
+
+	nonExistingEmail := "nonexisting@example.com"
+	reqBody = request.CheckUserRequest{
+		Email: nonExistingEmail,
+	}
+	body, _ = json.Marshal(reqBody)
+	req = httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewReader(body))
+	w = httptest.NewRecorder()
+
+	handler.CheckEmail(w, req)
+
+	res = w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Errorf("Test Case 2 Failed: Expected status %d, got %d", http.StatusBadRequest, res.StatusCode)
+	}
+}
+
+func TestAuth(t *testing.T) {
+	userRepo := &profile.UserRepo{}
+	sessionRepo := &session.Sessionrepo{}
+
+	core := usecase.NewCore(*sessionRepo, *userRepo)
+	handler := NewMyHandler(core)
+
+	existingUser := data.Users["user1"]
+	sessionID, err := core.CreateSession(context.Background(), existingUser.ID)
+	if err != nil {
+		t.Fatalf("Failed to create session: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth", nil)
+	cookie := &http.Cookie{
+		Name:  "session_id",
+		Value: sessionID,
+	}
+	req.AddCookie(cookie)
+
+	w := httptest.NewRecorder()
+	handler.Auth(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, res.StatusCode)
+	}
+
+	var responseUser models.User
+	if err := json.NewDecoder(res.Body).Decode(&responseUser); err != nil {
+		t.Fatalf("Failed to decode response body: %v", err)
+	}
+
+	if responseUser.ID != existingUser.ID {
+		t.Errorf("Expected user ID %d, got %d", existingUser.ID, responseUser.ID)
 	}
 }

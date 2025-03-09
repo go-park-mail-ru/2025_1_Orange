@@ -83,6 +83,15 @@ func (core *Core) KillSession(_ context.Context, sid string) error {
 	return nil
 }
 
+func (core *Core) GetUserIDFromSession(sid string) (uint64, error) {
+	userID, err := core.Sessions.GetSession(sid)
+	if err != nil {
+		return 0, fmt.Errorf("GetUserIDFromSession: can't get session %s: %w", sid, err)
+	}
+
+	return userID, nil
+}
+
 func (core *Core) GetUserName(_ context.Context, sid string) (string, error) {
 	userID, err := core.Sessions.GetSession(sid)
 	if err != nil {

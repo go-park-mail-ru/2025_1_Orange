@@ -138,3 +138,53 @@ func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var req request.CheckUserRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
+	_, exists := api.core.Users.GetUserByEmail(req.Email)
+	if exists {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"})
+		return
+	}
+
+	w.WriteHeader(http.StatusBadRequest)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Email not found"})
+}
+
+func (api *MyHandler) Auth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
+		log.Println("No session cookie:", err)
+		return
+	}
+
+	sid := cookie.Value
+
+	userID, err := api.core.GetUserIDFromSession(sid)
+	if err != nil {
+		http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
+		log.Println("Invalid session:", err)
+		return
+	}
+
+	user, ok := api.core.Users.GetUserById(userID)
+	if !ok {
+		http.Error(w, `{"error": "User not found"}`, http.StatusNotFound)
+		log.Println("User not found:", userID)
+		return
+	}
+
+	json.NewEncoder(w).Encode(user)
+}

@@ -19,6 +19,8 @@ func NewRouter() *http.ServeMux {
 	mux.HandleFunc("/signin", auth.NewMyHandler(core).Signin)
 	mux.HandleFunc("/signup", auth.NewMyHandler(core).Signup)
 	mux.HandleFunc("/logout", auth.NewMyHandler(core).Logout)
+	mux.HandleFunc("/auth", auth.NewMyHandler(core).Auth)
+	mux.HandleFunc("/check-email", auth.NewMyHandler(core).CheckEmail)
 	mux.HandleFunc("/vacancies", vacancy.GetVacancies)
 
 	return mux

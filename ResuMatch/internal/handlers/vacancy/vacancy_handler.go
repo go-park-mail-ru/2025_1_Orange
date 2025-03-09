@@ -1,7 +1,7 @@
-package handlers
+package vacancy
 
 import (
-	"ResuMatch/data"
+	"ResuMatch/internal/data"
 	"encoding/json"
 	"net/http"
 )

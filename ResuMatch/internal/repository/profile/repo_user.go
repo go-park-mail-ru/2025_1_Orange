@@ -43,10 +43,10 @@ func (r UserRepo) GetUserByEmail(email string) (*models.User, bool) {
 	return nil, false
 }
 
-func (r UserRepo) CreateUser(email string, password string, firstname string, lastname string, companyname string, companyaddress string) error {
+func (r UserRepo) CreateUser(email string, password string, firstname string, lastname string, companyname string, companyaddress string) (models.User, error) {
 	for _, user := range data.Users {
 		if user.Email == email {
-			return errors.New("email already exists")
+			return models.User{}, errors.New("email already exists")
 		}
 	}
 	newUser := models.User{
@@ -61,7 +61,7 @@ func (r UserRepo) CreateUser(email string, password string, firstname string, la
 
 	data.Users[email] = newUser
 
-	return nil
+	return newUser, nil
 }
 
 // func (r UserRepo) GetUser(email string, password string) (*models.User, bool, error) {

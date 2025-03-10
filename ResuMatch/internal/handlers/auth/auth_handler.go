@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/mail"
+
 	"time"
 )
 
@@ -42,12 +43,24 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "bad pass"}`, http.StatusUnauthorized)
 		return
 	}
+
 	sid, err := api.core.CreateSession(r.Context(), user.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
+
+	hashTok := usecase.CryptToken{Secret: []byte("Base")}
+	token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
+
+	if err != nil {
+		http.Error(w, `{"error": "failed to create CSRF token"}`, http.StatusInternalServerError)
+		log.Println("Failed to create CSRF token:", err)
+		return
+	}
+
+	w.Header().Set("csrf", token)
 
 	cookie := &http.Cookie{
 		Name:     "session_id",
@@ -94,12 +107,40 @@ func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := api.core.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
+	user, err := api.core.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create user: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
+	sid, err := api.core.CreateSession(r.Context(), user.ID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	hashTok := usecase.NewSimpleToken("Base")
+	token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
+
+	if err != nil {
+		http.Error(w, `{"error": "failed to create CSRF token"}`, http.StatusInternalServerError)
+		log.Println("Failed to create CSRF token:", err)
+		return
+	}
+
+	w.Header().Set("csrf", token)
+
+	cookie := &http.Cookie{
+		Name:     "session_id",
+		Value:    sid,
+		Expires:  time.Now().Add(10 * time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
+	}
+
+	http.SetCookie(w, cookie)
 
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"}); err != nil {
@@ -141,15 +182,13 @@ func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var req request.CheckUserRequest
+	email := r.URL.Query().Get("email")
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
-		log.Println(err)
+	if email == "" {
+		http.Error(w, `{"error": "Email parameter is required"}`, http.StatusBadRequest)
 		return
 	}
-
-	_, exists := api.core.Users.GetUserByEmail(req.Email)
+	_, exists := api.core.Users.GetUserByEmail(email)
 	if exists {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"})

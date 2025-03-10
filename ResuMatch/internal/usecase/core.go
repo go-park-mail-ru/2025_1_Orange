@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"ResuMatch/internal/models"
 	"ResuMatch/internal/repository/profile"
 	"ResuMatch/internal/repository/session"
 	"context"
@@ -91,16 +92,16 @@ func (core *Core) GetUserIDFromSession(sid string) (uint64, error) {
 	return userID, nil
 }
 
-func (core *Core) CreateUserAccount(_ context.Context, email string, password string, firstname string, lastname string, companyname string, companyaddress string) error {
+func (core *Core) CreateUserAccount(_ context.Context, email string, password string, firstname string, lastname string, companyname string, companyaddress string) (models.User, error) {
 	if _, err := mail.ParseAddress(email); err != nil {
-		return ErrInvalideEmail
+		return models.User{}, ErrInvalideEmail
 	}
-	err := core.Users.CreateUser(email, password, firstname, lastname, companyname, companyaddress)
+	user, err := core.Users.CreateUser(email, password, firstname, lastname, companyname, companyaddress)
 	if err != nil {
-		return fmt.Errorf("CreateUserAccount err: %w", err)
+		return models.User{}, fmt.Errorf("CreateUserAccount err: %w", err)
 	}
 
-	return nil
+	return user, nil
 }
 
 // func (core *Core) GetUserName(_ context.Context, sid string) (string, error) {

@@ -4,7 +4,7 @@ import (
 	"ResuMatch/internal/handlers/auth"
 	"ResuMatch/internal/handlers/vacancy"
 	"ResuMatch/internal/repository/profile"
-	"ResuMatch/internal/session"
+	"ResuMatch/internal/repository/session"
 	"ResuMatch/internal/usecase"
 	"net/http"
 )

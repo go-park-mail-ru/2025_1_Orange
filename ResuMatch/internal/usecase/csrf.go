@@ -36,7 +36,7 @@ func (tk *CryptToken) Create(sessionID string, tokenExpTime int64) (string, erro
 	return token, nil
 }
 
-func (tk *CryptToken) Check(sessionID string, inputToken string) (bool, error) {
+func (tk *CryptToken) Check(sid string, inputToken string) (bool, error) {
 
 	parts := strings.Split(inputToken, ".")
 	if len(parts) != 2 {
@@ -63,7 +63,7 @@ func (tk *CryptToken) Check(sessionID string, inputToken string) (bool, error) {
 		return false, fmt.Errorf("token expired")
 	}
 
-	if td.SessionID != sessionID {
+	if td.SessionID != sid {
 		return false, fmt.Errorf("session ID mismatch")
 	}
 

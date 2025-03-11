@@ -1,0 +1,797 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cmd: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">ResuMatch/cmd/main.go (0.0%)</option>
+				
+				<option value="file1">ResuMatch/internal/csrf/csrf.go (89.7%)</option>
+				
+				<option value="file2">ResuMatch/internal/handlers/auth/auth_handler.go (70.8%)</option>
+				
+				<option value="file3">ResuMatch/internal/handlers/vacancy/vacancy_handler.go (85.7%)</option>
+				
+				<option value="file4">ResuMatch/internal/middleware/cors.go (100.0%)</option>
+				
+				<option value="file5">ResuMatch/internal/profile/repo_user.go (0.0%)</option>
+				
+				<option value="file6">ResuMatch/internal/router/router.go (0.0%)</option>
+				
+				<option value="file7">ResuMatch/internal/session/session_repo.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "ResuMatch/internal/middleware"
+        "ResuMatch/internal/router"
+        "fmt"
+        "log"
+        "net/http"
+)
+
+func main() <span class="cov0" title="0">{
+        // Создаем маршрутизатор
+        mux := router.NewRouter()
+
+        handler := middleware.CORS(mux)
+
+        // Запускаем сервер
+        port := ":8000"
+        fmt.Println("Сервер запущен на http://localhost" + port)
+        log.Fatal(http.ListenAndServe(port, handler))
+
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package csrf
+
+import (
+        "crypto/sha256"
+        "encoding/base64"
+        "encoding/json"
+        "fmt"
+        "strings"
+        "time"
+)
+
+type CryptToken struct {
+        Secret []byte
+}
+
+type TokenData struct {
+        SessionID string `json:"session_id"`
+        Exp       int64  `json:"exp"`
+}
+
+func NewSimpleToken(secret string) *CryptToken <span class="cov8" title="1">{
+        return &amp;CryptToken{Secret: []byte(secret)}
+}</span>
+
+func (tk *CryptToken) Create(sessionID string, tokenExpTime int64) (string, error) <span class="cov8" title="1">{
+        td := &amp;TokenData{SessionID: sessionID, Exp: tokenExpTime}
+        data, err := json.Marshal(td)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("failed to marshal token %w", err)
+        }</span>
+        <span class="cov8" title="1">payload := base64.StdEncoding.EncodeToString(data)
+
+        signature := fmt.Sprintf("%x", sha256.Sum256(append([]byte(payload), tk.Secret...)))
+        token := payload + "." + signature
+
+        return token, nil</span>
+}
+
+func (tk *CryptToken) Check(sid string, inputToken string) (bool, error) <span class="cov8" title="1">{
+
+        parts := strings.Split(inputToken, ".")
+        if len(parts) != 2 </span><span class="cov8" title="1">{
+                return false, fmt.Errorf("invalid token format")
+        }</span>
+        <span class="cov8" title="1">payload, signature := parts[0], parts[1]
+
+        if !Verify(payload, signature, tk.Secret) </span><span class="cov8" title="1">{
+                return false, fmt.Errorf("invalid token signature")
+        }</span>
+
+        <span class="cov8" title="1">data, err := base64.StdEncoding.DecodeString(payload)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, fmt.Errorf("failed to decode base64 payload: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">td := TokenData{}
+        err = json.Unmarshal(data, &amp;td)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, fmt.Errorf("failed to unmarshal token %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if td.Exp &lt; time.Now().Unix() </span><span class="cov8" title="1">{
+                return false, fmt.Errorf("token expired")
+        }</span>
+
+        <span class="cov8" title="1">if td.SessionID != sid </span><span class="cov8" title="1">{
+                return false, fmt.Errorf("session ID mismatch")
+        }</span>
+
+        <span class="cov8" title="1">return true, nil</span>
+}
+
+func Verify(payload, signature string, secret []byte) bool <span class="cov8" title="1">{
+
+        expectedSignature := fmt.Sprintf("%x", sha256.Sum256(append([]byte(payload), secret...)))
+        return signature == expectedSignature
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package auth
+
+import (
+        "ResuMatch/internal/csrf"
+        "ResuMatch/internal/profile"
+        request "ResuMatch/internal/request"
+        "ResuMatch/internal/session"
+        "encoding/json"
+        "fmt"
+        "log"
+        "net/http"
+        "net/mail"
+        "time"
+)
+
+type MyHandler struct {
+        user    *profile.UserStorage
+        session *session.SessionStorage
+}
+
+func NewMyHandler() *MyHandler <span class="cov8" title="1">{
+        return &amp;MyHandler{
+                user:    profile.NewUserStorage(),
+                session: session.NewSessionStorage(),
+        }
+}</span>
+
+func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+
+        var req request.SigninRequest
+
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+                log.Println(err)
+                return
+        }</span>
+        <span class="cov8" title="1">user, ok := api.user.GetUserByEmail(req.Email)
+        if !ok </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "no user"}`, http.StatusNotFound)
+                return
+        }</span>
+
+        <span class="cov8" title="1">if user.Password != req.Password </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "bad pass"}`, http.StatusUnauthorized)
+                return
+        }</span>
+        <span class="cov8" title="1">sid, err := api.session.CreateSession(r.Context(), user.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
+                log.Println(err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">hashTok := csrf.NewSimpleToken("Base")
+        token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, `{"error": "failed to create CSRF token"}`, http.StatusInternalServerError)
+                log.Println("Failed to create CSRF token:", err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("csrf", token)
+
+        cookie := &amp;http.Cookie{
+                Name:     "session_id",
+                Value:    sid,
+                Expires:  time.Now().Add(10 * time.Hour),
+                HttpOnly: true,
+                Secure:   false,
+                SameSite: http.SameSiteStrictMode,
+        }
+
+        http.SetCookie(w, cookie)
+
+        if err := json.NewEncoder(w).Encode(map[string]string{"session_id": sid}); err != nil </span><span class="cov0" title="0">{
+                log.Println("Failed to encode response:", err)
+                http.Error(w, `{"error": "failed to encode response"}`, http.StatusInternalServerError)
+                return
+        }</span>
+}
+
+func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+
+        var req request.SignupRequest
+
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov0" title="0">{
+                http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+                log.Println(err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">if req.Password != req.RepeatPassword </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "Passwords do not match"}`, http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">if _, err := mail.ParseAddress(req.Email); err != nil </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "Invalid email format"}`, http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">_, exists := api.user.GetUserByEmail(req.Email)
+        if exists </span><span class="cov0" title="0">{
+                http.Error(w, `{"error": "Email already exists"}`, http.StatusConflict)
+                return
+        }</span>
+
+        <span class="cov8" title="1">user, err := api.user.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf(`{"error": "failed to create user: %s"}`, err.Error()), http.StatusInternalServerError)
+                log.Println(err)
+                return
+        }</span>
+        <span class="cov8" title="1">sid, err := api.session.CreateSession(r.Context(), user.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
+                log.Println(err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">hashTok := csrf.NewSimpleToken("Base")
+        token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
+
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, `{"error": "failed to create CSRF token"}`, http.StatusInternalServerError)
+                log.Println("Failed to create CSRF token:", err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("csrf", token)
+
+        cookie := &amp;http.Cookie{
+                Name:     "session_id",
+                Value:    sid,
+                Expires:  time.Now().Add(10 * time.Hour),
+                HttpOnly: true,
+                Secure:   false,
+                SameSite: http.SameSiteStrictMode,
+        }
+
+        http.SetCookie(w, cookie)
+
+        w.WriteHeader(http.StatusCreated)
+        if err := json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"}); err != nil </span><span class="cov0" title="0">{
+                log.Println("Failed to encode response:", err)
+                http.Error(w, `{"error": "failed to encode response"}`, http.StatusInternalServerError)
+                return
+        }</span>
+
+}
+func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+
+        sessionCookie, err := r.Cookie("session_id")
+        if err == http.ErrNoCookie </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "no session"}`, http.StatusUnauthorized)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sid := sessionCookie.Value
+
+        err = api.session.KillSession(r.Context(), sid)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, fmt.Sprintf(`{"error": "failed to kill session: %s"}`, err.Error()), http.StatusInternalServerError)
+                log.Println(err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sessionCookie.Expires = time.Now().AddDate(0, 0, -1)
+        http.SetCookie(w, sessionCookie)
+
+        w.WriteHeader(http.StatusOK)
+        if err := json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"}); err != nil </span><span class="cov0" title="0">{
+                log.Println("Failed to encode response:", err)
+                http.Error(w, `{"error": "failed to encode response"}`, http.StatusInternalServerError)
+                return
+        }</span>
+
+}
+func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+
+        email := r.URL.Query().Get("email")
+
+        if email == "" </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "Email parameter is required"}`, http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">_, exists := api.user.GetUserByEmail(email)
+        if exists </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusOK)
+                json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Email not found"})</span>
+}
+
+func (api *MyHandler) Auth(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+
+        cookie, err := r.Cookie("session_id")
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
+                log.Println("No session cookie:", err)
+                return
+        }</span>
+        <span class="cov8" title="1">sid := cookie.Value
+
+        userID, err := api.session.GetUserIDFromSession(sid)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
+                log.Println("Invalid session:", err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">user, ok := api.user.GetUserById(userID)
+        if !ok </span><span class="cov0" title="0">{
+                http.Error(w, `{"error": "User not found"}`, http.StatusNotFound)
+                log.Println("User not found:", userID)
+                return
+        }</span>
+
+        <span class="cov8" title="1">json.NewEncoder(w).Encode(user)</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package vacancy
+
+import (
+        "ResuMatch/internal/data"
+        "encoding/json"
+        "net/http"
+)
+
+func GetVacancies(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+
+        // Проверяем, что запрос идет методом GET
+        if r.Method != http.MethodGet </span><span class="cov8" title="1">{
+                http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+                return
+        }</span>
+
+        // Устанавливаем заголовки ответа
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+
+        // Кодируем данные в JSON и отправляем
+        if err := json.NewEncoder(w).Encode(data.Vacancies); err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Не удалось закодировать ответ", http.StatusInternalServerError)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package middleware
+
+import "net/http"
+
+func CORS(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173 http://localhost:8001") // Разрешить запросы с фронта
+                w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+                w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+                // Если это preflight-запрос (OPTIONS), просто возвращаем успешный ответ
+                if r.Method == "OPTIONS" </span><span class="cov8" title="1">{
+                        w.WriteHeader(http.StatusOK)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package profile
+
+import (
+        "ResuMatch/internal/data"
+        "ResuMatch/internal/models"
+        "context"
+        "errors"
+        "fmt"
+        "net/mail"
+        //_ "github.com/jackc/pgx/stdlib"
+)
+
+var (
+        ErrNotFound      = errors.New("not found")
+        ErrNotAllowed    = errors.New("not allowed")
+        ErrInvalideEmail = errors.New("invalide email")
+)
+
+type IUserRepo interface {
+        GetUserByEmail(email string) (*models.User, bool)
+        GetUserById(Id uint64) (*models.User, bool)
+        CreateUser(email string, password string, name string, birthDate string) error
+}
+
+type UserStorage struct {
+        Users map[string]models.User
+}
+
+func NewUserStorage() *UserStorage <span class="cov0" title="0">{
+        return &amp;UserStorage{
+                Users: data.Users,
+        }
+}</span>
+
+func (u *UserStorage) CreateUser(email, password, firstname, lastname, companyname, companyaddress string) (models.User, error) <span class="cov0" title="0">{
+        if _, exists := u.Users[email]; exists </span><span class="cov0" title="0">{
+                return models.User{}, errors.New("email already exists")
+        }</span>
+        <span class="cov0" title="0">newUser := models.User{
+                ID:             uint64(len(u.Users) + 1),
+                Email:          email,
+                Password:       password,
+                FirstName:      firstname,
+                LastName:       lastname,
+                CompanyName:    companyname,
+                CompanyAddress: companyaddress,
+        }
+        u.Users[email] = newUser
+        return newUser, nil</span>
+}
+
+func (u *UserStorage) GetUserByEmail(email string) (*models.User, bool) <span class="cov0" title="0">{
+        for _, user := range u.Users </span><span class="cov0" title="0">{
+                if user.Email == email </span><span class="cov0" title="0">{
+                        return &amp;user, true
+                }</span>
+        }
+        <span class="cov0" title="0">return nil, false</span>
+}
+
+func (u *UserStorage) GetUserById(id uint64) (*models.User, bool) <span class="cov0" title="0">{
+        for _, user := range u.Users </span><span class="cov0" title="0">{
+                if user.ID == id </span><span class="cov0" title="0">{
+                        return &amp;user, true
+                }</span>
+        }
+        <span class="cov0" title="0">return nil, false</span>
+}
+
+func (u *UserStorage) CreateUserAccount(_ context.Context, email string, password string, firstname string, lastname string, companyname string, companyaddress string) (models.User, error) <span class="cov0" title="0">{
+        if _, err := mail.ParseAddress(email); err != nil </span><span class="cov0" title="0">{
+                return models.User{}, ErrInvalideEmail
+        }</span>
+        <span class="cov0" title="0">user, err := u.CreateUser(email, password, firstname, lastname, companyname, companyaddress)
+        if err != nil </span><span class="cov0" title="0">{
+                return models.User{}, fmt.Errorf("CreateUserAccount err: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return user, nil</span>
+}
+
+// type UserRepo struct{}
+
+// func (r UserRepo) GetUserById(Id uint64) (*models.User, bool) {
+//         for i := range data.Users {
+//                 if data.Users[i].ID == Id {
+//                         user := data.Users[i]
+//                         return &amp;user, true
+//                 }
+//         }
+//         return nil, false
+// }
+
+// func (r UserRepo) GetUserByEmail(email string) (*models.User, bool) {
+//         for i := range data.Users {
+//                 if data.Users[i].Email == email {
+//                         user := data.Users[i]
+//                         return &amp;user, true
+//                 }
+//         }
+//         return nil, false
+// }
+
+// func (r UserRepo) CreateUser(email string, password string, firstname string, lastname string, companyname string, companyaddress string) (models.User, error) {
+//         for _, user := range data.Users {
+//                 if user.Email == email {
+//                         return models.User{}, errors.New("email already exists")
+//                 }
+//         }
+//         newUser := models.User{
+//                 ID:             uint64(len(data.Users) + 1),
+//                 Email:          email,
+//                 Password:       password,
+//                 FirstName:      firstname,
+//                 LastName:       lastname,
+//                 CompanyName:    companyname,
+//                 CompanyAddress: companyaddress,
+//         }
+
+//         data.Users[email] = newUser
+
+//         return newUser, nil
+// }
+
+// func (r UserRepo) GetUser(email string, password string) (*models.User, bool, error) {
+//         for i := range data.Users {
+//                 if data.Users[i].Email == email &amp;&amp; data.Users[i].Password == password {
+//                         user := data.Users[i]
+//                         return &amp;user, true, nil
+//                 }
+//         }
+//         return nil, false, fmt.Errorf("GetUser err")
+// }
+
+// func (r UserRepo) FindUser(email string) (bool, error) {
+//         for i := range data.Users {
+//                 if data.Users[i].Email == email {
+//                         return true, nil
+//                 }
+//         }
+//         return false, fmt.Errorf("GetUserProfileId err")
+// }
+
+// func (r UserRepo) FindUsers(email string, _ string, first, limit uint64) ([]models.User, error) {
+//         var foundUsers []models.User
+//         count := uint64(0)
+
+//         for _, user := range data.Users {
+//                 if email != "" &amp;&amp; !strings.Contains(user.Email, email) {
+//                         continue
+//                 }
+//                 if count &gt;= first {
+//                         foundUsers = append(foundUsers, user)
+//                 }
+//                 count++
+//                 if len(foundUsers) &gt;= int(limit) {
+//                         break
+//                 }
+//         }
+//         if len(foundUsers) == 0 {
+//                 return nil, fmt.Errorf("Users not found")
+//         }
+
+//                return foundUsers, nil
+//        }
+
+// func (r UserRepo) GetUserProfile(email string) (*models.User, error) {
+//         for i := range data.Users {
+//                 if data.Users[i].Email == email {
+//                         user := data.Users[i]
+//                         return &amp;user, nil
+//                 }
+//         }
+//         return nil, fmt.Errorf("GetUserProfileId err")
+// }
+
+// func (r UserRepo) GetUserCompany(email string) (string, error) {
+//         for i := range data.Users {
+//                 if data.Users[i].Email == email {
+//                         return data.Users[i].CompanyName, nil
+//                 }
+//         }
+//         return "", fmt.Errorf("GetUserRole err")
+// }
+
+// func (r UserRepo) GetEmailByID(userID uint64) (string, error) {
+//         for email, user := range data.Users {
+//                 if user.ID == userID {
+//                         return email, nil
+//                 }
+//         }
+//         return "", fmt.Errorf("user with ID %d not found", userID)
+// }
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package router
+
+import (
+        "ResuMatch/internal/handlers/auth"
+        "ResuMatch/internal/handlers/vacancy"
+        "net/http"
+)
+
+func NewRouter() *http.ServeMux <span class="cov0" title="0">{
+        mux := http.NewServeMux()
+
+        mux.HandleFunc("/signin", auth.NewMyHandler().Signin)
+        mux.HandleFunc("/signup", auth.NewMyHandler().Signup)
+        mux.HandleFunc("/logout", auth.NewMyHandler().Logout)
+        mux.HandleFunc("/auth", auth.NewMyHandler().Auth)
+        mux.HandleFunc("/check-email", auth.NewMyHandler().CheckEmail)
+        mux.HandleFunc("/vacancies", vacancy.GetVacancies)
+
+        return mux
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package session
+
+import (
+        "context"
+        "crypto/rand"
+        "encoding/base64"
+        "fmt"
+)
+
+type SessionStorage struct {
+        Sessions map[string]uint64
+}
+
+func NewSessionStorage() *SessionStorage <span class="cov0" title="0">{
+        return &amp;SessionStorage{
+                Sessions: make(map[string]uint64),
+        }
+}</span>
+func CreateSessionID() (string, error) <span class="cov0" title="0">{
+        b := make([]byte, 32)
+        _, err := rand.Read(b)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("createSessionID: failed to generate random bytes: %w", err)
+        }</span>
+        <span class="cov0" title="0">return base64.URLEncoding.EncodeToString(b), nil</span>
+}
+
+func (s *SessionStorage) createSession(_ context.Context, userID uint64, sid string) error <span class="cov0" title="0">{
+        s.Sessions[sid] = userID
+        return nil
+}</span>
+
+func (s *SessionStorage) GetSession(sid string) (uint64, error) <span class="cov0" title="0">{
+        userID, exists := s.Sessions[sid]
+        if !exists </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("session not found")
+        }</span>
+        <span class="cov0" title="0">return userID, nil</span>
+}
+
+func (s *SessionStorage) DeleteSession(sid string) error <span class="cov0" title="0">{
+        delete(s.Sessions, sid)
+        return nil
+}</span>
+
+func (s *SessionStorage) CreateSession(ctx context.Context, userID uint64) (string, error) <span class="cov0" title="0">{
+        sid, err := CreateSessionID()
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("CreateSession: can't generate session ID for user %d: %w", userID, err)
+        }</span>
+
+        <span class="cov0" title="0">err = s.createSession(ctx, userID, sid)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("CreateSession: can't create session for user %d with sid %s: %w", userID, sid, err)
+        }</span>
+        <span class="cov0" title="0">return sid, nil</span>
+}
+func (s *SessionStorage) FindActiveSession(_ context.Context, sid string) (uint64, error) <span class="cov0" title="0">{
+        userID, err := s.GetSession(sid)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("FindActiveSession: can't get session %s: %w", sid, err)
+        }</span>
+        <span class="cov0" title="0">return userID, nil</span>
+}
+
+func (s *SessionStorage) KillSession(_ context.Context, sid string) error <span class="cov0" title="0">{
+        err := s.DeleteSession(sid)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("KillSession: can't delete session %s: %w", sid, err)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (s *SessionStorage) GetUserIDFromSession(sid string) (uint64, error) <span class="cov0" title="0">{
+        userID, err := s.GetSession(sid)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("GetUserIDFromSession: can't get session %s: %w", sid, err)
+        }</span>
+
+        <span class="cov0" title="0">return userID, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

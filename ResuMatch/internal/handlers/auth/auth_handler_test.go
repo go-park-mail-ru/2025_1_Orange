@@ -40,13 +40,22 @@ func TestSignup(t *testing.T) {
 	}
 }
 func TestSignin(t *testing.T) {
-	userRepo := &profile.UserStorage{}
-	existingUser := userRepo.Users["user1"]
+	userRepo := &profile.UserStorage{
+		Users: map[string]models.User{
+			"user1": {
+				ID:       1,
+				Email:    "test@example.com",
+				Password: "password123",
+			},
+		},
+	}
+
 	handler := NewMyHandler()
+	handler.user = userRepo
 
 	reqBody := request.SigninRequest{
-		Email:    existingUser.Email,
-		Password: existingUser.Password,
+		Email:    "test@example.com",
+		Password: "password123",
 	}
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/signin", bytes.NewReader(body))
@@ -63,7 +72,9 @@ func TestSignin(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	sessionRepo := &session.SessionStorage{}
+	sessionRepo := &session.SessionStorage{
+		Sessions: make(map[string]uint64),
+	}
 	sessionID := "valid-session-id"
 	sessionRepo.Sessions[sessionID] = 1
 
@@ -84,8 +95,16 @@ func TestLogout(t *testing.T) {
 }
 
 func TestCheckEmail(t *testing.T) {
-	userRepo := &profile.UserStorage{}
+	userRepo := &profile.UserStorage{
+		Users: map[string]models.User{
+			"user1": {
+				ID:    1,
+				Email: "user1@example.com",
+			},
+		},
+	}
 	handler := NewMyHandler()
+	handler.user = userRepo
 
 	existingEmail := userRepo.Users["user1"].Email
 
@@ -100,6 +119,7 @@ func TestCheckEmail(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Errorf("Test Case 1 Failed: Expected status %d, got %d", http.StatusOK, res.StatusCode)
 	}
+
 	nonExistingEmail := "nonexisting@example.com"
 	req = httptest.NewRequest(http.MethodGet, "/check-email?email="+nonExistingEmail, nil)
 	w = httptest.NewRecorder()
@@ -113,11 +133,24 @@ func TestCheckEmail(t *testing.T) {
 		t.Errorf("Test Case 2 Failed: Expected status %d, got %d", http.StatusBadRequest, res.StatusCode)
 	}
 }
+
 func TestAuth(t *testing.T) {
-	userRepo := &profile.UserStorage{}
-	sessionRepo := &session.SessionStorage{}
+	userRepo := &profile.UserStorage{
+		Users: map[string]models.User{
+			"user1": {
+				ID:    1,
+				Email: "user1@example.com",
+			},
+		},
+	}
+
+	sessionRepo := &session.SessionStorage{
+		Sessions: make(map[string]uint64),
+	}
 
 	handler := NewMyHandler()
+	handler.user = userRepo
+	handler.session = sessionRepo
 
 	existingUser := userRepo.Users["user1"]
 	sessionID, err := sessionRepo.CreateSession(context.Background(), existingUser.ID)
@@ -193,14 +226,22 @@ func TestSignin_UserNotFound(t *testing.T) {
 }
 
 func TestSignin_WrongPassword(t *testing.T) {
-	userRepo := &profile.UserStorage{}
-	handler := NewMyHandler()
+	userRepo := &profile.UserStorage{
+		Users: map[string]models.User{
+			"user1": {
+				ID:       1,
+				Email:    "user1@example.com",
+				Password: "correctpassword",
+			},
+		},
+	}
 
-	existingUser := userRepo.Users["user1"]
+	handler := NewMyHandler()
+	handler.user = userRepo
 
 	reqBody := request.SigninRequest{
-		Email:    existingUser.Email,
-		Password: "wrongpassword",
+		Email:    "user1@example.com",
+		Password: "wrongpassword", // Неверный пароль
 	}
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/signin", bytes.NewReader(body))

@@ -105,11 +105,8 @@ func TestCheckEmail(t *testing.T) {
 
 	existingEmail := data.Users["user1"].Email
 
-	reqBody := request.CheckUserRequest{
-		Email: existingEmail,
-	}
-	body, _ := json.Marshal(reqBody)
-	req := httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewReader(body))
+	// Тест на существующий email
+	req := httptest.NewRequest(http.MethodGet, "/check-email?email="+existingEmail, nil)
 	w := httptest.NewRecorder()
 
 	handler.CheckEmail(w, req)
@@ -121,12 +118,9 @@ func TestCheckEmail(t *testing.T) {
 		t.Errorf("Test Case 1 Failed: Expected status %d, got %d", http.StatusOK, res.StatusCode)
 	}
 
+	// Тест на несуществующий email
 	nonExistingEmail := "nonexisting@example.com"
-	reqBody = request.CheckUserRequest{
-		Email: nonExistingEmail,
-	}
-	body, _ = json.Marshal(reqBody)
-	req = httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewReader(body))
+	req = httptest.NewRequest(http.MethodGet, "/check-email?email="+nonExistingEmail, nil)
 	w = httptest.NewRecorder()
 
 	handler.CheckEmail(w, req)
@@ -138,7 +132,6 @@ func TestCheckEmail(t *testing.T) {
 		t.Errorf("Test Case 2 Failed: Expected status %d, got %d", http.StatusBadRequest, res.StatusCode)
 	}
 }
-
 func TestAuth(t *testing.T) {
 	userRepo := &profile.UserRepo{}
 	sessionRepo := &session.Sessionrepo{}
@@ -335,9 +328,8 @@ func TestCheckEmail_InvalidRequestBody(t *testing.T) {
 	core := usecase.NewCore(*sessionRepo, *userRepo)
 	handler := NewMyHandler(core)
 
-	// Некорректное тело запроса (например, неверный JSON)
-	invalidBody := `{ "email": "invalidemail@example.com" ` // Ошибка в JSON (не закрыта скобка)
-	req := httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewReader([]byte(invalidBody)))
+	// Пустой URL без email-параметра (CheckEmail ожидает email в query params)
+	req := httptest.NewRequest(http.MethodGet, "/check-email", nil)
 	w := httptest.NewRecorder()
 
 	// Вызов метода CheckEmail
@@ -357,12 +349,11 @@ func TestCheckEmail_InvalidRequestBody(t *testing.T) {
 		t.Errorf("Failed to decode response body: %v", err)
 	}
 
-	expectedMessage := `{"error": "Invalid request body"}`
-	if response["error"] != "Invalid request body" {
+	expectedMessage := "Email parameter is required"
+	if response["error"] != expectedMessage {
 		t.Errorf("Expected error message %s, got %s", expectedMessage, response["error"])
 	}
 }
-
 func TestAuth_NoSessionCookie(t *testing.T) {
 	sessionRepo := &session.Sessionrepo{}
 	userRepo := &profile.UserRepo{}

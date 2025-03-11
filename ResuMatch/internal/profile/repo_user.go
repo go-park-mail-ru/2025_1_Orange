@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"ResuMatch/internal/data"
 	"ResuMatch/internal/models"
 	"context"
 	"errors"
@@ -27,7 +28,7 @@ type UserStorage struct {
 
 func NewUserStorage() *UserStorage {
 	return &UserStorage{
-		Users: make(map[string]models.User),
+		Users: data.Users,
 	}
 }
 

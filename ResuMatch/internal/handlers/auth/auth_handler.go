@@ -1,24 +1,27 @@
 package auth
 
 import (
+	"ResuMatch/internal/csrf"
+	"ResuMatch/internal/profile"
 	request "ResuMatch/internal/request"
-	"ResuMatch/internal/usecase"
+	"ResuMatch/internal/session"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/mail"
-
 	"time"
 )
 
 type MyHandler struct {
-	core *usecase.Core
+	user    *profile.UserStorage
+	session *session.SessionStorage
 }
 
-func NewMyHandler(core *usecase.Core) *MyHandler {
+func NewMyHandler() *MyHandler {
 	return &MyHandler{
-		core: core,
+		user:    profile.NewUserStorage(),
+		session: session.NewSessionStorage(),
 	}
 }
 
@@ -32,8 +35,7 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-
-	user, ok := api.core.Users.GetUserByEmail(req.Email)
+	user, ok := api.user.GetUserByEmail(req.Email)
 	if !ok {
 		http.Error(w, `{"error": "no user"}`, http.StatusNotFound)
 		return
@@ -43,17 +45,15 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "bad pass"}`, http.StatusUnauthorized)
 		return
 	}
-
-	sid, err := api.core.CreateSession(r.Context(), user.ID)
+	sid, err := api.session.CreateSession(r.Context(), user.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 
-	hashTok := usecase.CryptToken{Secret: []byte("Base")}
+	hashTok := csrf.NewSimpleToken("Base")
 	token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
-
 	if err != nil {
 		http.Error(w, `{"error": "failed to create CSRF token"}`, http.StatusInternalServerError)
 		log.Println("Failed to create CSRF token:", err)
@@ -101,26 +101,26 @@ func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, exists := api.core.Users.GetUserByEmail(req.Email)
+	_, exists := api.user.GetUserByEmail(req.Email)
 	if exists {
 		http.Error(w, `{"error": "Email already exists"}`, http.StatusConflict)
 		return
 	}
 
-	user, err := api.core.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
+	user, err := api.user.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create user: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
-	sid, err := api.core.CreateSession(r.Context(), user.ID)
+	sid, err := api.session.CreateSession(r.Context(), user.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 
-	hashTok := usecase.NewSimpleToken("Base")
+	hashTok := csrf.NewSimpleToken("Base")
 	token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
 
 	if err != nil {
@@ -161,7 +161,7 @@ func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	sid := sessionCookie.Value
 
-	err = api.core.KillSession(r.Context(), sid)
+	err = api.session.KillSession(r.Context(), sid)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to kill session: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
@@ -188,7 +188,7 @@ func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Email parameter is required"}`, http.StatusBadRequest)
 		return
 	}
-	_, exists := api.core.Users.GetUserByEmail(email)
+	_, exists := api.user.GetUserByEmail(email)
 	if exists {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"})
@@ -208,17 +208,16 @@ func (api *MyHandler) Auth(w http.ResponseWriter, r *http.Request) {
 		log.Println("No session cookie:", err)
 		return
 	}
-
 	sid := cookie.Value
 
-	userID, err := api.core.GetUserIDFromSession(sid)
+	userID, err := api.session.GetUserIDFromSession(sid)
 	if err != nil {
 		http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
 		log.Println("Invalid session:", err)
 		return
 	}
 
-	user, ok := api.core.Users.GetUserById(userID)
+	user, ok := api.user.GetUserById(userID)
 	if !ok {
 		http.Error(w, `{"error": "User not found"}`, http.StatusNotFound)
 		log.Println("User not found:", userID)

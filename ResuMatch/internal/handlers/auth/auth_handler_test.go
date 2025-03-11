@@ -1,12 +1,10 @@
 package auth
 
 import (
-	"ResuMatch/internal/data"
 	"ResuMatch/internal/models"
-	"ResuMatch/internal/repository/profile"
-	"ResuMatch/internal/repository/session"
+	"ResuMatch/internal/profile"
 	request "ResuMatch/internal/request"
-	"ResuMatch/internal/usecase"
+	"ResuMatch/internal/session"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -16,11 +14,8 @@ import (
 )
 
 func TestSignup(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
 
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	handler := NewMyHandler()
 
 	reqBody := request.SignupRequest{
 		Email:          "newuser@example.com",
@@ -45,13 +40,9 @@ func TestSignup(t *testing.T) {
 	}
 }
 func TestSignin(t *testing.T) {
-
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-
-	existingUser := data.Users["user1"]
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	userRepo := &profile.UserStorage{}
+	existingUser := userRepo.Users["user1"]
+	handler := NewMyHandler()
 
 	reqBody := request.SigninRequest{
 		Email:    existingUser.Email,
@@ -72,15 +63,11 @@ func TestSignin(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-
+	sessionRepo := &session.SessionStorage{}
 	sessionID := "valid-session-id"
-	session.Sessions[sessionID] = 1
+	sessionRepo.Sessions[sessionID] = 1
 
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	handler := NewMyHandler()
 
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
 	req.AddCookie(&http.Cookie{Name: "session_id", Value: sessionID})
@@ -97,15 +84,11 @@ func TestLogout(t *testing.T) {
 }
 
 func TestCheckEmail(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
+	userRepo := &profile.UserStorage{}
+	handler := NewMyHandler()
 
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	existingEmail := userRepo.Users["user1"].Email
 
-	existingEmail := data.Users["user1"].Email
-
-	// Тест на существующий email
 	req := httptest.NewRequest(http.MethodGet, "/check-email?email="+existingEmail, nil)
 	w := httptest.NewRecorder()
 
@@ -117,8 +100,6 @@ func TestCheckEmail(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Errorf("Test Case 1 Failed: Expected status %d, got %d", http.StatusOK, res.StatusCode)
 	}
-
-	// Тест на несуществующий email
 	nonExistingEmail := "nonexisting@example.com"
 	req = httptest.NewRequest(http.MethodGet, "/check-email?email="+nonExistingEmail, nil)
 	w = httptest.NewRecorder()
@@ -133,14 +114,13 @@ func TestCheckEmail(t *testing.T) {
 	}
 }
 func TestAuth(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
+	userRepo := &profile.UserStorage{}
+	sessionRepo := &session.SessionStorage{}
 
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	handler := NewMyHandler()
 
-	existingUser := data.Users["user1"]
-	sessionID, err := core.CreateSession(context.Background(), existingUser.ID)
+	existingUser := userRepo.Users["user1"]
+	sessionID, err := sessionRepo.CreateSession(context.Background(), existingUser.ID)
 	if err != nil {
 		t.Fatalf("Failed to create session: %v", err)
 	}
@@ -173,12 +153,10 @@ func TestAuth(t *testing.T) {
 }
 
 func TestSignin_InvalidJSON(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
 
-	invalidBody := `{"email": "test@example.com", "password": }` // Неверный JSON
+	handler := NewMyHandler()
+
+	invalidBody := `{"email": "test@example.com", "password": }`
 	req := httptest.NewRequest(http.MethodPost, "/signin", bytes.NewReader([]byte(invalidBody)))
 	w := httptest.NewRecorder()
 
@@ -193,10 +171,8 @@ func TestSignin_InvalidJSON(t *testing.T) {
 }
 
 func TestSignin_UserNotFound(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+
+	handler := NewMyHandler()
 
 	reqBody := request.SigninRequest{
 		Email:    "nonexistent@example.com",
@@ -217,12 +193,10 @@ func TestSignin_UserNotFound(t *testing.T) {
 }
 
 func TestSignin_WrongPassword(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	userRepo := &profile.UserStorage{}
+	handler := NewMyHandler()
 
-	existingUser := data.Users["user1"]
+	existingUser := userRepo.Users["user1"]
 
 	reqBody := request.SigninRequest{
 		Email:    existingUser.Email,
@@ -243,15 +217,13 @@ func TestSignin_WrongPassword(t *testing.T) {
 }
 
 func TestSignup_PasswordMismatch(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+
+	handler := NewMyHandler()
 
 	reqBody := request.SignupRequest{
 		Email:          "user@example.com",
 		Password:       "password123",
-		RepeatPassword: "password321", // Не совпадают
+		RepeatPassword: "password321",
 		FirstName:      "Test",
 		LastName:       "User",
 		CompanyName:    "TestCo",
@@ -272,10 +244,7 @@ func TestSignup_PasswordMismatch(t *testing.T) {
 }
 
 func TestSignup_InvalidEmail(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	handler := NewMyHandler()
 
 	reqBody := request.SignupRequest{
 		Email:          "invalid-email",
@@ -301,13 +270,8 @@ func TestSignup_InvalidEmail(t *testing.T) {
 }
 
 func TestLogout_NoSessionCookie(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
+	handler := NewMyHandler()
 
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
-
-	// Нет cookie сессии
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
 	w := httptest.NewRecorder()
 
@@ -323,10 +287,7 @@ func TestLogout_NoSessionCookie(t *testing.T) {
 
 func TestCheckEmail_InvalidRequestBody(t *testing.T) {
 	// Подготовка необходимых объектов
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+	handler := NewMyHandler()
 
 	// Пустой URL без email-параметра (CheckEmail ожидает email в query params)
 	req := httptest.NewRequest(http.MethodGet, "/check-email", nil)
@@ -355,10 +316,8 @@ func TestCheckEmail_InvalidRequestBody(t *testing.T) {
 	}
 }
 func TestAuth_NoSessionCookie(t *testing.T) {
-	sessionRepo := &session.Sessionrepo{}
-	userRepo := &profile.UserRepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+
+	handler := NewMyHandler()
 
 	// Создаем тестовый запрос без cookie
 	req := httptest.NewRequest(http.MethodGet, "/auth", nil)
@@ -387,10 +346,8 @@ func TestAuth_NoSessionCookie(t *testing.T) {
 }
 
 func TestAuth_InvalidSession(t *testing.T) {
-	userRepo := &profile.UserRepo{}
-	sessionRepo := &session.Sessionrepo{}
-	core := usecase.NewCore(*sessionRepo, *userRepo)
-	handler := NewMyHandler(core)
+
+	handler := NewMyHandler()
 
 	// Создаем запрос с cookie, но с невалидным значением session_id
 	req := httptest.NewRequest(http.MethodGet, "/auth", nil)

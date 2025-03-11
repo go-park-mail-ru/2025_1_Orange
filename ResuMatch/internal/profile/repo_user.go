@@ -49,11 +49,12 @@ func (u *UserStorage) CreateUser(email, password, firstname, lastname, companyna
 }
 
 func (u *UserStorage) GetUserByEmail(email string) (*models.User, bool) {
-	user, exists := u.Users[email]
-	if !exists {
-		return nil, false
+	for _, user := range u.Users {
+		if user.Email == email {
+			return &user, true
+		}
 	}
-	return &user, true
+	return nil, false
 }
 
 func (u *UserStorage) GetUserById(id uint64) (*models.User, bool) {

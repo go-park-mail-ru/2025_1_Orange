@@ -1,22 +1,21 @@
-
-# Command for running the linter.
+# Команда для запуска линтера.
 lint:
-	@echo "Running golangci-lint..."
+	@echo "Запуск golangci-lint..."
 	@golangci-lint run ./...
 
-# Command for running tests with coverage.
+# Команда для запуска тестов с покрытием.
 test:
-	@echo "Running tests..."
+	@echo "Запуск тестов..."
 	@go test ./... -coverprofile=coverage.out
 
-# Command for showing test coverage.
+# Команда для отображения покрытия тестов.
 coverage:
-	@echo "Displaying test coverage..."
+	@echo "Отображение покрытия тестов..."
 	@go tool cover -func=coverage.out
 
-# Command for running the backend.
+# Команда для запуска бэкенда.
 run-backend:
-	@echo "Starting the backend..."
+	@echo "Запуск бэкенда..."
 	@go run ./cmd/main.go
 
 

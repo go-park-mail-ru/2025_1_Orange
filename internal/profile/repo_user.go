@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrNotAllowed    = errors.New("not allowed")
-	ErrInvalideEmail = errors.New("invalide email")
+	ErrNotFound           = errors.New("not found")
+	ErrNotAllowed         = errors.New("not allowed")
+	ErrInvalideEmail      = errors.New("invalide email")
+	ErrEmailAlreadyExists = errors.New("email already exists")
 )
 
 type UserStorage struct {
@@ -28,7 +29,7 @@ func NewUserStorage() *UserStorage {
 
 func (u *UserStorage) CreateUser(email, password, firstname, lastname, companyname, companyaddress string) (models.User, error) {
 	if _, exists := u.Users[email]; exists {
-		return models.User{}, errors.New("email already exists")
+		return models.User{}, ErrEmailAlreadyExists
 	}
 	newUser := models.User{
 		ID:             uint64(len(u.Users) + 1),

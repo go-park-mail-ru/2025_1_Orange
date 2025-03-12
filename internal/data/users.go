@@ -8,7 +8,7 @@ var Users = map[string]models.User{
 	"user1": {
 		ID:             1,
 		Email:          "john.doe@example.com",
-		Password:       "$2a$10$XXXXXXXXXXXXXX",
+		Password:       "qwertyuiop",
 		FirstName:      "John",
 		LastName:       "Doe",
 		CompanyName:    "Acme Corporation",
@@ -17,7 +17,7 @@ var Users = map[string]models.User{
 	"user2": {
 		ID:             2,
 		Email:          "jane.smith@gmail.com",
-		Password:       "$2a$10$YYYYYYYYYYYYYY",
+		Password:       "asdfghjkl",
 		FirstName:      "Jane",
 		LastName:       "Smith",
 		CompanyName:    "",
@@ -26,7 +26,7 @@ var Users = map[string]models.User{
 	"user3": {
 		ID:             3,
 		Email:          "anonymous@example.net",
-		Password:       "$2a$10$zzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+		Password:       "zxcvbnm",
 		FirstName:      "",
 		LastName:       "",
 		CompanyName:    "",
@@ -35,7 +35,7 @@ var Users = map[string]models.User{
 	"user4": {
 		ID:             4,
 		Email:          "special.user@domain.org",
-		Password:       "$2a$10$qqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+		Password:       "qqqqqqqqqq",
 		FirstName:      "Special",
 		LastName:       "User",
 		CompanyName:    "",
@@ -44,7 +44,7 @@ var Users = map[string]models.User{
 	"user5 ": {
 		ID:             5,
 		Email:          "a.very.long.email.address.for.testing@very.long.domain.example.com",
-		Password:       "$2a$10$rrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+		Password:       "1234567890",
 		FirstName:      "A Very Long First Name For Testing Purposes",
 		LastName:       "An Equally Long Last Name Also For Testing Purposes",
 		CompanyName:    "A Company With A Very Long Name To See How It Handles",

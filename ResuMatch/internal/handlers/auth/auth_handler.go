@@ -184,12 +184,28 @@ func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	email := r.URL.Query().Get("email")
+	// email := r.URL.Query().Get("email")
+	// Структура для парсинга JSON-тела запроса
+	var requestBody struct {
+		Email string `json:"email"`
+	}
+
+	// Парсим JSON-тело запроса
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
+		log.Printf("Failed to decode request body: %v", err)
+		return
+	}
+
+	// Проверяем, передан ли email
+	email := requestBody.Email
 
 	if email == "" {
+		// fmt.Println("123")
 		http.Error(w, `{"error": "Email parameter is required"}`, http.StatusBadRequest)
 		return
 	}
+	// fmt.Println(email)
 	_, exists := api.user.GetUserByEmail(email)
 	if exists {
 		w.WriteHeader(http.StatusOK)
@@ -200,6 +216,7 @@ func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusBadRequest)
+	// fmt.Println("qwer")
 	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Email not found"}); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 	}

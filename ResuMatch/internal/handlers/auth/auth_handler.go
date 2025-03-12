@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"ResuMatch/internal/csrf"
 	"ResuMatch/internal/profile"
 	request "ResuMatch/internal/request"
 	"ResuMatch/internal/session"
@@ -51,16 +50,6 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-
-	hashTok := csrf.NewSimpleToken("Base")
-	token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
-	if err != nil {
-		http.Error(w, `{"error": "failed to create CSRF token"}`, http.StatusInternalServerError)
-		log.Println("Failed to create CSRF token:", err)
-		return
-	}
-
-	w.Header().Set("csrf", token)
 
 	cookie := &http.Cookie{
 		Name:     "session_id",
@@ -121,17 +110,6 @@ func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-
-	hashTok := csrf.NewSimpleToken("Base")
-	token, err := hashTok.Create(sid, time.Now().Add(10*time.Hour).Unix())
-
-	if err != nil {
-		http.Error(w, `{"error": "failed to create CSRF token"}`, http.StatusInternalServerError)
-		log.Println("Failed to create CSRF token:", err)
-		return
-	}
-
-	w.Header().Set("csrf", token)
 
 	cookie := &http.Cookie{
 		Name:     "session_id",

@@ -8,12 +8,13 @@ import (
 
 func NewRouter() *http.ServeMux {
 	mux := http.NewServeMux()
+	handler := auth.NewMyHandler()
 
-	mux.HandleFunc("/signin", auth.NewMyHandler().Signin)
-	mux.HandleFunc("/signup", auth.NewMyHandler().Signup)
-	mux.HandleFunc("/logout", auth.NewMyHandler().Logout)
-	mux.HandleFunc("/auth", auth.NewMyHandler().Auth)
-	mux.HandleFunc("/check-email", auth.NewMyHandler().CheckEmail)
+	mux.HandleFunc("/signin", handler.Signin)
+	mux.HandleFunc("/signup", handler.Signup)
+	mux.HandleFunc("/logout", handler.Logout)
+	mux.HandleFunc("/auth", handler.Auth)
+	mux.HandleFunc("/check-email", handler.CheckEmail)
 	mux.HandleFunc("/vacancies", vacancy.GetVacancies)
 
 	return mux

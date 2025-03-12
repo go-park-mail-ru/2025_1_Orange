@@ -81,6 +81,8 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	api.user = profile.NewUserStorage()
+	api.session = session.NewSessionStorage()
 	w.Header().Set("Content-Type", "application/json")
 
 	var req request.SignupRequest

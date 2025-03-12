@@ -95,6 +95,7 @@ func TestLogout(t *testing.T) {
 }
 
 func TestCheckEmail(t *testing.T) {
+	// Подготовка тестовых данных
 	userRepo := &profile.UserStorage{
 		Users: map[string]models.User{
 			"user1": {
@@ -106,9 +107,13 @@ func TestCheckEmail(t *testing.T) {
 	handler := NewMyHandler()
 	handler.user = userRepo
 
+	// Тест 1: Проверка существующего email
 	existingEmail := userRepo.Users["user1"].Email
+	requestBody := map[string]string{"email": existingEmail}
+	jsonBody, _ := json.Marshal(requestBody)
 
-	req := httptest.NewRequest(http.MethodGet, "/check-email?email="+existingEmail, nil)
+	req := httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	handler.CheckEmail(w, req)
@@ -120,8 +125,23 @@ func TestCheckEmail(t *testing.T) {
 		t.Errorf("Test Case 1 Failed: Expected status %d, got %d", http.StatusOK, res.StatusCode)
 	}
 
+	var response map[string]string
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		t.Errorf("Failed to decode response body: %v", err)
+	}
+
+	expectedMessage := "Email already exists"
+	if response["message"] != expectedMessage {
+		t.Errorf("Test Case 1 Failed: Expected message %s, got %s", expectedMessage, response["message"])
+	}
+
+	// Тест 2: Проверка несуществующего email
 	nonExistingEmail := "nonexisting@example.com"
-	req = httptest.NewRequest(http.MethodGet, "/check-email?email="+nonExistingEmail, nil)
+	requestBody = map[string]string{"email": nonExistingEmail}
+	jsonBody, _ = json.Marshal(requestBody)
+
+	req = httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
 
 	handler.CheckEmail(w, req)
@@ -132,8 +152,16 @@ func TestCheckEmail(t *testing.T) {
 	if res.StatusCode != http.StatusBadRequest {
 		t.Errorf("Test Case 2 Failed: Expected status %d, got %d", http.StatusBadRequest, res.StatusCode)
 	}
-}
 
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		t.Errorf("Failed to decode response body: %v", err)
+	}
+
+	expectedMessage = "Email not found"
+	if response["message"] != expectedMessage {
+		t.Errorf("Test Case 2 Failed: Expected message %s, got %s", expectedMessage, response["message"])
+	}
+}
 func TestAuth(t *testing.T) {
 	userRepo := &profile.UserStorage{
 		Users: map[string]models.User{
@@ -330,8 +358,10 @@ func TestCheckEmail_InvalidRequestBody(t *testing.T) {
 	// Подготовка необходимых объектов
 	handler := NewMyHandler()
 
-	// Пустой URL без email-параметра (CheckEmail ожидает email в query params)
-	req := httptest.NewRequest(http.MethodGet, "/check-email", nil)
+	// Создаем запрос с некорректным телом (не JSON)
+	invalidBody := "invalid json"
+	req := httptest.NewRequest(http.MethodPost, "/check-email", bytes.NewBufferString(invalidBody))
+	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	// Вызов метода CheckEmail
@@ -351,7 +381,7 @@ func TestCheckEmail_InvalidRequestBody(t *testing.T) {
 		t.Errorf("Failed to decode response body: %v", err)
 	}
 
-	expectedMessage := "Email parameter is required"
+	expectedMessage := "Invalid request body"
 	if response["error"] != expectedMessage {
 		t.Errorf("Expected error message %s, got %s", expectedMessage, response["error"])
 	}

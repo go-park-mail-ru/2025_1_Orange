@@ -55,13 +55,6 @@ func (s *SessionStorage) CreateSession(ctx context.Context, userID uint64) (stri
 	}
 	return sid, nil
 }
-func (s *SessionStorage) FindActiveSession(_ context.Context, sid string) (uint64, error) {
-	userID, err := s.GetSession(sid)
-	if err != nil {
-		return 0, fmt.Errorf("FindActiveSession: can't get session %s: %w", sid, err)
-	}
-	return userID, nil
-}
 
 func (s *SessionStorage) KillSession(_ context.Context, sid string) error {
 	err := s.DeleteSession(sid)

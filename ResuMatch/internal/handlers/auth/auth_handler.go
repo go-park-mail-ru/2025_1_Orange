@@ -193,12 +193,16 @@ func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) {
 	_, exists := api.user.GetUserByEmail(email)
 	if exists {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"})
+		if err := json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"}); err != nil {
+			log.Printf("Failed to encode response: %v", err)
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Email not found"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Email not found"}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+	}
 }
 
 func (api *MyHandler) Auth(w http.ResponseWriter, r *http.Request) {
@@ -226,5 +230,7 @@ func (api *MyHandler) Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+	}
 }

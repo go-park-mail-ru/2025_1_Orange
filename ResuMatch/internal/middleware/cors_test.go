@@ -9,7 +9,7 @@ import (
 // Тестируем, что CORS-заголовки устанавливаются
 func TestCORSHeaders(t *testing.T) {
 	// Создаем моковый обработчик, который просто возвращает 200 OK
-	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -39,7 +39,7 @@ func TestCORSHeaders(t *testing.T) {
 
 // Тестируем обработку preflight-запроса (OPTIONS)
 func TestCORSPreflight(t *testing.T) {
-	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 

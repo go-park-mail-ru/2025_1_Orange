@@ -19,7 +19,7 @@ erDiagram
         TEXT sex "Пол соискателя"
         TEXT email "Электронная почта"
         TEXT password "Пароль"
-        INT status_id FK "Идентификатор статуса поиска работы"
+        INT status FK "Статус поиска работы"
         INT avatar_id FK "Идентификатор фото"
         TIMESTAMP created_at "Дата и время создания профиля"
         TIMESTAMP updated_at "Дата и время последнего обновления профиля"
@@ -34,11 +34,6 @@ erDiagram
         INT id PK "Идентификатор связи"
         INT vacancy_id FK "Идентификатор вакансии"
         INT city_id FK "Идентификатор города"
-    }
-
-    JOB_SEARCH_STATUS {
-        INT id PK "Идентификатор статуса"
-        TEXT name "Статус"
     }
 
     EMPLOYER {
@@ -67,15 +62,15 @@ erDiagram
         BOOLEAN is_active "Статус вакансии (активна/неактивна)"
         INT employer_id FK "Идентификатор работодателя"
         INT specialization_id FK "Идентификатор специализации"
-        INT work_format_id FK "Идентификатор формата работы"
-        INT employment_type_id FK "Идентификатор типа занятости"
-        INT schedule_id FK "Идентификатор графика работы"
+        INT work_format "Формат работы"
+        INT employment_type "Тип занятости"
+        INT schedule "График работы"
         INT working_hours "Рабочие часы"
         INT salary_from "Минимальная зарплата"
         INT salary_to "Максимальная зарплата"
         INT payment_frequency_id FK "Идентификатор частоты выплат"
         TEXT taxes "Условия по налогам"
-        INT experience_id FK "Идентификатор уровня опыта"
+        INT experience "Опыт работы"
         TEXT description "Описание вакансии"
         TEXT tasks "Задачи по вакансии"
         TEXT requirements "Требования к кандидату"
@@ -89,29 +84,9 @@ erDiagram
         TEXT name "Название специализации"
     }
 
-    WORK_FORMAT {
-        INT id PK "Идентификатор формата работы"
-        TEXT name "Название формата работы"
-    }
-
-    EMPLOYMENT_TYPE {
-        INT id PK "Идентификатор типа занятости"
-        TEXT name "Название типа занятости"
-    }
-
-    SCHEDULE {
-        INT id PK "Идентификатор графика работы"
-        TEXT name "Название графика работы"
-    }
-
     PAYMENT_FREQUENCY {
         INT id PK "Идентификатор частоты выплат"
         TEXT name "Название частоты выплат"
-    }
-
-    EXPERIENCE {
-        INT id PK "Идентификатор уровня опыта"
-        TEXT name "Название уровня опыта"
     }
 
     SUPPLEMENTARY_CONDITIONS {
@@ -143,6 +118,13 @@ erDiagram
         TIMESTAMP applied_at "Дата и время отклика"
     }
 
+    VACANCY_LIKE {
+        INT id PK "Идентификатор лайка"
+        INT vacancy_id FK "Идентификатор вакансии"
+        INT applicant_id FK "Идентификатор соискателя"
+        TIMESTAMP liked_at "Дата и время лайка"
+    }
+
     RESUME_SPECIALIZATION {
         INT id PK "Идентификатор связи"
         INT resume_id FK "Идентификатор резюме"
@@ -154,16 +136,11 @@ erDiagram
         INT applicant_id FK "Идентификатор соискателя"
         TEXT about_me "Информация о себе"
         INT specialization_id FK "Идентификатор специализации"
-        INT education_type_id FK "Идентификатор типа образования"
+        INT education_type "Тип образования"
         TEXT educational_institution "Название учебного заведения"
         DATE graduation_year "Год окончания"
         TIMESTAMP created_at "Дата и время создания резюме"
         TIMESTAMP updated_at "Дата и время последнего обновления резюме"
-    }
-
-    EDUCATION_TYPE {
-        INT id PK "Идентификатор типа образования"
-        TEXT name "Название типа образования"
     }
 
     WORK_EXPERIENCE {
@@ -186,17 +163,12 @@ erDiagram
 
     STATIC ||--|| APPLICANT : "avatar_id"
     CITY ||--o{ APPLICANT : "city_id"
-    JOB_SEARCH_STATUS ||--|| APPLICANT : "status_id"
     STATIC ||--|| EMPLOYER : "logo_id"
     EMPLOYER ||--o{ EMPLOYER_INFO_LINK : "employer_id"
     STATIC ||--o{ EMPLOYER_INFO_LINK : "image_id"
-    EMPLOYER ||--o{ VACANCY : "employer_id"
+    EMPLOYER ||--o| VACANCY : "employer_id"
     SPECIALIZATION ||--o{ VACANCY : "specialization_id"
-    WORK_FORMAT ||--o{ VACANCY : "work_format_id"
-    EMPLOYMENT_TYPE ||--o{ VACANCY : "employment_type_id"
-    SCHEDULE ||--o{ VACANCY : "schedule_id"
     PAYMENT_FREQUENCY ||--o{ VACANCY : "payment_frequency_id"
-    EXPERIENCE ||--o{ VACANCY : "experience_id"
     VACANCY ||--o{ VACANCY_CITY : "vacancy_id"
     CITY ||--o{ VACANCY_CITY : "city_id"
     VACANCY ||--o{ VACANCY_SUPPLEMENTARY_CONDITIONS : "vacancy_id"
@@ -205,10 +177,11 @@ erDiagram
     SKILL ||--o{ VACANCY_SKILL : "skill_id"
     VACANCY ||--o{ VACANCY_RESPONSE : "vacancy_id"
     APPLICANT ||--o{ VACANCY_RESPONSE : "applicant_id"
+    VACANCY ||--o{ VACANCY_LIKE : "vacancy_id"
+    APPLICANT ||--o{ VACANCY_LIKE : "applicant_id"
     RESUME ||--o{ RESUME_SPECIALIZATION : "resume_id"
     SPECIALIZATION ||--o{ RESUME_SPECIALIZATION : "specialization_id"
     APPLICANT ||--o{ RESUME : "applicant_id"
-    EDUCATION_TYPE ||--o{ RESUME : "education_type_id"
     RESUME ||--o{ WORK_EXPERIENCE : "resume_id"
     RESUME ||--o{ RESUME_SKILL : "resume_id"
     SKILL ||--o{ RESUME_SKILL : "skill_id"

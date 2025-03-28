@@ -71,8 +71,8 @@ erDiagram
         DATE birth_date "Дата рождения"
         TEXT sex "Пол соискателя"
         TEXT email "Электронная почта"
-        TEXT password_hashed "Захэшированный пароль"
-        TEXT password_salt "Соль для генерации хэша пароля"
+        BYTEA password_hashed "Захэшированный пароль"
+        BYTEA password_salt "Соль для генерации хэша пароля"
         INT status FK "Статус поиска работы"
         INT avatar_id FK "Идентификатор фото"
         TIMESTAMP created_at "Дата и время создания профиля"
@@ -186,8 +186,8 @@ erDiagram
         TEXT description "Описание работодателя"
         TEXT legal_address "Юридический адрес"
         TEXT email "Электронная почта"
-        TEXT password_hashed "Захэшированный пароль"
-        TEXT password_salt "Соль для генерации хэша пароля"
+        BYTEA password_hashed "Захэшированный пароль"
+        BYTEA password_salt "Соль для генерации хэша пароля"
         INT logo_id FK "Идентификатор логотипа"
         TIMESTAMP created_at "Дата и время создания профиля работодателя"
         TIMESTAMP updated_at "Дата и время последнего обновления профиля работодателя"
@@ -196,12 +196,12 @@ erDiagram
 ```
 
 
-## Таблица `EMPLOYER_INFO_LINK`
+## Таблица `USER_INFO_LINK`
 
-Таблица `EMPLOYER_INFO_LINK` хранит информацию об информационных ресурсах работодателя (например, ссылки на социальные сети или другие платформы). Каждый ресурс может иметь логотип.
+Таблица `USER_INFO_LINK` хранит информацию об информационных ресурсах работодателя/соискателя (например, ссылки на социальные сети или другие платформы). Каждый ресурс может иметь логотип.
 
 ### Функциональные зависимости
-- `{id} -> {employer_id, image_id, url}`
+- `{id} -> {user_type, user_id, image_id, url}`
 
 ### Нормальные формы
 - НФ1:
@@ -222,14 +222,16 @@ erDiagram
 
 ```mermaid
 erDiagram
-    EMPLOYER_INFO_LINK {
-        INT id PK "Идентификатор связи"
-        INT employer_id FK "Идентификатор работодателя"
-        INT image_id FK "Идентификатор логотипа"
-        TEXT url "URL ссылки на ресурс"
+    USER_INFO_LINK {
+        INT id PK "Идентификатор ссылки"
+        TEXT user_type "Тип пользователя"
+        INT user_id "ID пользователя"
+        TEXT url "URL ссылки"
+        INT image_id FK "Идентификатор изображения"
     }
-    EMPLOYER ||--o{ EMPLOYER_INFO_LINK : "employer_id"
-    STATIC ||--o{ EMPLOYER_INFO_LINK : "image_id"
+    STATIC ||--o{ USER_INFO_LINK : "image_id"
+    APPLICANT }o--|| USER_INFO_LINK : "user_id (user_type='applicant')"
+    EMPLOYER }o--|| USER_INFO_LINK : "user_id (user_type='employer')"
 ```
 
 
@@ -238,7 +240,7 @@ erDiagram
 Таблица `VACANCY` хранит информацию о вакансиях, размещенных работодателями. Включает название вакансии, описание, требования, зарплату и другие детали.
 
 ### Функциональные зависимости
-- `{id} -> {title, is_active, employer_id, specialization_id, work_format, employment_type, schedule, working_hours, salary_from, salary_to, taxes, experience, description, tasks, requirements, optional_requirements, created_at, updated_at}`
+- `{id} -> {title, is_active, employer_id, specialization_id, work_format, employment, schedule, working_hours, salary_from, salary_to, taxes_included, experience, description, tasks, requirements, optional_requirements, created_at, updated_at}`
 
 ### Нормальные формы
 - НФ1:
@@ -266,12 +268,12 @@ erDiagram
         INT employer_id FK "Идентификатор работодателя"
         INT specialization_id FK "Идентификатор специализации"
         INT work_format "Формат работы"
-        INT employment_type "Тип занятости"
+        INT employment "Тип занятости"
         INT schedule "График работы"
         INT working_hours "Рабочие часы"
         INT salary_from "Минимальная зарплата"
         INT salary_to "Максимальная зарплата"
-        TEXT taxes "Условия по налогам"
+        TEXT taxes_included "Условия по налогам"
         INT experience "Опыт работы"
         TEXT description "Описание вакансии"
         TEXT tasks "Задачи по вакансии"
@@ -568,7 +570,7 @@ erDiagram
 Таблица `RESUME` хранит информацию о резюме соискателей.
 
 ### Функциональные зависимости
-- `{id} -> {applicant_id, about_me, specialization_id, education_type, educational_institution, graduation_year, created_at, updated_at}`
+- `{id} -> {applicant_id, about_me, specialization_id, education, educational_institution, graduation_year, created_at, updated_at}`
 
 ### Нормальные формы
 - НФ1:
@@ -594,7 +596,7 @@ erDiagram
         INT applicant_id FK "Идентификатор соискателя"
         TEXT about_me "Информация о себе"
         INT specialization_id FK "Идентификатор специализации"
-        INT education_type "Тип образования"
+        INT education "Тип образования"
         TEXT educational_institution "Название учебного заведения"
         DATE graduation_year "Год окончания"
         TIMESTAMP created_at "Дата и время создания резюме"

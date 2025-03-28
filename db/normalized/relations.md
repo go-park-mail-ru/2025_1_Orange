@@ -40,7 +40,7 @@ erDiagram
 Таблица `APPLICANT` хранит информацию о соискателях (пользователях, которые ищут работу). Включает персональные данные, контактную информацию и статус поиска работы.
 
 ### Функциональные зависимости
-- `{id} -> {first_name, last_name, middle_name, city, birth_date, sex, email, password, status, avatar_id, created_at, updated_at}`
+- `{id} -> {first_name, last_name, middle_name, city, birth_date, sex, email, password_hashed, password_salt, status, avatar_id, created_at, updated_at}`
 
 ### Нормальные формы
 - НФ1:
@@ -71,7 +71,8 @@ erDiagram
         DATE birth_date "Дата рождения"
         TEXT sex "Пол соискателя"
         TEXT email "Электронная почта"
-        TEXT password "Пароль"
+        TEXT password_hashed "Захэшированный пароль"
+        TEXT password_salt "Соль для генерации хэша пароля"
         INT status FK "Статус поиска работы"
         INT avatar_id FK "Идентификатор фото"
         TIMESTAMP created_at "Дата и время создания профиля"
@@ -156,7 +157,7 @@ erDiagram
 Таблица `EMPLOYER` хранит информацию о работодателях. Включает название работодателя, контактную информацию, юридический адрес и логотип.
 
 ### Функциональные зависимости
-- `{id} -> {name, slogan, website, description, legal_address, email, logo_id, created_at, updated_at}`
+- `{id} -> {name, slogan, website, description, legal_address, email, password_hashed, password_salt, logo_id, created_at, updated_at}`
 
 ### Нормальные формы
 - НФ1:
@@ -185,6 +186,8 @@ erDiagram
         TEXT description "Описание работодателя"
         TEXT legal_address "Юридический адрес"
         TEXT email "Электронная почта"
+        TEXT password_hashed "Захэшированный пароль"
+        TEXT password_salt "Соль для генерации хэша пароля"
         INT logo_id FK "Идентификатор логотипа"
         TIMESTAMP created_at "Дата и время создания профиля работодателя"
         TIMESTAMP updated_at "Дата и время последнего обновления профиля работодателя"

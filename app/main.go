@@ -1,9 +1,9 @@
 package app
 
 import (
+	"ResuMatch/internal/delivery/http"
 	"ResuMatch/internal/repository/mysql"
-	ses "ResuMatch/internal/repository/redis"
-
+	"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/usecase"
 	"database/sql"
 	"fmt"
@@ -56,7 +56,7 @@ func InitializeRedis() (*redis.Pool, error) {
 func InitializeRouter(db *sql.DB, redisPool *redis.Pool) *mux.Router {
 	// Инициализация репозиториев
 	userRepo := mysql.NewUserRepository(db)
-	sessionRepo := ses.NewSessionRedisRepository(redisPool)
+	sessionRepo := redis.NewSessionRedisRepository(redisPool)
 
 	// Инициализация юзкейсов
 	authUsecase := &usecase.AuthUsecase{
@@ -67,6 +67,7 @@ func InitializeRouter(db *sql.DB, redisPool *redis.Pool) *mux.Router {
 	router := mux.NewRouter()
 	// Регистрация хендлеров
 	http.NewUserHandler(router, *authUsecase)
+	// Регистрация метрик Prometheus
 	return nil
 }
 

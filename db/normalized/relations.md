@@ -235,7 +235,7 @@ erDiagram
 Таблица `VACANCY` хранит информацию о вакансиях, размещенных работодателями. Включает название вакансии, описание, требования, зарплату и другие детали.
 
 ### Функциональные зависимости
-- `{id} -> {title, is_active, employer_id, specialization_id, work_format, employment_type, schedule, working_hours, salary_from, salary_to, payment_frequency_id, taxes, experience, description, tasks, requirements, optional_requirements, created_at, updated_at}`
+- `{id} -> {title, is_active, employer_id, specialization_id, work_format, employment_type, schedule, working_hours, salary_from, salary_to, taxes, experience, description, tasks, requirements, optional_requirements, created_at, updated_at}`
 
 ### Нормальные формы
 - НФ1:
@@ -268,7 +268,6 @@ erDiagram
         INT working_hours "Рабочие часы"
         INT salary_from "Минимальная зарплата"
         INT salary_to "Максимальная зарплата"
-        INT payment_frequency_id FK "Идентификатор частоты выплат"
         TEXT taxes "Условия по налогам"
         INT experience "Опыт работы"
         TEXT description "Описание вакансии"
@@ -280,7 +279,6 @@ erDiagram
     }
     EMPLOYER ||--o| VACANCY : "employer_id"
     SPECIALIZATION ||--o{ VACANCY : "specialization_id"
-    PAYMENT_FREQUENCY ||--o{ VACANCY : "payment_frequency_id"
 ```
 
 
@@ -316,38 +314,6 @@ erDiagram
     }
 ```
 
-
-## Таблица `PAYMENT_FREQUENCY`
-
-Таблица `PAYMENT_FREQUENCY` хранит информацию о частоте выплат (например, "Ежемесячно", "Еженедельно").
-
-### Функциональные зависимости
-- `{id} -> {name}`
-
-### Нормальные формы
-- НФ1:
-  - в таблице отсутствуют дублирующиеся строки
-  - в каждой ячейке хранится атомарное значение
-  - в столбце хранятся данные одного типа
-  - отсутствуют массивы и списки в любом виде
-- НФ2:
-  - таблица находится в НФ1
-  - таблица имеет ключ
-  - все неключевые столбцы зависят от полного ключа
-- НФ3:
-  - таблица находится в НФ2
-  - в таблицах отсутствует транзитивная зависимость
-- НФБК:
-  - таблица находится в НФ3
-  - ключевые атрибуты составного ключа не должны зависеть от неключевых атрибутов (составной ключ отсутствует)
-
-```mermaid
-erDiagram
-    PAYMENT_FREQUENCY {
-        INT id PK "Идентификатор частоты выплат"
-        TEXT name "Название частоты выплат"
-    }
-```
 
 ## Таблица `SUPPLEMENTARY_CONDITIONS`
 

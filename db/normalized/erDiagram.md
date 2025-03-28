@@ -68,7 +68,6 @@ erDiagram
         INT working_hours "Рабочие часы"
         INT salary_from "Минимальная зарплата"
         INT salary_to "Максимальная зарплата"
-        INT payment_frequency_id FK "Идентификатор частоты выплат"
         TEXT taxes "Условия по налогам"
         INT experience "Опыт работы"
         TEXT description "Описание вакансии"
@@ -84,10 +83,6 @@ erDiagram
         TEXT name "Название специализации"
     }
 
-    PAYMENT_FREQUENCY {
-        INT id PK "Идентификатор частоты выплат"
-        TEXT name "Название частоты выплат"
-    }
 
     SUPPLEMENTARY_CONDITIONS {
         INT id PK "Идентификатор условия"
@@ -168,7 +163,6 @@ erDiagram
     STATIC ||--o{ EMPLOYER_INFO_LINK : "image_id"
     EMPLOYER ||--o| VACANCY : "employer_id"
     SPECIALIZATION ||--o{ VACANCY : "specialization_id"
-    PAYMENT_FREQUENCY ||--o{ VACANCY : "payment_frequency_id"
     VACANCY ||--o{ VACANCY_CITY : "vacancy_id"
     CITY ||--o{ VACANCY_CITY : "city_id"
     VACANCY ||--o{ VACANCY_SUPPLEMENTARY_CONDITIONS : "vacancy_id"

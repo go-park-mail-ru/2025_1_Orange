@@ -1,4 +1,4 @@
-package requests
+package mocks
 
 type (
 	SignupRequest struct {

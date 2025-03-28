@@ -1,9 +1,8 @@
 package auth
 
 import (
-	"ResuMatch/internal/profile"
 	request "ResuMatch/internal/request"
-	"ResuMatch/internal/session"
+	"ResuMatch/internal/usecase"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,14 +12,12 @@ import (
 )
 
 type MyHandler struct {
-	user    *profile.UserStorage
-	session *session.SessionStorage
+	core *usecase.Core
 }
 
-func NewMyHandler() *MyHandler {
+func NewMyHandler(core *usecase.Core) *MyHandler {
 	return &MyHandler{
-		user:    profile.NewUserStorage(),
-		session: session.NewSessionStorage(),
+		core: core,
 	}
 }
 
@@ -34,7 +31,8 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	user, ok := api.user.GetUserByEmail(req.Email)
+
+	user, ok := api.core.Users.GetUserByEmail(req.Email)
 	if !ok {
 		http.Error(w, `{"error": "no user"}`, http.StatusNotFound)
 		return
@@ -44,7 +42,7 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "bad pass"}`, http.StatusUnauthorized)
 		return
 	}
-	sid, err := api.session.CreateSession(r.Context(), user.ID)
+	sid, err := api.core.CreateSession(r.Context(), user.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
@@ -70,8 +68,6 @@ func (api *MyHandler) Signin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
-	api.user = profile.NewUserStorage()
-	api.session = session.NewSessionStorage()
 	w.Header().Set("Content-Type", "application/json")
 
 	var req request.SignupRequest
@@ -92,35 +88,18 @@ func (api *MyHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, exists := api.user.GetUserByEmail(req.Email)
+	_, exists := api.core.Users.GetUserByEmail(req.Email)
 	if exists {
 		http.Error(w, `{"error": "Email already exists"}`, http.StatusConflict)
 		return
 	}
 
-	user, err := api.user.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
+	err := api.core.CreateUserAccount(r.Context(), req.Email, req.Password, req.FirstName, req.LastName, req.CompanyName, req.CompanyAddress)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to create user: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
-	sid, err := api.session.CreateSession(r.Context(), user.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error": "failed to create session: %s"}`, err.Error()), http.StatusInternalServerError)
-		log.Println(err)
-		return
-	}
-
-	cookie := &http.Cookie{
-		Name:     "session_id",
-		Value:    sid,
-		Expires:  time.Now().Add(10 * time.Hour),
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteStrictMode,
-	}
-
-	http.SetCookie(w, cookie)
 
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"}); err != nil {
@@ -141,7 +120,7 @@ func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	sid := sessionCookie.Value
 
-	err = api.session.KillSession(r.Context(), sid)
+	err = api.core.KillSession(r.Context(), sid)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error": "failed to kill session: %s"}`, err.Error()), http.StatusInternalServerError)
 		log.Println(err)
@@ -158,74 +137,4 @@ func (api *MyHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-}
-func (api *MyHandler) CheckEmail(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	// email := r.URL.Query().Get("email")
-	// Структура для парсинга JSON-тела запроса
-	var requestBody struct {
-		Email string `json:"email"`
-	}
-
-	// Парсим JSON-тело запроса
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, `{"error": "Invalid request body"}`, http.StatusBadRequest)
-		log.Printf("Failed to decode request body: %v", err)
-		return
-	}
-
-	// Проверяем, передан ли email
-	email := requestBody.Email
-
-	if email == "" {
-		// fmt.Println("123")
-		http.Error(w, `{"error": "Email parameter is required"}`, http.StatusBadRequest)
-		return
-	}
-	// fmt.Println(email)
-	_, exists := api.user.GetUserByEmail(email)
-	if exists {
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"}); err != nil {
-			log.Printf("Failed to encode response: %v", err)
-		}
-		return
-	}
-
-	w.WriteHeader(http.StatusBadRequest)
-	// fmt.Println("qwer")
-	if err := json.NewEncoder(w).Encode(map[string]string{"message": "Email not found"}); err != nil {
-		log.Printf("Failed to encode response: %v", err)
-	}
-}
-
-func (api *MyHandler) Auth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
-		log.Println("No session cookie:", err)
-		return
-	}
-	sid := cookie.Value
-
-	userID, err := api.session.GetUserIDFromSession(sid)
-	if err != nil {
-		http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
-		log.Println("Invalid session:", err)
-		return
-	}
-
-	user, ok := api.user.GetUserById(userID)
-	if !ok {
-		http.Error(w, `{"error": "User not found"}`, http.StatusNotFound)
-		log.Println("User not found:", userID)
-		return
-	}
-
-	if err := json.NewEncoder(w).Encode(user); err != nil {
-		log.Printf("Failed to encode response: %v", err)
-	}
 }

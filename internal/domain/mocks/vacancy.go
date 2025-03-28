@@ -1,4 +1,4 @@
-package models
+package mocks
 
 type Vacancy struct {
 	ID         int     `json:"id"`

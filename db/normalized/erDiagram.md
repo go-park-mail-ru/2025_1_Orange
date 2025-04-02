@@ -39,7 +39,7 @@ erDiagram
 
     EMPLOYER {
         INT id PK "Идентификатор работодателя"
-        TEXT name "Название работодателя"
+        TEXT company_name "Название работодателя"
         TEXT slogan "Слоган работодателя"
         TEXT website "Адрес сайта работодателя"
         TEXT description "Описание работодателя"

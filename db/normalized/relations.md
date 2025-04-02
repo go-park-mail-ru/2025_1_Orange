@@ -157,7 +157,7 @@ erDiagram
 Таблица `EMPLOYER` хранит информацию о работодателях. Включает название работодателя, контактную информацию, юридический адрес и логотип.
 
 ### Функциональные зависимости
-- `{id} -> {name, slogan, website, description, legal_address, email, password_hashed, password_salt, logo_id, created_at, updated_at}`
+- `{id} -> {company_name, slogan, website, description, legal_address, email, password_hashed, password_salt, logo_id, created_at, updated_at}`
 
 ### Нормальные формы
 - НФ1:
@@ -180,7 +180,7 @@ erDiagram
 erDiagram
     EMPLOYER {
         INT id PK "Идентификатор работодателя"
-        TEXT name "Название работодателя"
+        TEXT company_name "Название работодателя"
         TEXT slogan "Слоган работодателя"
         TEXT website "Адрес сайта работодателя"
         TEXT description "Описание работодателя"

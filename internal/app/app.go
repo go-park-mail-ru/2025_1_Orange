@@ -35,8 +35,8 @@ func Init(cfg *config.Config) *server.Server {
 
 	// Transport Init
 	authHandler := http.NewAuthHandler(authService)
-	applicantHandler := http.NewApplicantHandler(authService, applicantService)
-	employmentHandler := http.NewEmployerHandler(authService, employerService)
+	applicantHandler := http.NewApplicantHandler(authService, applicantService, cfg.CSRF)
+	employmentHandler := http.NewEmployerHandler(authService, employerService, cfg.CSRF)
 
 	// Server Init
 	srv := server.NewServer(cfg)

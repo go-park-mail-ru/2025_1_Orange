@@ -1,8 +1,10 @@
 package http
 
 import (
+	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"encoding/json"
@@ -16,21 +18,17 @@ import (
 type ApplicantHandler struct {
 	auth      usecase.Auth
 	applicant usecase.Applicant
+	cfg       config.CSRFConfig
 }
 
-func NewApplicantHandler(auth usecase.Auth, applicant usecase.Applicant) ApplicantHandler {
-	return ApplicantHandler{auth: auth, applicant: applicant}
+func NewApplicantHandler(auth usecase.Auth, applicant usecase.Applicant, cfg config.CSRFConfig) ApplicantHandler {
+	return ApplicantHandler{auth: auth, applicant: applicant, cfg: cfg}
 }
 
 func (h *ApplicantHandler) Configure(r *httprouter.Router) {
 	r.POST("/api/v1/applicant/register", h.Register)
 	r.POST("/api/v1/applicant/login", h.Login)
 	r.GET("/api/v1/applicant/profile", h.GetProfile)
-
-	//applicantRouter := r.PathPrefix("/applicant").Subrouter()
-	//applicantRouter.HandleFunc("/register", h.Register).Methods("POST")
-	//applicantRouter.HandleFunc("/login", h.Login).Methods("POST")
-	//applicantRouter.HandleFunc("/profile", h.GetProfile).Methods("GET")
 }
 
 func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -66,7 +64,10 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request, _ ht
 
 	if err := utils.CreateSession(w, r, h.auth, applicantID, "applicant"); err != nil {
 		utils.NewError(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
 func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -99,7 +100,9 @@ func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request, _ httpr
 
 	if err := utils.CreateSession(w, r, h.auth, applicantID, "applicant"); err != nil {
 		utils.NewError(w, http.StatusInternalServerError, err)
+		return
 	}
+	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
 func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

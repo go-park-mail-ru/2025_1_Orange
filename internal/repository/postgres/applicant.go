@@ -16,7 +16,7 @@ type ApplicantDB struct {
 	DB *sql.DB
 }
 
-func NewApplicantRepository(cfg config.PostgresDBConfig) (repository.ApplicantRepository, error) {
+func NewApplicantRepository(cfg config.PostgresConfig) (repository.ApplicantRepository, error) {
 	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {
 		return nil, entity.NewClientError("failed to connect to PostgreSQL", entity.ErrPostgres)

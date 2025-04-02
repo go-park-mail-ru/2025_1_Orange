@@ -21,13 +21,24 @@ func GetUserIDFromSession(r *http.Request, auth usecase.Auth) (int, string, erro
 	return userID, role, nil
 }
 
-func ClearSession(w http.ResponseWriter) {
+func NullifyTokenCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Expires:  time.Unix(0, 0),
+		Expires:  time.Now().Add(-24 * time.Hour),
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   -1,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Now().Add(-24 * time.Hour),
+		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})
 }
@@ -45,13 +56,13 @@ func CreateSession(w http.ResponseWriter, r *http.Request, auth usecase.Auth, us
 }
 
 func SetSession(w http.ResponseWriter, value string, expires time.Time) {
-	cookie := http.Cookie{
+	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    value,
-		Expires:  expires,
-		HttpOnly: true,
-		Secure:   true,
 		Path:     "/",
-	}
-	http.SetCookie(w, &cookie)
+		Secure:   true,
+		HttpOnly: true,
+		Expires:  expires,
+		SameSite: http.SameSiteStrictMode,
+	})
 }

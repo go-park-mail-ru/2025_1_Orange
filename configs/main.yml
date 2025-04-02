@@ -1,4 +1,5 @@
 http:
+  host: "localhost"
   port: "8000"
   readTimeout: "10s"
   writeTimeout: "10s"
@@ -6,18 +7,29 @@ http:
   corsAllowedOrigins:
     - "http://localhost:5173"
 
-cookies:
-  secure: true
+session:
+  cookieName: "session"
+  lifetime: "24h"
   httpOnly: true
+  secure: true
   sameSite: "Strict"
 
-cache:
-  ttl: 3600  # Время жизни кеша
+csrf:
+  cookieName: "csrf_token"
+  lifetime: "1h"
+  httpOnly: false
+  secure: true
+  sameSite: "Strict"
+
+postgres:
+  host: "localhost"
+  port: "5432"
+  user: "postgres"
+  dbname: "mydb"
+  sslmode: "disable"
 
 redis:
-  db: 0  # Номер базы Redis (0-15)
+  host: "localhost"
+  port: "6379"
+  db: 0
   ttl: 86400
-
-secrets:
-  session: "placeholder"
-  csrf: "placeholder"

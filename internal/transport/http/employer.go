@@ -1,8 +1,10 @@
 package http
 
 import (
+	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"encoding/json"
@@ -16,10 +18,11 @@ import (
 type EmployerHandler struct {
 	auth     usecase.Auth
 	employer usecase.Employer
+	cfg      config.CSRFConfig
 }
 
-func NewEmployerHandler(auth usecase.Auth, employer usecase.Employer) EmployerHandler {
-	return EmployerHandler{auth: auth, employer: employer}
+func NewEmployerHandler(auth usecase.Auth, employer usecase.Employer, cfg config.CSRFConfig) EmployerHandler {
+	return EmployerHandler{auth: auth, employer: employer, cfg: cfg}
 }
 
 func (h *EmployerHandler) Configure(r *httprouter.Router) {
@@ -60,7 +63,9 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request, _ htt
 
 	if err := utils.CreateSession(w, r, h.auth, employerID, "employer"); err != nil {
 		utils.NewError(w, http.StatusInternalServerError, err)
+		return
 	}
+	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
 func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -93,7 +98,9 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request, _ httpro
 
 	if err := utils.CreateSession(w, r, h.auth, employerID, "employer"); err != nil {
 		utils.NewError(w, http.StatusInternalServerError, err)
+		return
 	}
+	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
 func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

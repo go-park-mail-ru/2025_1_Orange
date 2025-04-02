@@ -10,6 +10,7 @@ import (
 )
 
 type HTTPConfig struct {
+	Host               string        `yaml:"host"`
 	Port               string        `yaml:"port"`
 	ReadTimeout        time.Duration `yaml:"readTimeout"`
 	WriteTimeout       time.Duration `yaml:"writeTimeout"`
@@ -17,75 +18,96 @@ type HTTPConfig struct {
 	CORSAllowedOrigins []string      `yaml:"corsAllowedOrigins"`
 }
 
-type CookiesConfig struct {
-	Secure   bool   `yaml:"secure"`
-	HTTPOnly bool   `yaml:"httpOnly"`
-	SameSite string `yaml:"sameSite"`
+type SessionConfig struct {
+	CookieName string        `yaml:"cookieName"`
+	Lifetime   time.Duration `yaml:"lifetime"`
+	HttpOnly   bool          `yaml:"httpOnly"`
+	Secure     bool          `yaml:"secure"`
+	SameSite   string        `yaml:"sameSite"`
+	Secret     string        `yaml:"-"`
 }
 
-type CacheConfig struct {
-	TTL int `yaml:"ttl"`
+type CSRFConfig struct {
+	CookieName string        `yaml:"cookieName"`
+	Lifetime   time.Duration `yaml:"lifetime"`
+	Secret     string        `yaml:"-"`
+	HttpOnly   bool          `yaml:"httpOnly"`
+	Secure     bool          `yaml:"secure"`
+	SameSite   string        `yaml:"sameSite"`
 }
 
-type PostgresDBConfig struct {
-	DSN string
+type PostgresConfig struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"-"`
+	DBName   string `yaml:"dbname"`
+	SSLMode  string `yaml:"sslmode"`
+	DSN      string `yaml:"-"`
 }
 
-type RedisDBConfig struct {
-	Address  string
-	Password string
-	DB       int `yaml:"db"`
-	TTL      int `yaml:"ttl"`
+type RedisConfig struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Password string `yaml:"-"`
+	DB       int    `yaml:"db"`
+	TTL      int    `yaml:"ttl"`
 }
 
 type Config struct {
-	HTTP     HTTPConfig    `yaml:"http"`
-	Cookies  CookiesConfig `yaml:"cookies"`
-	Cache    CacheConfig   `yaml:"cache"`
-	Postgres PostgresDBConfig
-	Redis    RedisDBConfig `yaml:"redis"`
-	Secrets  struct {
-		SessionTTL string `yaml:"session_ttl"`
-		CSRF       string `yaml:"csrf"`
-	} `yaml:"secrets"`
+	HTTP     HTTPConfig     `yaml:"http"`
+	Session  SessionConfig  `yaml:"session"`
+	CSRF     CSRFConfig     `yaml:"csrf"`
+	Postgres PostgresConfig `yaml:"postgres"`
+	Redis    RedisConfig    `yaml:"redis"`
 }
 
 func Load() (*Config, error) {
-	// dotenv properties
+	// Загрузка .env
 	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("ошибка загрузки .env: %w", err)
+		return nil, fmt.Errorf("error loading .env: %w", err)
 	}
-	// yml properties
+
+	// Чтение YAML
 	yamlFile, err := os.ReadFile("configs/main.yml")
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения конфига: %w", err)
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
 	var cfg Config
 	if err := yaml.Unmarshal(yamlFile, &cfg); err != nil {
-		return nil, fmt.Errorf("ошибка парсинга YAML: %w", err)
+		return nil, fmt.Errorf("error parsing YAML: %w", err)
 	}
 
-	// формирование DSN для PostgreSQL
-	cfg.Postgres.DSN = fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"),
-	)
+	// Заполнение секретов из .env
+	cfg.CSRF.Secret = os.Getenv("CSRF_SECRET")
 
-	// настройки Redis
-	cfg.Redis.Address = fmt.Sprintf(
-		"%s:%s",
-		os.Getenv("REDIS_HOST"),
-		os.Getenv("REDIS_PORT"),
-	)
-	cfg.Redis.Password = os.Getenv("REDIS_PASSWORD")
+	// Формирование DSN для PostgreSQL
+	cfg.Postgres = PostgresConfig{
+		Host:     os.Getenv("POSTGRES_HOST"),
+		Port:     os.Getenv("POSTGRES_PORT"),
+		User:     os.Getenv("POSTGRES_USER"),
+		Password: os.Getenv("POSTGRES_PASSWORD"),
+		DBName:   os.Getenv("POSTGRES_DB"),
+		SSLMode:  "disable",
+		DSN: fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			os.Getenv("POSTGRES_HOST"),
+			os.Getenv("POSTGRES_PORT"),
+			os.Getenv("POSTGRES_USER"),
+			os.Getenv("POSTGRES_PASSWORD"),
+			os.Getenv("POSTGRES_DB"),
+		),
+	}
 
-	// секреты
-	cfg.Secrets.CSRF = os.Getenv("CSRF_SECRET")
+	// Настройка Redis
+	cfg.Redis = RedisConfig{
+		Host:     os.Getenv("REDIS_HOST"),
+		Port:     os.Getenv("REDIS_PORT"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       cfg.Redis.DB,
+		TTL:      cfg.Redis.TTL,
+	}
 
 	return &cfg, nil
 }

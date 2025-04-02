@@ -15,7 +15,7 @@ type EmployerDB struct {
 	DB *sql.DB
 }
 
-func NewEmployerDB(cfg config.PostgresDBConfig) (*EmployerDB, error) {
+func NewEmployerDB(cfg config.PostgresConfig) (*EmployerDB, error) {
 	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {
 		return nil, entity.NewClientError("failed to connect to PostgreSQL", entity.ErrPostgres)

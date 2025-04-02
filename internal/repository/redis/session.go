@@ -24,8 +24,9 @@ type SessionDB struct {
 	ctx              context.Context
 }
 
-func NewSessionRepository(cfg config.RedisDBConfig, sessionTTL int) (repository.SessionRepository, error) {
-	conn, err := redis.Dial("tcp", cfg.Address,
+func NewSessionRepository(cfg config.RedisConfig, sessionTTL int) (repository.SessionRepository, error) {
+	address := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+	conn, err := redis.Dial("tcp", address,
 		redis.DialPassword(cfg.Password),
 		redis.DialDatabase(cfg.DB),
 		redis.DialConnectTimeout(5*time.Second),

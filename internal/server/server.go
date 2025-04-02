@@ -18,7 +18,7 @@ func NewServer(cfg *config.Config) *Server {
 	return &Server{
 		config: cfg,
 		httpServer: &http.Server{
-			Addr:           ":" + cfg.HTTP.Port,
+			Addr:           cfg.HTTP.Host + ":" + cfg.HTTP.Port,
 			ReadTimeout:    cfg.HTTP.ReadTimeout,
 			WriteTimeout:   cfg.HTTP.WriteTimeout,
 			MaxHeaderBytes: cfg.HTTP.MaxHeaderBytes,
@@ -30,7 +30,7 @@ func NewServer(cfg *config.Config) *Server {
 //	router := mux.NewRouter()
 //
 //	// Middleware
-//	csrf := middleware.NewCSRF(s.config.Secrets.CSRF, "__csrf_token", s.config.Cookies)
+//	csrf := middleware.NewCSRF(s.config.Secrets.CSRF, "csrf_token", s.config.Cookies)
 //	cors := middleware.CORS(s.config.HTTP.CORSAllowedOrigins)
 //	router.Use(cors, csrf.CSRFMiddleware)
 //
@@ -45,8 +45,8 @@ func (s *Server) SetupRoutes(routeConfig func(*httprouter.Router)) {
 
 	// Middleware chain
 	handler := middleware.CORS(s.config.HTTP.CORSAllowedOrigins)(router)
-	csrf := middleware.NewCSRF(s.config.Secrets.CSRF, "__csrf_token", s.config.Cookies)
-	handler = csrf.CSRFMiddleware(handler)
+	csrf := middleware.CSRFMiddleware(s.config.CSRF)
+	handler = csrf(handler)
 
 	// Router config
 	routeConfig(router)

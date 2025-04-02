@@ -6,71 +6,79 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"net/http"
+	"time"
 )
 
-type CSRF struct {
-	secret     []byte
-	cookieName string
-	cookieCfg  config.CookiesConfig
-}
-
-func NewCSRF(secret, cookieName string, cookieCfg config.CookiesConfig) *CSRF {
-	return &CSRF{
-		secret:     []byte(secret),
-		cookieName: cookieName,
-		cookieCfg:  cookieCfg,
+func generateToken(r *http.Request, sessionID string, cfg config.CSRFConfig) string {
+	h := hmac.New(sha256.New, []byte(cfg.Secret))
+	if sessionID != "" {
+		h.Write([]byte(sessionID))
+	} else {
+		// Соль в виде ip адреса
+		h.Write([]byte(r.RemoteAddr))
 	}
-}
-
-func (c *CSRF) generateToken(r *http.Request) string {
-	h := hmac.New(sha256.New, c.secret)
-	// Соль в виде ip адреса
-	h.Write([]byte(r.RemoteAddr))
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func (c *CSRF) CSRFMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Исключаем безопасные методы
-		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
-			token := c.generateToken(r)
-			http.SetCookie(w, &http.Cookie{
-				Name:  c.cookieName,
-				Value: token,
-				// устанавливаем куку для всех маршрутов домена
-				Path:     "/",
-				Secure:   c.cookieCfg.Secure,
-				HttpOnly: c.cookieCfg.HTTPOnly,
-				SameSite: c.parseSameSite(),
-			})
-			next.ServeHTTP(w, r)
-			return
-		}
+func SetCSRFToken(w http.ResponseWriter, r *http.Request, cfg config.CSRFConfig) {
+	sessionCookie, _ := r.Cookie("session")
+	var sessionID string
+	if sessionCookie != nil {
+		sessionID = sessionCookie.Value
+	}
 
-		// Проверяем токен для небезопасных методов
-		receivedToken := r.Header.Get("X-CSRF-Token")
-		if receivedToken == "" {
-			http.Error(w, "CSRF token missing", http.StatusForbidden)
-			return
-		}
+	token := generateToken(r, sessionID, cfg)
 
-		cookie, err := r.Cookie(c.cookieName)
-		if err != nil {
-			http.Error(w, "CSRF cookie missing", http.StatusForbidden)
-			return
-		}
-
-		if !hmac.Equal([]byte(receivedToken), []byte(cookie.Value)) {
-			http.Error(w, "Invalid CSRF token", http.StatusForbidden)
-			return
-		}
-
-		next.ServeHTTP(w, r)
+	http.SetCookie(w, &http.Cookie{
+		Name:  cfg.CookieName,
+		Value: token,
+		// устанавливаем куку для всех маршрутов домена
+		Path:     "/",
+		Secure:   cfg.Secure,
+		HttpOnly: cfg.HttpOnly,
+		Expires:  time.Now().Add(cfg.Lifetime),
+		SameSite: parsedSameSite(cfg),
 	})
+	w.Header().Set("X-CSRF-Token", token)
 }
 
-func (c *CSRF) parseSameSite() http.SameSite {
-	switch c.cookieCfg.SameSite {
+func CSRFMiddleware(cfg config.CSRFConfig) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Исключаем безопасные методы
+			if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
+				SetCSRFToken(w, r, cfg)
+
+				next.ServeHTTP(w, r)
+
+				return
+			}
+
+			// Проверяем токен для небезопасных методов
+			receivedToken := r.Header.Get("X-CSRF-Token")
+			if receivedToken == "" {
+				http.Error(w, "CSRF token missing", http.StatusForbidden)
+				return
+			}
+
+			cookie, err := r.Cookie(cfg.CookieName)
+			if err != nil {
+				http.Error(w, "CSRF cookie missing", http.StatusForbidden)
+				return
+			}
+
+			if !hmac.Equal([]byte(receivedToken), []byte(cookie.Value)) {
+				http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func parsedSameSite(cfg config.CSRFConfig) http.SameSite {
+	switch cfg.SameSite {
 	case "Lax":
 		return http.SameSiteLaxMode
 	case "Strict":

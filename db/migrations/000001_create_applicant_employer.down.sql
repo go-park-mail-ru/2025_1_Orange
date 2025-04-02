@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS applicant;
+DROP TABLE IF EXISTS employer;

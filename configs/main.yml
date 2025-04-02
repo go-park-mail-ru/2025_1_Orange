@@ -1,0 +1,23 @@
+http:
+  port: "8000"
+  readTimeout: "10s"
+  writeTimeout: "10s"
+  maxHeaderBytes: 1048576
+  corsAllowedOrigins:
+    - "http://localhost:5173"
+
+cookies:
+  secure: true
+  httpOnly: true
+  sameSite: "Strict"
+
+cache:
+  ttl: 3600  # Время жизни кеша
+
+redis:
+  db: 0  # Номер базы Redis (0-15)
+  ttl: 86400
+
+secrets:
+  session: "placeholder"
+  csrf: "placeholder"

@@ -85,7 +85,7 @@ func Load() (*Config, error) {
 	// Формирование DSN для PostgreSQL
 	cfg.Postgres = PostgresConfig{
 		Host:     os.Getenv("POSTGRES_HOST"),
-		Port:     os.Getenv("POSTGRES_PORT"),
+		Port:     os.Getenv("POSTGRES_CONTAINER_PORT"),
 		User:     os.Getenv("POSTGRES_USER"),
 		Password: os.Getenv("POSTGRES_PASSWORD"),
 		DBName:   os.Getenv("POSTGRES_DB"),
@@ -93,7 +93,7 @@ func Load() (*Config, error) {
 		DSN: fmt.Sprintf(
 			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 			os.Getenv("POSTGRES_HOST"),
-			os.Getenv("POSTGRES_PORT"),
+			os.Getenv("POSTGRES_CONTAINER_PORT"),
 			os.Getenv("POSTGRES_USER"),
 			os.Getenv("POSTGRES_PASSWORD"),
 			os.Getenv("POSTGRES_DB"),
@@ -103,7 +103,7 @@ func Load() (*Config, error) {
 	// Настройка Redis
 	cfg.Redis = RedisConfig{
 		Host:     os.Getenv("REDIS_HOST"),
-		Port:     os.Getenv("REDIS_PORT"),
+		Port:     os.Getenv("REDIS_CONTAINER_PORT"),
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       cfg.Redis.DB,
 		TTL:      cfg.Redis.TTL,

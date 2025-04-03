@@ -7,6 +7,7 @@ import (
 	"ResuMatch/internal/server"
 	"ResuMatch/internal/transport/http"
 	"ResuMatch/internal/usecase/service"
+	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"log"
 )
@@ -14,6 +15,7 @@ import (
 func Init(cfg *config.Config) *server.Server {
 	// Repositories Init
 	applicantRepo, err := postgres.NewApplicantRepository(cfg.Postgres)
+	fmt.Println(cfg.Postgres.DSN)
 	if err != nil {
 		log.Fatalf("Failed to create applicant repository: %v", err)
 	}

@@ -1,28 +1,66 @@
-version: '3.8'
-
 services:
-  redis:
-    image: redis:alpine
-    container_name: redis
+  resumatch:
+    container_name: app
+    build: .
+    env_file: .env
     ports:
-      - "8090:6379"
-    volumes:
-      - redis_data:/data
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    command: >
+      sh -c "
+        ./migrate -path ./migrations -database 'postgres://$$POSTGRES_USER:$$POSTGRES_PASSWORD@postgres:$$POSTGRES_CONTAINER_PORT/$$POSTGRES_DB?sslmode=disable' up &&
+        ./.bin run
+      "
+    networks:
+      - resumatch-network
 
   postgres:
-    image: postgres:alpine
     container_name: postgres
+    image: postgres:17-alpine
+    env_file: .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: resumatch
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "8070:5432"
+      - "${POSTGRES_HOST_PORT}:${POSTGRES_CONTAINER_PORT}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
+    networks:
+      - resumatch-network
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    env_file: .env
+    ports:
+      - "${REDIS_HOST_PORT}:${REDIS_CONTAINER_PORT}"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - resumatch-network
 
 volumes:
-  redis_data:
   postgres_data:
+  redis_data:
+
+networks:
+  resumatch-network:
+    driver: bridge

@@ -55,6 +55,8 @@ func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	handler := middleware.CreateMiddlewareChain(
 		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
 		middleware.CSRFMiddleware(s.config.CSRF),
+		middleware.RequestIDMiddleware(),
+		middleware.AccessLogMiddleware(),
 	)(mainRouter)
 
 	s.httpServer.Handler = handler

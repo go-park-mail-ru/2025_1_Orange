@@ -3,13 +3,16 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 type ApplicantDB struct {
@@ -71,6 +74,8 @@ func (r *ApplicantDB) Create(ctx context.Context, applicant *entity.Applicant) (
 }
 
 func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
+	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+
 	query := `
 		SELECT id, email, password_hashed, password_salt, first_name, last_name
 		FROM applicant
@@ -91,6 +96,11 @@ func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, e
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewClientError(fmt.Sprintf("applicant with id=%d not found", id), entity.ErrNotFound)
 		}
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        id,
+			"error":     err,
+		}).Error("Failed to get Applicant from DB")
 		return nil, entity.NewClientError(fmt.Sprintf("failed to get Applicant with id=%d", id), entity.ErrPostgres)
 	}
 
@@ -98,6 +108,8 @@ func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, e
 }
 
 func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
+	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+
 	query := `
 		SELECT id, email, password_hashed, password_salt, first_name, last_name
 		FROM applicant
@@ -118,6 +130,11 @@ func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.App
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewClientError(fmt.Sprintf("applicant with email=%s not found", email), entity.ErrNotFound)
 		}
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to get Applicant from DB")
 		return nil, entity.NewClientError(fmt.Sprintf("failed to get Applicant with email=%s", email), entity.ErrPostgres)
 	}
 
@@ -125,6 +142,8 @@ func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.App
 }
 
 func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) error {
+	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+
 	query := `
 		UPDATE applicant
 		SET 
@@ -157,15 +176,30 @@ func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) e
 				return entity.NewClientError("Некорректный формат данных", entity.ErrBadRequest)
 			}
 		}
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to update Applicant")
 		return entity.NewClientError(fmt.Sprintf("failed to update Applicant with id=%d", applicant.ID), entity.ErrPostgres)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to get rows affected while updating applicant")
 		return entity.NewClientError(fmt.Sprintf("failed to get rows affected while updating applicant with id=%d", applicant.ID), entity.ErrPostgres)
 	}
 
 	if rowsAffected == 0 {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to find Applicant for update")
 		return entity.NewClientError(fmt.Sprintf("failed to find applicant for update with id=%d", applicant.ID), entity.ErrPostgres)
 	}
 

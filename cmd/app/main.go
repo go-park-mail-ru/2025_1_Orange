@@ -3,8 +3,8 @@ package main
 import (
 	"ResuMatch/internal/app"
 	"ResuMatch/internal/config"
+	l "ResuMatch/pkg/logger"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,7 +15,7 @@ func main() {
 	// 1. Загрузка конфигурации
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		l.Log.Fatalf("Failed to load config: %v", err)
 	}
 
 	// 2. Инициализация приложения
@@ -27,15 +27,15 @@ func main() {
 
 	go func() {
 		<-quit
-		log.Println("Shutting down server...")
+		l.Log.Info("Shutting down server...")
 		if err := srv.Stop(); err != nil {
-			log.Fatalf("Server shutdown error: %v", err)
+			l.Log.Fatalf("Failed to stop server: %v", err)
 		}
 	}()
 
 	// 4. Запуск сервера
-	log.Printf("Starting server on %s", cfg.HTTP.Port)
+	l.Log.Infof("Starting server on %s", cfg.HTTP.Port)
 	if err := srv.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("Server failed: %v", err)
+		l.Log.Fatalf("Failed to run server: %v", err)
 	}
 }

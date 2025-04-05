@@ -5,10 +5,10 @@ import (
 	"ResuMatch/internal/repository/postgres"
 	"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/server"
-	"ResuMatch/internal/transport/http"
+	handler "ResuMatch/internal/transport/http"
 	"ResuMatch/internal/usecase/service"
-	"github.com/julienschmidt/httprouter"
 	"log"
+	"net/http"
 )
 
 func Init(cfg *config.Config) *server.Server {
@@ -34,15 +34,15 @@ func Init(cfg *config.Config) *server.Server {
 	employerService := service.NewEmployerService(employerRepo)
 
 	// Transport Init
-	authHandler := http.NewAuthHandler(authService)
-	applicantHandler := http.NewApplicantHandler(authService, applicantService, cfg.CSRF)
-	employmentHandler := http.NewEmployerHandler(authService, employerService, cfg.CSRF)
+	authHandler := handler.NewAuthHandler(authService)
+	applicantHandler := handler.NewApplicantHandler(authService, applicantService, cfg.CSRF)
+	employmentHandler := handler.NewEmployerHandler(authService, employerService, cfg.CSRF)
 
 	// Server Init
 	srv := server.NewServer(cfg)
 
 	// Router config
-	srv.SetupRoutes(func(r *httprouter.Router) {
+	srv.SetupRoutes(func(r *http.ServeMux) {
 		authHandler.Configure(r)
 		applicantHandler.Configure(r)
 		employmentHandler.Configure(r)

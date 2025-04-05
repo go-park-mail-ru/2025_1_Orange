@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"
 )
@@ -25,13 +24,17 @@ func NewApplicantHandler(auth usecase.Auth, applicant usecase.Applicant, cfg con
 	return ApplicantHandler{auth: auth, applicant: applicant, cfg: cfg}
 }
 
-func (h *ApplicantHandler) Configure(r *httprouter.Router) {
-	r.POST("/api/v1/applicant/register", h.Register)
-	r.POST("/api/v1/applicant/login", h.Login)
-	r.GET("/api/v1/applicant/profile", h.GetProfile)
+func (h *ApplicantHandler) Configure(r *http.ServeMux) {
+	applicantMux := http.NewServeMux()
+
+	applicantMux.HandleFunc("POST /register", h.Register)
+	applicantMux.HandleFunc("POST /login", h.Login)
+	applicantMux.HandleFunc("GET /profile", h.GetProfile)
+
+	r.Handle("/applicant/", http.StripPrefix("/applicant", applicantMux))
 }
 
-func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var registerDTO dto.ApplicantRegister
@@ -72,7 +75,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request, _ ht
 	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
-func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var loginDTO dto.ApplicantLogin
@@ -109,12 +112,13 @@ func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request, _ httpr
 	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
-func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// проверяем сессию
 	cookie, err := r.Cookie("session")
 	if err != nil {
 		utils.NewError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
 	}
 
 	currentUserID, _, err := h.auth.GetUserIDBySession(cookie.Value)

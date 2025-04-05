@@ -4,7 +4,6 @@ import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/middleware"
 	"context"
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"time"
 )
@@ -26,22 +25,39 @@ func NewServer(cfg *config.Config) *Server {
 	}
 }
 
-func (s *Server) SetupRoutes(routeConfig func(*httprouter.Router)) {
-	router := httprouter.New()
+//func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
+//	router := http.NewServeMux()
+//
+//	// Add prefix
+//	apiRouter := http.NewServeMux()
+//	apiRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", router))
+//
+//	// Middleware chain
+//	handler := middleware.CreateMiddlewareChain(
+//		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
+//		middleware.CSRFMiddleware(s.config.CSRF),
+//	)
+//
+//	// Router config
+//	routeConfig(apiRouter)
+//
+//	s.httpServer.Handler = handler(router)
+//}
 
-	// Middleware chain
+func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
+	subrouter := http.NewServeMux()
+
+	mainRouter := http.NewServeMux()
+	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", subrouter))
+
+	routeConfig(subrouter)
+
 	handler := middleware.CreateMiddlewareChain(
 		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
 		middleware.CSRFMiddleware(s.config.CSRF),
-	)
-	//handler := middleware.CORS(s.config.HTTP.CORSAllowedOrigins)(router)
-	//csrf := middleware.CSRFMiddleware(s.config.CSRF)
-	//handler = csrf(handler)
+	)(mainRouter)
 
-	// Router config
-	routeConfig(router)
-
-	s.httpServer.Handler = handler(router)
+	s.httpServer.Handler = handler
 }
 
 func (s *Server) Run() error {

@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"
 )
@@ -25,13 +24,17 @@ func NewEmployerHandler(auth usecase.Auth, employer usecase.Employer, cfg config
 	return EmployerHandler{auth: auth, employer: employer, cfg: cfg}
 }
 
-func (h *EmployerHandler) Configure(r *httprouter.Router) {
-	r.POST("/api/v1/employer/register", h.Register)
-	r.POST("/api/v1/employer/login", h.Login)
-	r.GET("/api/v1/employer/profile", h.GetProfile)
+func (h *EmployerHandler) Configure(r *http.ServeMux) {
+	employerMux := http.NewServeMux()
+
+	employerMux.HandleFunc("POST /register", h.Register)
+	employerMux.HandleFunc("POST /login", h.Login)
+	employerMux.HandleFunc("GET /profile", h.GetProfile)
+
+	r.Handle("/employer/", http.StripPrefix("/employer", employerMux))
 }
 
-func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var registerDTO dto.EmployerRegister
@@ -70,7 +73,7 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request, _ htt
 	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
-func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var loginDTO dto.EmployerLogin
@@ -107,7 +110,7 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request, _ httpro
 	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
-func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// проверяем сессию
 	cookie, err := r.Cookie("session")

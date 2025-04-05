@@ -2,8 +2,12 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+<<<<<<< HEAD
 	"ResuMatch/internal/utils"
+=======
+>>>>>>> 2e508df (Added logger.)
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -151,6 +155,7 @@ func (r *ApplicantRepository) CreateApplicant(
 	return &createdApplicant, nil
 }
 
+<<<<<<< HEAD
 func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
@@ -158,6 +163,10 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 		"requestID": requestID,
 		"id":        id,
 	}).Info("выполнение sql-запроса получения соискателя по ID GetApplicantByID")
+=======
+func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
+	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+>>>>>>> 2e508df (Added logger.)
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
@@ -198,22 +207,31 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 				fmt.Errorf("соискатель с id=%d не найден", id),
 			)
 		}
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2e508df (Added logger.)
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        id,
 			"error":     err,
+<<<<<<< HEAD
 		}).Error("не удалось найти соискателя по id")
 
 		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось получить соискателя по id=%d", id),
 		)
+=======
+		}).Error("Failed to get Applicant from DB")
+		return nil, entity.NewClientError(fmt.Sprintf("failed to get Applicant with id=%d", id), entity.ErrPostgres)
+>>>>>>> 2e508df (Added logger.)
 	}
 
 	return applicant, nil
 }
 
+<<<<<<< HEAD
 func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
@@ -221,6 +239,10 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 		"requestID": requestID,
 		"email":     email,
 	}).Info("выполнение sql-запроса получения соискателя по почте GetApplicantByEmail")
+=======
+func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
+	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+>>>>>>> 2e508df (Added logger.)
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
@@ -261,6 +283,7 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 				fmt.Errorf("соискатель с email=%s не найден", email),
 			)
 		}
+<<<<<<< HEAD
 
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
@@ -272,13 +295,37 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 			entity.ErrInternal,
 			fmt.Errorf("не удалось найти соискателя с email=%s", email),
 		)
+=======
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to get Applicant from DB")
+		return nil, entity.NewClientError(fmt.Sprintf("failed to get Applicant with email=%s", email), entity.ErrPostgres)
+>>>>>>> 2e508df (Added logger.)
 	}
 
 	return applicant, nil
 }
 
+<<<<<<< HEAD
 func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, fields map[string]interface{}) error {
 	requestID := utils.GetRequestID(ctx)
+=======
+func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) error {
+	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+
+	query := `
+		UPDATE applicant
+		SET 
+			email = $1,
+			password_hashed = $2,
+			password_salt = $3,
+			first_name = $4,
+			last_name = $5
+		WHERE id = $6
+	`
+>>>>>>> 2e508df (Added logger.)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -332,6 +379,7 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 				)
 			}
 		}
+<<<<<<< HEAD
 
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
@@ -343,12 +391,21 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 			entity.ErrInternal,
 			fmt.Errorf("не удалось обновить соискателя с id=%d", userID),
 		)
+=======
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to update Applicant")
+		return entity.NewClientError(fmt.Sprintf("failed to update Applicant with id=%d", applicant.ID), entity.ErrPostgres)
+>>>>>>> 2e508df (Added logger.)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
+<<<<<<< HEAD
 			"id":        userID,
 			"error":     err,
 		}).Error("не удалось получить обновленные строки при обновлении соискателя")
@@ -357,11 +414,18 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 			entity.ErrInternal,
 			fmt.Errorf("не удалось получить обновленные строки при обновлении соискателя с id=%d", userID),
 		)
+=======
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to get rows affected while updating applicant")
+		return entity.NewClientError(fmt.Sprintf("failed to get rows affected while updating applicant with id=%d", applicant.ID), entity.ErrPostgres)
+>>>>>>> 2e508df (Added logger.)
 	}
 
 	if rowsAffected == 0 {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
+<<<<<<< HEAD
 			"id":        userID,
 			"error":     err,
 		}).Error("не удалось найти при обновлении соискателя")
@@ -370,6 +434,12 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 			entity.ErrInternal,
 			fmt.Errorf("не удалось найти при обновлении соискателя с id=%d", userID),
 		)
+=======
+			"id":        applicant.ID,
+			"error":     err,
+		}).Error("Failed to find Applicant for update")
+		return entity.NewClientError(fmt.Sprintf("failed to find applicant for update with id=%d", applicant.ID), entity.ErrPostgres)
+>>>>>>> 2e508df (Added logger.)
 	}
 
 	return nil

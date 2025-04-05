@@ -10,12 +10,17 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+<<<<<<< HEAD
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.37.0
+=======
+	github.com/sirupsen/logrus v1.9.3
+	golang.org/x/crypto v0.36.0
+>>>>>>> 2e508df (Added logger.)
 	gopkg.in/yaml.v2 v2.4.0
 )
 

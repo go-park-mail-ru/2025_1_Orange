@@ -37,7 +37,11 @@ func (f *CoolFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	// не уверен, стоит ли так делать
 	// но это гарантирует порядок следеования id
+<<<<<<< HEAD
 	if requestID, ok := entry.Data["requestID"].(string); ok && requestID != "" {
+=======
+	if requestID, ok := entry.Data["requestID"].(string); ok {
+>>>>>>> 2e508df (Added logger.)
 		b.WriteString("[RID=")
 		b.WriteString(requestID)
 		b.WriteString("] ")

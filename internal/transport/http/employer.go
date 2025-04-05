@@ -109,9 +109,14 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request, _ httpro
 
 func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
-
 	// проверяем сессию
-	currentUserID, _, err := utils.GetUserIDFromSession(r, h.auth)
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		utils.NewError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	currentUserID, _, err := h.auth.GetUserIDBySession(cookie.Value)
 	if err != nil {
 		utils.NewError(w, http.StatusUnauthorized, err)
 		return

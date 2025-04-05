@@ -1,6 +1,7 @@
 package http
 
 import (
+	"ResuMatch/internal/entity"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"github.com/julienschmidt/httprouter"
@@ -22,10 +23,17 @@ func (h *AuthHandler) Configure(r *httprouter.Router) {
 }
 
 func (h *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if _, _, err := utils.GetUserIDFromSession(r, h.auth); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		utils.NewError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+	}
+
+	_, _, err = h.auth.GetUserIDBySession(cookie.Value)
+	if err != nil {
+		utils.NewError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
 }
 

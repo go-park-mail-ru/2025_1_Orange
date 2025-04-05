@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
     command: >
       sh -c "
-        ./migrate -path ./migrations -database 'postgres://$$POSTGRES_USER:$$POSTGRES_PASSWORD@postgres:$$POSTGRES_CONTAINER_PORT/$$POSTGRES_DB?sslmode=disable' up &&
+        ./migrate -path ./migrations -database 'postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:$POSTGRES_CONTAINER_PORT/$POSTGRES_DB?sslmode=disable' up &&
         ./.bin run
       "
     networks:

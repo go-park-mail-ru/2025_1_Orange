@@ -1,25 +1,10 @@
 package utils
 
 import (
-	"ResuMatch/internal/entity"
 	"ResuMatch/internal/usecase"
 	"net/http"
 	"time"
 )
-
-func GetUserIDFromSession(r *http.Request, auth usecase.Auth) (int, string, error) {
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		return 0, "", entity.NewClientError("отсутствует cookies с сессией", entity.ErrUnauthorized)
-	}
-
-	userID, role, err := auth.GetUserIDBySession(cookie.Value)
-	if err != nil {
-		return 0, "", entity.NewClientError("необходима авторизация", entity.ErrUnauthorized)
-	}
-
-	return userID, role, nil
-}
 
 func ClearTokenCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{

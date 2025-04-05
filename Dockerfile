@@ -26,8 +26,3 @@ COPY --from=builder /go/bin/migrate .
 # libc6-compat - для migrate
 RUN apk add --no-cache tzdata libc6-compat
 ENV TZ=Europe/Moscow
-
-
-# Вызовется при docker run
-# Если command переопределены в docker-compose - то не вызовется
-ENTRYPOINT ["./.bin"]

@@ -26,32 +26,22 @@ func NewServer(cfg *config.Config) *Server {
 	}
 }
 
-//func (s *Server) SetupRoutes(routeConfig func(*mux.Router)) {
-//	router := mux.NewRouter()
-//
-//	// Middleware
-//	csrf := middleware.NewCSRF(s.config.Secrets.CSRF, "csrf_token", s.config.Cookies)
-//	cors := middleware.CORS(s.config.HTTP.CORSAllowedOrigins)
-//	router.Use(cors, csrf.CSRFMiddleware)
-//
-//	// Router config
-//	routeConfig(router)
-//
-//	s.httpServer.Handler = router
-//}
-
 func (s *Server) SetupRoutes(routeConfig func(*httprouter.Router)) {
 	router := httprouter.New()
 
 	// Middleware chain
-	handler := middleware.CORS(s.config.HTTP.CORSAllowedOrigins)(router)
-	csrf := middleware.CSRFMiddleware(s.config.CSRF)
-	handler = csrf(handler)
+	handler := middleware.CreateMiddlewareChain(
+		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
+		middleware.CSRFMiddleware(s.config.CSRF),
+	)
+	//handler := middleware.CORS(s.config.HTTP.CORSAllowedOrigins)(router)
+	//csrf := middleware.CSRFMiddleware(s.config.CSRF)
+	//handler = csrf(handler)
 
 	// Router config
 	routeConfig(router)
 
-	s.httpServer.Handler = handler
+	s.httpServer.Handler = handler(router)
 }
 
 func (s *Server) Run() error {

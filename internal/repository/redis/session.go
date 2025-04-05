@@ -24,7 +24,7 @@ type SessionDB struct {
 	ctx              context.Context
 }
 
-func NewSessionRepository(cfg config.RedisConfig, sessionTTL int) (repository.SessionRepository, error) {
+func NewSessionRepository(cfg config.RedisConfig) (repository.SessionRepository, error) {
 	address := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
 	conn, err := redis.Dial("tcp", address,
 		redis.DialPassword(cfg.Password),
@@ -41,7 +41,7 @@ func NewSessionRepository(cfg config.RedisConfig, sessionTTL int) (repository.Se
 
 	return &SessionDB{
 		conn:             conn,
-		sessionAliveTime: sessionTTL,
+		sessionAliveTime: cfg.TTL,
 		ctx:              context.Background(),
 	}, nil
 }

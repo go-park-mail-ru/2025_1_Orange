@@ -32,7 +32,7 @@ func (a AuthService) LogoutAll(userID int, role string) error {
 func (a AuthService) GetUserIDBySession(session string) (int, string, error) {
 	userID, role, err := a.sessionRepository.GetSession(session)
 	if err != nil {
-		return 0, "", err
+		return -1, "", err
 	}
 	return userID, role, nil
 }

@@ -7,7 +7,6 @@ import (
 	"ResuMatch/internal/server"
 	"ResuMatch/internal/transport/http"
 	"ResuMatch/internal/usecase/service"
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"log"
 )
@@ -15,7 +14,6 @@ import (
 func Init(cfg *config.Config) *server.Server {
 	// Repositories Init
 	applicantRepo, err := postgres.NewApplicantRepository(cfg.Postgres)
-	fmt.Println(cfg.Postgres.DSN)
 	if err != nil {
 		log.Fatalf("Failed to create applicant repository: %v", err)
 	}
@@ -25,7 +23,7 @@ func Init(cfg *config.Config) *server.Server {
 		log.Fatalf("Failed to create employer repository: %v", err)
 	}
 
-	sessionRepo, err := redis.NewSessionRepository(cfg.Redis, cfg.Redis.TTL)
+	sessionRepo, err := redis.NewSessionRepository(cfg.Redis)
 	if err != nil {
 		log.Fatalf("Failed to create session repository: %v", err)
 	}

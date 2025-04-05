@@ -32,24 +32,26 @@ func (h *EmployerHandler) Configure(r *httprouter.Router) {
 }
 
 func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+
 	var registerDTO dto.EmployerRegister
 	if err := json.NewDecoder(r.Body).Decode(&registerDTO); err != nil {
 		utils.NewError(w, http.StatusBadRequest, errors.New("неправильный формат JSON"))
 		return
 	}
 	fmt.Printf("comp=%s, addr=%s", registerDTO.CompanyName, registerDTO.LegalAddress)
-	employerID, err := h.employer.Register(&registerDTO)
+	employerID, err := h.employer.Register(ctx, &registerDTO)
 	if err != nil {
 		var clientErr entity.ClientError
 		if errors.As(err, &clientErr) {
 			switch {
-			case errors.Is(clientErr.Data, entity.ErrBadRequest):
+			case errors.Is(clientErr.Err, entity.ErrBadRequest):
 				utils.NewError(w, http.StatusBadRequest, err)
-			case errors.Is(clientErr.Data, entity.ErrAlreadyExists):
+			case errors.Is(clientErr.Err, entity.ErrAlreadyExists):
 				utils.NewError(w, http.StatusConflict, err)
-			case errors.Is(clientErr.Data, entity.ErrNotFound):
+			case errors.Is(clientErr.Err, entity.ErrNotFound):
 				utils.NewError(w, http.StatusNotFound, err)
-			case errors.Is(clientErr.Data, entity.ErrPostgres), errors.Is(clientErr.Data, entity.ErrInternal):
+			case errors.Is(clientErr.Err, entity.ErrPostgres), errors.Is(clientErr.Err, entity.ErrInternal):
 				utils.NewError(w, http.StatusInternalServerError, err)
 			default:
 				utils.NewError(w, http.StatusInternalServerError, err)
@@ -69,22 +71,24 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request, _ htt
 }
 
 func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+
 	var loginDTO dto.EmployerLogin
 	if err := json.NewDecoder(r.Body).Decode(&loginDTO); err != nil {
 		utils.NewError(w, http.StatusBadRequest, errors.New("неправильный формат JSON"))
 		return
 	}
 
-	employerID, err := h.employer.Login(&loginDTO)
+	employerID, err := h.employer.Login(ctx, &loginDTO)
 	if err != nil {
 		var clientErr entity.ClientError
 		if errors.As(err, &clientErr) {
 			switch {
-			case errors.Is(clientErr.Data, entity.ErrForbidden):
+			case errors.Is(clientErr.Err, entity.ErrForbidden):
 				utils.NewError(w, http.StatusForbidden, err)
-			case errors.Is(clientErr.Data, entity.ErrNotFound):
+			case errors.Is(clientErr.Err, entity.ErrNotFound):
 				utils.NewError(w, http.StatusNotFound, err)
-			case errors.Is(clientErr.Data, entity.ErrPostgres), errors.Is(clientErr.Data, entity.ErrInternal):
+			case errors.Is(clientErr.Err, entity.ErrPostgres), errors.Is(clientErr.Err, entity.ErrInternal):
 				utils.NewError(w, http.StatusInternalServerError, err)
 			default:
 				utils.NewError(w, http.StatusInternalServerError, err)
@@ -104,6 +108,8 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	ctx := r.Context()
+
 	// проверяем сессию
 	currentUserID, _, err := utils.GetUserIDFromSession(r, h.auth)
 	if err != nil {
@@ -123,12 +129,12 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	employer, err := h.employer.GetUser(employerID)
+	employer, err := h.employer.GetUser(ctx, employerID)
 	if err != nil {
 		var clientErr entity.ClientError
 		if errors.As(err, &clientErr) {
 			switch {
-			case errors.Is(clientErr.Data, entity.ErrNotFound):
+			case errors.Is(clientErr.Err, entity.ErrNotFound):
 				utils.NewError(w, http.StatusNotFound, err)
 			default:
 				utils.NewError(w, http.StatusInternalServerError, err)

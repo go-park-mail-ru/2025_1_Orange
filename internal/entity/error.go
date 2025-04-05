@@ -6,18 +6,18 @@ import (
 )
 
 type ClientError struct {
-	ErrorMessage string
-	Data         error
+	Message string
+	Err     error
 }
 
 func (err ClientError) Error() string {
-	return fmt.Sprint(err.ErrorMessage)
+	return fmt.Sprint(err.Message)
 }
 
 func NewClientError(msg string, err error) error {
 	return ClientError{
-		ErrorMessage: msg,
-		Data:         err,
+		Message: msg,
+		Err:     err,
 	}
 }
 

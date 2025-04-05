@@ -1,8 +1,8 @@
 package usecase
 
 type Auth interface {
-	Logout(session string) error
-	LogoutAll(userID int, role string) error
-	GetUserIDBySession(session string) (int, string, error)
-	CreateSession(userID int, role string) (string, error)
+	Logout(string) error
+	LogoutAll(int, string) error
+	GetUserIDBySession(string) (int, string, error)
+	CreateSession(int, string) (string, error)
 }

@@ -18,19 +18,19 @@ func NewApplicantService(applicantRepository repository.ApplicantRepository) use
 	}
 }
 
-func (a *ApplicantService) Register(registerDTO *dto.ApplicantRegister) (int, error) {
+func (a *ApplicantService) Register(ctx context.Context, registerDTO *dto.ApplicantRegister) (int, error) {
 	applicant := new(entity.Applicant)
 
 	if err := entity.ValidateEmail(registerDTO.Email); err != nil {
-		return 0, err
+		return -1, err
 	}
 	if err := entity.ValidatePassword(registerDTO.Password); err != nil {
-		return 0, err
+		return -1, err
 	}
 
 	salt, hash, err := entity.HashPassword(registerDTO.Password)
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
 
 	applicant.Email = registerDTO.Email
@@ -39,31 +39,31 @@ func (a *ApplicantService) Register(registerDTO *dto.ApplicantRegister) (int, er
 	applicant.FirstName = registerDTO.FirstName
 	applicant.LastName = registerDTO.LastName
 
-	applicant, err = a.applicantRepository.Create(context.Background(), applicant)
+	applicant, err = a.applicantRepository.Create(ctx, applicant)
 	if err != nil {
 		return -1, err
 	}
 	return applicant.ID, nil
 }
 
-func (a *ApplicantService) Login(loginDTO *dto.ApplicantLogin) (int, error) {
+func (a *ApplicantService) Login(ctx context.Context, loginDTO *dto.ApplicantLogin) (int, error) {
 	if err := entity.ValidateEmail(loginDTO.Email); err != nil {
-		return 0, err
+		return -1, err
 	}
 
-	applicant, err := a.applicantRepository.GetByEmail(context.Background(), loginDTO.Email)
+	applicant, err := a.applicantRepository.GetByEmail(ctx, loginDTO.Email)
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
 
 	if applicant.CheckPassword(loginDTO.Password) {
 		return applicant.ID, nil
 	}
-	return 0, entity.NewClientError("Неверный пароль", entity.ErrForbidden)
+	return -1, entity.NewClientError("Неверный пароль", entity.ErrForbidden)
 }
 
-func (a *ApplicantService) GetUser(applicantID int) (*dto.ApplicantProfile, error) {
-	applicant, err := a.applicantRepository.GetByID(context.Background(), applicantID)
+func (a *ApplicantService) GetUser(ctx context.Context, applicantID int) (*dto.ApplicantProfile, error) {
+	applicant, err := a.applicantRepository.GetByID(ctx, applicantID)
 	if err != nil {
 		return nil, err
 	}

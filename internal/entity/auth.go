@@ -85,7 +85,7 @@ func ValidateEmail(email string) error {
 	if !re.MatchString(email) {
 		return NewClientError("Невалидная почта", ErrBadRequest)
 	}
-	if len(email) > 256 {
+	if len(email) > 255 {
 		return NewClientError("Почта не может быть длиннее 255 символов", ErrBadRequest)
 	}
 	return nil

@@ -41,7 +41,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request, _ httproute
 		return
 	}
 
-	utils.NullifyTokenCookies(w)
+	utils.ClearTokenCookies(w)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -63,6 +63,6 @@ func (h *AuthHandler) LogoutAll(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
-	utils.NullifyTokenCookies(w)
+	utils.ClearTokenCookies(w)
 	w.WriteHeader(http.StatusOK)
 }

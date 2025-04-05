@@ -21,7 +21,7 @@ func GetUserIDFromSession(r *http.Request, auth usecase.Auth) (int, string, erro
 	return userID, role, nil
 }
 
-func NullifyTokenCookies(w http.ResponseWriter) {
+func ClearTokenCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    "",

@@ -1,9 +1,12 @@
 package usecase
 
-import "ResuMatch/internal/entity/dto"
+import (
+	"ResuMatch/internal/entity/dto"
+	"context"
+)
 
 type Employer interface {
-	Register(*dto.EmployerRegister) (int, error)
-	Login(*dto.EmployerLogin) (int, error)
-	GetUser(employerID int) (*dto.EmployerProfile, error)
+	Register(context.Context, *dto.EmployerRegister) (int, error)
+	Login(context.Context, *dto.EmployerLogin) (int, error)
+	GetUser(context.Context, int) (*dto.EmployerProfile, error)
 }

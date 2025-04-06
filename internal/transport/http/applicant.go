@@ -30,11 +30,8 @@ func (h *ApplicantHandler) Configure(r *http.ServeMux) {
 	applicantMux.HandleFunc("POST /register", h.Register)
 	applicantMux.HandleFunc("POST /login", h.Login)
 	applicantMux.HandleFunc("GET /profile/{id}", h.GetProfile)
-<<<<<<< HEAD
 	applicantMux.HandleFunc("PUT /profile", h.UpdateProfile)
 	applicantMux.HandleFunc("POST /avatar", h.UploadAvatar)
-=======
->>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 
 	r.Handle("/applicant/", http.StripPrefix("/applicant", applicantMux))
 }
@@ -158,10 +155,6 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-<<<<<<< HEAD
-=======
-	//requestedID := r.URL.Query().Get("id")
->>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 	requestedID := r.PathValue("id")
 	applicantID, err := strconv.Atoi(requestedID)
 	if err != nil {

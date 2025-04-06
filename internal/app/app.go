@@ -59,7 +59,11 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to create vacancy repository: %v", err)
 	}
 
+<<<<<<< HEAD
 	specializationRepo, err := postgres.NewSpecializationRepository(specializationConn)
+=======
+	employerRepo, err := postgres.NewEmployerRepository(cfg.Postgres)
+>>>>>>> bf20f5c (Fixed error handling.)
 	if err != nil {
 		l.Log.Errorf("Failed to create specialization repository: %v", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"context"
+	"fmt"
 )
 
 type EmployerService struct {
@@ -58,7 +59,10 @@ func (e *EmployerService) Login(ctx context.Context, loginDTO *dto.EmployerLogin
 	if employer.CheckPassword(loginDTO.Password) {
 		return employer.ID, nil
 	}
-	return -1, entity.NewClientError("Неверный пароль", entity.ErrForbidden)
+	return -1, entity.NewError(
+		entity.ErrForbidden,
+		fmt.Errorf("неверный пароль"),
+	)
 }
 
 func (e *EmployerService) GetUser(ctx context.Context, employerID int) (*dto.EmployerProfile, error) {

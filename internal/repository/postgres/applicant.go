@@ -15,23 +15,39 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ApplicantDB struct {
+type ApplicantRepository struct {
 	DB *sql.DB
 }
 
 func NewApplicantRepository(cfg config.PostgresConfig) (repository.ApplicantRepository, error) {
 	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {
-		return nil, entity.NewClientError("failed to connect to PostgreSQL", entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("не удалось установить соединение с PostgreSQL из ApplicantRepository")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось установить соединение PostgreSQL из ApplicantRepository: %w", err),
+		)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, entity.NewClientError("failed to ping PostgreSQL", entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("не удалось выполнить ping PostgreSQL из ApplicantRepository")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось выполнить ping PostgreSQL из ApplicantRepository: %w", err),
+		)
 	}
-	return &ApplicantDB{DB: db}, nil
+	return &ApplicantRepository{DB: db}, nil
 }
 
-func (r *ApplicantDB) Create(ctx context.Context, applicant *entity.Applicant) (*entity.Applicant, error) {
+func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Applicant) (*entity.Applicant, error) {
+	requestID := middleware.GetRequestID(ctx)
+
 	query := `
         INSERT INTO applicant (email, password_hashed, password_salt, first_name, last_name)
         VALUES ($1, $2, $3, $4, $5)
@@ -59,21 +75,43 @@ func (r *ApplicantDB) Create(ctx context.Context, applicant *entity.Applicant) (
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
 			case "23505": // Уникальное ограничение
-				return nil, entity.NewClientError("Соискатель с таким email уже зарегистрирован", entity.ErrAlreadyExists)
+				return nil, entity.NewError(
+					entity.ErrAlreadyExists,
+					fmt.Errorf("соискатель с таким email уже зарегистрирован"),
+				)
 			case "23502": // NOT NULL ограничение
-				return nil, entity.NewClientError("Обязательное поле отсутствует", entity.ErrBadRequest)
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("обязательное поле отсутствует"),
+				)
 			case "22P02": // Ошибка типа данных
-				return nil, entity.NewClientError("Некорректный формат данных", entity.ErrBadRequest)
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильный формат данных"),
+				)
+			case "23514": // Ошибка constraint
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильные данные"),
+				)
 			}
 		}
 
-		return nil, entity.NewClientError("Ошибка создания соискателя", entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при создании соискателя")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при создании соискателя: %w", err),
+		)
 	}
 
 	return &createdApplicant, nil
 }
 
-func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
+func (r *ApplicantRepository) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
 	requestID := middleware.GetRequestID(ctx)
 
 	query := `
@@ -94,20 +132,28 @@ func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, e
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entity.NewClientError(fmt.Sprintf("applicant with id=%d not found", id), entity.ErrNotFound)
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("соискатель с id=%d не найден", id),
+			)
 		}
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        id,
 			"error":     err,
-		}).Error("Failed to get Applicant from DB")
-		return nil, entity.NewClientError(fmt.Sprintf("failed to get Applicant with id=%d", id), entity.ErrPostgres)
+		}).Error("не удалось найти соискателя по id")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось получить соискателя по id=%d", id),
+		)
 	}
 
 	return &applicant, nil
 }
 
-func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
+func (r *ApplicantRepository) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
 	requestID := middleware.GetRequestID(ctx)
 
 	query := `
@@ -128,20 +174,28 @@ func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.App
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entity.NewClientError(fmt.Sprintf("applicant with email=%s not found", email), entity.ErrNotFound)
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("соискатель с email=%s не найден", email),
+			)
 		}
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        applicant.ID,
+			"email":     email,
 			"error":     err,
-		}).Error("Failed to get Applicant from DB")
-		return nil, entity.NewClientError(fmt.Sprintf("failed to get Applicant with email=%s", email), entity.ErrPostgres)
+		}).Error("не удалось найти соискателя по email")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось найти соискателя с email=%s", email),
+		)
 	}
 
 	return &applicant, nil
 }
 
-func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) error {
+func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Applicant) error {
 	requestID := middleware.GetRequestID(ctx)
 
 	query := `
@@ -169,19 +223,38 @@ func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) e
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
 			case "23505": // Уникальное ограничение
-				return entity.NewClientError("Соискатель с таким email уже зарегистрирован", entity.ErrAlreadyExists)
+				return entity.NewError(
+					entity.ErrAlreadyExists,
+					fmt.Errorf("соискатель с таким email уже зарегистрирован"),
+				)
 			case "23502": // NOT NULL ограничение
-				return entity.NewClientError("Обязательное поле отсутствует", entity.ErrBadRequest)
+				return entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("обязательное поле отсутствует"),
+				)
 			case "22P02": // Ошибка типа данных
-				return entity.NewClientError("Некорректный формат данных", entity.ErrBadRequest)
+				return entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильный формат данных"),
+				)
+			case "23514": // Ошибка constraint
+				return entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильные данные"),
+				)
 			}
 		}
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        applicant.ID,
 			"error":     err,
-		}).Error("Failed to update Applicant")
-		return entity.NewClientError(fmt.Sprintf("failed to update Applicant with id=%d", applicant.ID), entity.ErrPostgres)
+		}).Error("не удалось обновить соискателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось обновить соискателя с id=%d", applicant.ID),
+		)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -190,8 +263,12 @@ func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) e
 			"requestID": requestID,
 			"id":        applicant.ID,
 			"error":     err,
-		}).Error("Failed to get rows affected while updating applicant")
-		return entity.NewClientError(fmt.Sprintf("failed to get rows affected while updating applicant with id=%d", applicant.ID), entity.ErrPostgres)
+		}).Error("не удалось получить обновленные строки при обновлении соискателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось получить обновленные строки при обновлении соискателя с id=%d", applicant.ID),
+		)
 	}
 
 	if rowsAffected == 0 {
@@ -199,8 +276,12 @@ func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) e
 			"requestID": requestID,
 			"id":        applicant.ID,
 			"error":     err,
-		}).Error("Failed to find Applicant for update")
-		return entity.NewClientError(fmt.Sprintf("failed to find applicant for update with id=%d", applicant.ID), entity.ErrPostgres)
+		}).Error("не удалось найти при обновлении соискателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось найти при обновлении соискателя с id=%d", applicant.ID),
+		)
 	}
 
 	return nil

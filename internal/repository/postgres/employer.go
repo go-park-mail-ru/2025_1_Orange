@@ -3,32 +3,51 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/middleware"
+	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
-type EmployerDB struct {
+type EmployerRepository struct {
 	DB *sql.DB
 }
 
-func NewEmployerDB(cfg config.PostgresConfig) (*EmployerDB, error) {
+func NewEmployerRepository(cfg config.PostgresConfig) (*EmployerRepository, error) {
 	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {
-		return nil, entity.NewClientError("failed to connect to PostgreSQL", entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("не удалось установить соединение с PostgreSQL из EmployerRepository")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось установить соединение PostgreSQL из EmployerRepository: %w", err),
+		)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, entity.NewClientError("failed to ping PostgreSQL", entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("не удалось выполнить ping PostgreSQL из EmployerRepository")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось выполнить ping PostgreSQL из EmployerRepository: %w", err),
+		)
 	}
 
-	return &EmployerDB{DB: db}, nil
+	return &EmployerRepository{DB: db}, nil
 }
 
-func (r *EmployerDB) Create(ctx context.Context, employer *entity.Employer) (*entity.Employer, error) {
+func (r *EmployerRepository) Create(ctx context.Context, employer *entity.Employer) (*entity.Employer, error) {
+	requestID := middleware.GetRequestID(ctx)
+
 	query := `
 		INSERT INTO employer (email, password_hashed, password_salt, company_name, legal_address)
 		VALUES ($1, $2, $3, $4, $5)
@@ -56,21 +75,45 @@ func (r *EmployerDB) Create(ctx context.Context, employer *entity.Employer) (*en
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
 			case "23505": // Уникальное ограничение
-				return nil, entity.NewClientError("Работодатель с таким email или названием компании уже зарегистрирован", entity.ErrAlreadyExists)
+				return nil, entity.NewError(
+					entity.ErrAlreadyExists,
+					fmt.Errorf("работодатель с таким email уже зарегистрирован"),
+				)
 			case "23502": // NOT NULL ограничение
-				return nil, entity.NewClientError("Обязательное поле отсутствует", entity.ErrBadRequest)
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("обязательное поле отсутствует"),
+				)
 			case "22P02": // Ошибка типа данных
-				return nil, entity.NewClientError("Некорректный формат данных", entity.ErrBadRequest)
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильный формат данных"),
+				)
+			case "23514": // Ошибка constraint
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильные данные"),
+				)
 			}
 		}
 
-		return nil, entity.NewClientError("Ошибка создания работодателя", entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при создании работодателя")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при создании работодателя: %w", err),
+		)
 	}
 
 	return &createdEmployer, nil
 }
 
-func (r *EmployerDB) GetByID(ctx context.Context, id int) (*entity.Employer, error) {
+func (r *EmployerRepository) GetByID(ctx context.Context, id int) (*entity.Employer, error) {
+	requestID := middleware.GetRequestID(ctx)
+
 	query := `
 		SELECT id, email, password_hashed, password_salt, company_name, legal_address
 		FROM employer
@@ -89,15 +132,30 @@ func (r *EmployerDB) GetByID(ctx context.Context, id int) (*entity.Employer, err
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entity.NewClientError(fmt.Sprintf("employer with id=%d not found", id), entity.ErrNotFound)
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("работодатель с id=%d не найден", id),
+			)
 		}
-		return nil, entity.NewClientError(fmt.Sprintf("failed to get Employer with id=%d", id), entity.ErrPostgres)
+
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        id,
+			"error":     err,
+		}).Error("не удалось найти работодателя по id")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось получить работодателя по id=%d", id),
+		)
 	}
 
 	return &employer, nil
 }
 
-func (r *EmployerDB) GetByEmail(ctx context.Context, email string) (*entity.Employer, error) {
+func (r *EmployerRepository) GetByEmail(ctx context.Context, email string) (*entity.Employer, error) {
+	requestID := middleware.GetRequestID(ctx)
+
 	query := `
 		SELECT id, email, password_hashed, password_salt, company_name, legal_address
 		FROM employer
@@ -116,15 +174,30 @@ func (r *EmployerDB) GetByEmail(ctx context.Context, email string) (*entity.Empl
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entity.NewClientError(fmt.Sprintf("employer with email=%s not found", email), entity.ErrNotFound)
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("работодатель с email=%s не найден", email),
+			)
 		}
-		return nil, entity.NewClientError(fmt.Sprintf("failed to get Employer with email=%s", email), entity.ErrPostgres)
+
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"email":     employer.Email,
+			"error":     err,
+		}).Error("не удалось найти работодателя по email")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось найти работодателя с email=%s", email),
+		)
 	}
 
 	return &employer, nil
 }
 
-func (r *EmployerDB) Update(ctx context.Context, employer *entity.Employer) error {
+func (r *EmployerRepository) Update(ctx context.Context, employer *entity.Employer) error {
+	requestID := middleware.GetRequestID(ctx)
+
 	query := `
 		UPDATE employer
 		SET 
@@ -147,19 +220,68 @@ func (r *EmployerDB) Update(ctx context.Context, employer *entity.Employer) erro
 
 	if err != nil {
 		var pqErr *pq.Error
-		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-			return entity.NewClientError("email или название компании уже используется", entity.ErrAlreadyExists)
+		if errors.As(err, &pqErr) {
+			switch pqErr.Code {
+			case "23505": // Уникальное ограничение
+				return entity.NewError(
+					entity.ErrAlreadyExists,
+					fmt.Errorf("работодатель с таким email уже зарегистрирован"),
+				)
+			case "23502": // NOT NULL ограничение
+				return entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("обязательное поле отсутствует"),
+				)
+			case "22P02": // Ошибка типа данных
+				return entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильный формат данных"),
+				)
+			case "23514": // Ошибка constraint
+				return entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильные данные"),
+				)
+			}
 		}
-		return entity.NewClientError(fmt.Sprintf("failed to update Employer with id=%d", employer.ID), entity.ErrPostgres)
+
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        employer.ID,
+			"error":     err,
+		}).Error("не удалось обновить работодателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось обновить работодателя с id=%d", employer.ID),
+		)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return entity.NewClientError(fmt.Sprintf("failed to get rows affected while updating employer with id=%d", employer.ID), entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        employer.ID,
+			"error":     err,
+		}).Error("не удалось получить обновленные строки при обновлении работодателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось получить обновленные строки при обновлении работодателя с id=%d", employer.ID),
+		)
 	}
 
 	if rowsAffected == 0 {
-		return entity.NewClientError(fmt.Sprintf("failed to find employer for update with id=%d", employer.ID), entity.ErrPostgres)
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        employer.ID,
+			"error":     err,
+		}).Error("не удалось найти при обновлении работодателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось найти при обновлении работодателя с id=%d", employer.ID),
+		)
 	}
 
 	return nil

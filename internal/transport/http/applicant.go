@@ -8,8 +8,6 @@ import (
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -39,36 +37,18 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var registerDTO dto.ApplicantRegister
 	if err := json.NewDecoder(r.Body).Decode(&registerDTO); err != nil {
-		fmt.Println("parsing error")
-		utils.NewError(w, http.StatusBadRequest, errors.New("неправильный формат JSON"))
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	applicantID, err := h.applicant.Register(ctx, &registerDTO)
 	if err != nil {
-		var clientErr entity.ClientError
-		if errors.As(err, &clientErr) {
-			switch {
-			case errors.Is(clientErr.Err, entity.ErrBadRequest):
-				utils.NewError(w, http.StatusBadRequest, err)
-			case errors.Is(clientErr.Err, entity.ErrAlreadyExists):
-				utils.NewError(w, http.StatusConflict, err)
-			case errors.Is(clientErr.Err, entity.ErrNotFound):
-				utils.NewError(w, http.StatusNotFound, err)
-			case errors.Is(clientErr.Err, entity.ErrPostgres), errors.Is(clientErr.Err, entity.ErrInternal):
-				utils.NewError(w, http.StatusInternalServerError, err)
-			default:
-				utils.NewError(w, http.StatusInternalServerError, err)
-			}
-
-		} else {
-			utils.NewError(w, http.StatusInternalServerError, err)
-		}
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
 	if err := utils.CreateSession(w, r, h.auth, applicantID, "applicant"); err != nil {
-		utils.NewError(w, http.StatusInternalServerError, err)
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -80,33 +60,18 @@ func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var loginDTO dto.ApplicantLogin
 	if err := json.NewDecoder(r.Body).Decode(&loginDTO); err != nil {
-		utils.NewError(w, http.StatusBadRequest, errors.New("неправильный формат JSON"))
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	applicantID, err := h.applicant.Login(ctx, &loginDTO)
 	if err != nil {
-		var clientErr entity.ClientError
-		if errors.As(err, &clientErr) {
-			switch {
-			case errors.Is(clientErr.Err, entity.ErrForbidden):
-				utils.NewError(w, http.StatusForbidden, err)
-			case errors.Is(clientErr.Err, entity.ErrNotFound):
-				utils.NewError(w, http.StatusNotFound, err)
-			case errors.Is(clientErr.Err, entity.ErrPostgres), errors.Is(clientErr.Err, entity.ErrInternal):
-				utils.NewError(w, http.StatusInternalServerError, err)
-			default:
-				utils.NewError(w, http.StatusInternalServerError, err)
-			}
-
-		} else {
-			utils.NewError(w, http.StatusInternalServerError, err)
-		}
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
 	if err := utils.CreateSession(w, r, h.auth, applicantID, "applicant"); err != nil {
-		utils.NewError(w, http.StatusInternalServerError, err)
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 	middleware.SetCSRFToken(w, r, h.cfg)
@@ -117,42 +82,31 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	// проверяем сессию
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		utils.NewError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
 
 	currentUserID, _, err := h.auth.GetUserIDBySession(cookie.Value)
 	if err != nil {
-		utils.NewError(w, http.StatusUnauthorized, err)
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
-	//requestedID := r.URL.Query().Get("id")
 	requestedID := r.PathValue("id")
 	applicantID, err := strconv.Atoi(requestedID)
 	if err != nil {
-		utils.NewError(w, http.StatusBadRequest, errors.New("неверный id"))
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	if applicantID != currentUserID {
-		utils.NewError(w, http.StatusForbidden, errors.New("нет доступа"))
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
 
 	applicant, err := h.applicant.GetUser(ctx, applicantID)
 	if err != nil {
-		var clientErr entity.ClientError
-		if errors.As(err, &clientErr) {
-			switch {
-			case errors.Is(clientErr.Err, entity.ErrNotFound):
-				utils.NewError(w, http.StatusNotFound, err)
-			default:
-				utils.NewError(w, http.StatusInternalServerError, err)
-			}
-		} else {
-			utils.NewError(w, http.StatusInternalServerError, err)
-		}
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 

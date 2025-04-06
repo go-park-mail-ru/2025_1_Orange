@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"unicode/utf8"
 )
 
@@ -16,11 +17,17 @@ func (e *Employer) Validate() error {
 		return err
 	}
 	if utf8.RuneCountInString(e.CompanyName) > 64 {
-		return NewClientError("Название компании не может быть длиннее 64 символов", ErrBadRequest)
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("название компании не может быть длиннее 64 символов"),
+		)
 	}
 
 	if utf8.RuneCountInString(e.LegalAddress) > 255 {
-		return NewClientError("Юридический адрес компании не может быть длиннее 255 символов", ErrBadRequest)
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("юридический адрес компании не может быть длиннее 255 символов"),
+		)
 	}
 
 	return nil

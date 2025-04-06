@@ -74,7 +74,7 @@ func (r *ApplicantDB) Create(ctx context.Context, applicant *entity.Applicant) (
 }
 
 func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
-	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+	requestID := middleware.GetRequestID(ctx)
 
 	query := `
 		SELECT id, email, password_hashed, password_salt, first_name, last_name
@@ -108,7 +108,7 @@ func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, e
 }
 
 func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
-	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+	requestID := middleware.GetRequestID(ctx)
 
 	query := `
 		SELECT id, email, password_hashed, password_salt, first_name, last_name
@@ -142,7 +142,7 @@ func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.App
 }
 
 func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) error {
-	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+	requestID := middleware.GetRequestID(ctx)
 
 	query := `
 		UPDATE applicant

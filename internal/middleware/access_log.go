@@ -13,8 +13,11 @@ type customResponseWriter struct {
 }
 
 func (c *customResponseWriter) WriteHeader(statusCode int) {
-	c.statusCode = statusCode
-	c.ResponseWriter.WriteHeader(statusCode)
+	// Записываем статус код только если он ещё не установлен
+	if c.statusCode == 0 {
+		c.statusCode = statusCode
+		c.ResponseWriter.WriteHeader(statusCode)
+	}
 }
 
 func AccessLogMiddleware() func(http.Handler) http.Handler {
@@ -25,7 +28,7 @@ func AccessLogMiddleware() func(http.Handler) http.Handler {
 			cw := &customResponseWriter{ResponseWriter: w}
 			next.ServeHTTP(cw, r)
 
-			requestID := r.Header.Get("X-Request-ID")
+			requestID := GetRequestID(r.Context())
 
 			l.Log.WithFields(logrus.Fields{
 				"method":    r.Method,

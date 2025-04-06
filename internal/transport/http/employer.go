@@ -31,8 +31,6 @@ func (h *EmployerHandler) Configure(r *http.ServeMux) {
 	employerMux.HandleFunc("POST /register", h.Register)
 	employerMux.HandleFunc("POST /login", h.Login)
 	employerMux.HandleFunc("GET /profile/{id}", h.GetProfile)
-	employerMux.HandleFunc("PUT /profile", h.UpdateProfile)
-	employerMux.HandleFunc("POST /logo", h.UploadLogo)
 
 	r.Handle("/employer/", http.StripPrefix("/employer", employerMux))
 }
@@ -142,6 +140,16 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+<<<<<<< HEAD
+=======
+	currentUserID, _, err := h.auth.GetUserIDBySession(cookie.Value)
+	if err != nil {
+		utils.NewError(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	//requestedID := r.URL.Query().Get("id")
+>>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 	requestedID := r.PathValue("id")
 	employerID, err := strconv.Atoi(requestedID)
 	if err != nil {

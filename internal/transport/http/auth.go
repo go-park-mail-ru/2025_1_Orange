@@ -4,7 +4,10 @@ import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+<<<<<<< HEAD
 	"ResuMatch/internal/middleware"
+=======
+>>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"encoding/json"
@@ -30,6 +33,7 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 	r.Handle("/auth/", http.StripPrefix("/auth", authMux))
 }
 
+<<<<<<< HEAD
 // IsAuth godoc
 // @Tags Auth
 // @Summary Проверка авторизации
@@ -42,6 +46,10 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 // @Router /auth/isAuth [get]
 func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+=======
+func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+>>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
@@ -49,15 +57,24 @@ func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+<<<<<<< HEAD
 	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+=======
+	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+>>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+<<<<<<< HEAD
 	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: userID, Role: role}); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+=======
+	err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: userID, Role: role})
+	if err != nil {
+>>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 		return
 	}
 }

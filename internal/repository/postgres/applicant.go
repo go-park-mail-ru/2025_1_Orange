@@ -165,8 +165,12 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 	}).Info("выполнение sql-запроса получения соискателя по ID GetApplicantByID")
 =======
 func (r *ApplicantDB) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
+<<<<<<< HEAD
 	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
 >>>>>>> 2e508df (Added logger.)
+=======
+	requestID := middleware.GetRequestID(ctx)
+>>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
@@ -241,8 +245,12 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 	}).Info("выполнение sql-запроса получения соискателя по почте GetApplicantByEmail")
 =======
 func (r *ApplicantDB) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
+<<<<<<< HEAD
 	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
 >>>>>>> 2e508df (Added logger.)
+=======
+	requestID := middleware.GetRequestID(ctx)
+>>>>>>> 3dd0b9d (Fixed isAuth response. Deleted X-Request-ID header, now requestID is generated for every request.)
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
@@ -313,7 +321,7 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 	requestID := utils.GetRequestID(ctx)
 =======
 func (r *ApplicantDB) Update(ctx context.Context, applicant *entity.Applicant) error {
-	requestID, _ := ctx.Value(middleware.GetRequestID(ctx)).(string)
+	requestID := middleware.GetRequestID(ctx)
 
 	query := `
 		UPDATE applicant

@@ -29,7 +29,7 @@ func (h *ApplicantHandler) Configure(r *http.ServeMux) {
 
 	applicantMux.HandleFunc("POST /register", h.Register)
 	applicantMux.HandleFunc("POST /login", h.Login)
-	applicantMux.HandleFunc("GET /profile", h.GetProfile)
+	applicantMux.HandleFunc("GET /profile/{id}", h.GetProfile)
 
 	r.Handle("/applicant/", http.StripPrefix("/applicant", applicantMux))
 }
@@ -127,7 +127,8 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requestedID := r.URL.Query().Get("id")
+	//requestedID := r.URL.Query().Get("id")
+	requestedID := r.PathValue("id")
 	applicantID, err := strconv.Atoi(requestedID)
 	if err != nil {
 		utils.NewError(w, http.StatusBadRequest, errors.New("неверный id"))

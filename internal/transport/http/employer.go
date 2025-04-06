@@ -29,7 +29,7 @@ func (h *EmployerHandler) Configure(r *http.ServeMux) {
 
 	employerMux.HandleFunc("POST /register", h.Register)
 	employerMux.HandleFunc("POST /login", h.Login)
-	employerMux.HandleFunc("GET /profile", h.GetProfile)
+	employerMux.HandleFunc("GET /profile/{id}", h.GetProfile)
 
 	r.Handle("/employer/", http.StripPrefix("/employer", employerMux))
 }
@@ -125,7 +125,8 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requestedID := r.URL.Query().Get("id")
+	//requestedID := r.URL.Query().Get("id")
+	requestedID := r.PathValue("id")
 	employerID, err := strconv.Atoi(requestedID)
 	if err != nil {
 		utils.NewError(w, http.StatusBadRequest, errors.New("неверный id"))

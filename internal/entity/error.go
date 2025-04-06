@@ -18,7 +18,7 @@ type Error struct {
 	appErr error
 }
 
-func NewError(appErr, svcErr error) error {
+func NewError(svcErr, appErr error) error {
 	return Error{
 		svcErr: appErr,
 		appErr: svcErr,

@@ -26,6 +26,10 @@ func NewVacancyRepository(db *sql.DB) (repository.VacancyRepository, error) {
 func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на создание резюме Create")
+
 	query := `
         INSERT INTO vacancy (
             employer_id,
@@ -44,12 +48,28 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
             tasks,
             requirements,
             optional_requirements
-			created_at
-			updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
-        RETURNING id
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        RETURNING 
+            id,
+            employer_id,
+            title,
+            is_active,
+            specialization_id,
+            work_format,
+            employment,
+            schedule,
+            working_hours,
+            salary_from,
+            salary_to,
+            taxes_included,
+            experience,
+            description,
+            tasks,
+            requirements,
+            optional_requirements
     `
+
 	var createdVacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query,
 		vacancy.EmployerID,
@@ -117,7 +137,7 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 			case "23514": // Ошибка constraint
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
-					fmt.Errorf("неправильные данные"),
+					fmt.Errorf("неправильные данные (например, salary_from > salary_to)"),
 				)
 			}
 		}

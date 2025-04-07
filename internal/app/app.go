@@ -29,7 +29,7 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-	authService := service.NewAuthService(sessionRepo)
+	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo)
 	employerService := service.NewEmployerService(employerRepo)
 

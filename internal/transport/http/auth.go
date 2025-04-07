@@ -22,6 +22,7 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 	authMux.HandleFunc("GET /isAuth", h.IsAuth)
 	authMux.HandleFunc("POST /logout", h.Logout)
 	authMux.HandleFunc("POST /logoutAll", h.LogoutAll)
+	authMux.HandleFunc("POST /emailExists", h.EmailExists)
 
 	r.Handle("/auth/", http.StripPrefix("/auth", authMux))
 }
@@ -29,7 +30,7 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 
-	if err != nil || cookie == nil || cookie.Value == "" {
+	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -47,6 +48,29 @@ func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *AuthHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var emailDTO dto.EmailExistsRequest
+	err := json.NewDecoder(r.Body).Decode(&emailDTO)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	response, err := h.auth.EmailExists(ctx, emailDTO.Email)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err != nil {

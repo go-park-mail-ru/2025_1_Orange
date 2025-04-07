@@ -20,8 +20,8 @@ type Error struct {
 
 func NewError(svcErr, appErr error) error {
 	return Error{
-		svcErr: appErr,
-		appErr: svcErr,
+		svcErr: svcErr,
+		appErr: appErr,
 	}
 }
 

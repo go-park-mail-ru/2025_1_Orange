@@ -1,0 +1,35 @@
+http:
+  host: "0.0.0.0"
+  port: "8000"
+  readTimeout: "10s"
+  writeTimeout: "10s"
+  maxHeaderBytes: 1048576
+  corsAllowedOrigins:
+    - "http://localhost:5173"
+
+session:
+  cookieName: "session"
+  lifetime: "24h"
+  httpOnly: true
+  secure: true
+  sameSite: "Strict"
+
+csrf:
+  cookieName: "csrf_token"
+  lifetime: "1h"
+  httpOnly: false
+  secure: true
+  sameSite: "Strict"
+
+postgres:
+  host: "localhost"
+  port: "5432"
+  user: "postgres"
+  dbname: "mydb"
+  sslmode: "disable"
+
+redis:
+  host: "localhost"
+  port: "6379"
+  db: 0
+  ttl: 86400

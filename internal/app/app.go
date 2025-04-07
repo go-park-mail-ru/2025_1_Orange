@@ -28,10 +28,15 @@ func Init(cfg *config.Config) *server.Server {
 		log.Fatalf("Failed to create session repository: %v", err)
 	}
 
+	vacancyRepo, err := postgres.NewVacancyRepository(cfg.Postgres)
+	if err != nil {
+		log.Fatalf("Failed to create vacancy repository: %v", err)
+	}
 	// Use Cases Init
 	authService := service.NewAuthService(sessionRepo)
 	applicantService := service.NewApplicantService(applicantRepo)
 	employerService := service.NewEmployerService(employerRepo)
+	vacancyService := service.NewVacancyService(vacancyRepo)
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService)

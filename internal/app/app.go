@@ -9,26 +9,32 @@ import (
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
+	"log"
 	"net/http"
 )
 
 func Init(cfg *config.Config) *server.Server {
 	// Postgres Connection
-  resumeConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	resumeConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to resume postgres: %v", err)
 	}
-  
-  skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
+
+	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
+	}
+
+	skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to skill postgres: %v", err)
 	}
-  
-  specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
+
+	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to specialization postgres: %v", err)
 	}
-  
+
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to city postgres: %v", err)
@@ -56,9 +62,14 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Repositories Init
-  resumeRepo, err := postgres.NewResumeRepository(resumeConn)
+	resumeRepo, err := postgres.NewResumeRepository(resumeConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create resume repository: %v", err)
+	}
+
+	vacancyRepo, err := postgres.NewVacancyRepository(resumeConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create vacancy repository: %v", err)
 	}
 
 	skillRepo, err := postgres.NewSkillRepository(skillConn)
@@ -96,17 +107,21 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to create session repository: %v", err)
 	}
 
+	vacancyRepo, err := postgres.NewVacancyRepository(cfg.Postgres)
+	if err != nil {
+		log.Fatalf("Failed to create vacancy repository: %v", err)
+	}
 	// Use Cases Init
-	staticService := service.NewStaticService(staticRepo)
-	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
-	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
-	employerService := service.NewEmployerService(employerRepo, staticRepo)
-  resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
+	authService := service.NewAuthService(sessionRepo)
+	applicantService := service.NewApplicantService(applicantRepo)
+	employerService := service.NewEmployerService(employerRepo)
+	vacancyService := service.NewVacancyService(vacancyRepo)
+
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
-  resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
+	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 
 	// Server Init
 	srv := server.NewServer(cfg)

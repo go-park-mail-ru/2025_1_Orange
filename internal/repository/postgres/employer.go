@@ -74,22 +74,22 @@ func (r *EmployerRepository) Create(ctx context.Context, employer *entity.Employ
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
-			case "23505": // Уникальное ограничение
+			case entity.PSQLUniqueViolation: // Уникальное ограничение
 				return nil, entity.NewError(
 					entity.ErrAlreadyExists,
 					fmt.Errorf("работодатель с таким email уже зарегистрирован"),
 				)
-			case "23502": // NOT NULL ограничение
+			case entity.PSQLNotNullViolation: // NOT NULL ограничение
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("обязательное поле отсутствует"),
 				)
-			case "22P02": // Ошибка типа данных
+			case entity.PSQLDatatypeViolation: // Ошибка типа данных
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильный формат данных"),
 				)
-			case "23514": // Ошибка constraint
+			case entity.PSQLCheckViolation: // Ошибка constraint
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
@@ -222,22 +222,22 @@ func (r *EmployerRepository) Update(ctx context.Context, employer *entity.Employ
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
-			case "23505": // Уникальное ограничение
+			case entity.PSQLUniqueViolation: // Уникальное ограничение
 				return entity.NewError(
 					entity.ErrAlreadyExists,
 					fmt.Errorf("работодатель с таким email уже зарегистрирован"),
 				)
-			case "23502": // NOT NULL ограничение
+			case entity.PSQLNotNullViolation: // NOT NULL ограничение
 				return entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("обязательное поле отсутствует"),
 				)
-			case "22P02": // Ошибка типа данных
+			case entity.PSQLDatatypeViolation: // Ошибка типа данных
 				return entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильный формат данных"),
 				)
-			case "23514": // Ошибка constraint
+			case entity.PSQLCheckViolation: // Ошибка constraint
 				return entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),

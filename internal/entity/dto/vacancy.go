@@ -121,4 +121,17 @@ type Vacancy struct {
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
 }
+<<<<<<< HEAD
 >>>>>>> 4bccd34 (Add vacancy repositories)
+=======
+
+const (
+	UserTypeApplicant = "applicant"
+	UserTypeEmployer  = "employer"
+)
+
+type UserFromSession struct {
+	ID       int
+	UserType string
+}
+>>>>>>> 8cdc676 (Add vacancy usecases and handlers)

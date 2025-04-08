@@ -36,12 +36,13 @@ func Init(cfg *config.Config) *server.Server {
 	authService := service.NewAuthService(sessionRepo)
 	applicantService := service.NewApplicantService(applicantRepo)
 	employerService := service.NewEmployerService(employerRepo)
-	vacancyService := service.NewVacancyService(vacancyRepo)
+	vacancyService := service.NewVacanciesService(vacancyRepo)
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, cfg.CSRF)
+	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 
 	// Server Init
 	srv := server.NewServer(cfg)
@@ -51,6 +52,7 @@ func Init(cfg *config.Config) *server.Server {
 		authHandler.Configure(r)
 		applicantHandler.Configure(r)
 		employmentHandler.Configure(r)
+		vacancyHandler.Configure(r)
 	})
 
 	return srv

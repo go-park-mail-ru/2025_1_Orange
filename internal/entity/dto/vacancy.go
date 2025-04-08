@@ -23,3 +23,13 @@ type Vacancy struct {
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
 }
+
+const (
+	UserTypeApplicant = "applicant"
+	UserTypeEmployer  = "employer"
+)
+
+type UserFromSession struct {
+	ID       int
+	UserType string
+}

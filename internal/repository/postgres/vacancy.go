@@ -44,7 +44,7 @@ func NewVacancyRepository(cfg config.PostgresConfig) (*VacancyRepository, error)
 	return &VacancyRepository{DB: db}, nil
 }
 
-func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
+func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy) (int, error) {
 	requestID := middleware.GetRequestID(ctx)
 
 	query := `
@@ -67,27 +67,9 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
             optional_requirements
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-        RETURNING 
-            id,
-            employer_id,
-            title,
-            is_active,
-            specialization_id,
-            work_format,
-            employment,
-            schedule,
-            working_hours,
-            salary_from,
-            salary_to,
-            taxes_included,
-            experience,
-            description,
-            tasks,
-            requirements,
-            optional_requirements
+        RETURNING id
     `
-
-	var createdVacancy entity.Vacancy
+	var id int
 	err := r.DB.QueryRowContext(ctx, query,
 		vacancy.EmployerID,
 		vacancy.Title,
@@ -105,54 +87,36 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 		vacancy.Tasks,
 		vacancy.Requirements,
 		vacancy.OptionalRequirements,
-	).Scan(
-		&createdVacancy.ID,
-		&createdVacancy.EmployerID,
-		&createdVacancy.Title,
-		&createdVacancy.IsActive,
-		&createdVacancy.SpecializationID,
-		&createdVacancy.WorkFormat,
-		&createdVacancy.Employment,
-		&createdVacancy.Schedule,
-		&createdVacancy.WorkingHours,
-		&createdVacancy.SalaryFrom,
-		&createdVacancy.SalaryTo,
-		&createdVacancy.TaxesIncluded,
-		&createdVacancy.Experience,
-		&createdVacancy.Description,
-		&createdVacancy.Tasks,
-		&createdVacancy.Requirements,
-		&createdVacancy.OptionalRequirements,
-	)
+	).Scan(&id)
 
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
 			case "23505": // Уникальное ограничение
-				return nil, entity.NewError(
+				return 0, entity.NewError(
 					entity.ErrAlreadyExists,
 					fmt.Errorf("вакансия с такими параметрами уже существует"),
 				)
 			case "23503": // Ошибка внешнего ключа
-				return nil, entity.NewError(
+				return 0, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("работодатель или специализация с указанным ID не существует"),
 				)
 			case "23502": // NOT NULL ограничение
-				return nil, entity.NewError(
+				return 0, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("обязательное поле отсутствует"),
 				)
 			case "22P02": // Ошибка типа данных
-				return nil, entity.NewError(
+				return 0, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильный формат данных"),
 				)
 			case "23514": // Ошибка constraint
-				return nil, entity.NewError(
+				return 0, entity.NewError(
 					entity.ErrBadRequest,
-					fmt.Errorf("неправильные данные (например, salary_from > salary_to)"),
+					fmt.Errorf("неправильные данные"),
 				)
 			}
 		}
@@ -162,13 +126,13 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 			"error":     err,
 		}).Error("ошибка при создании вакансии")
 
-		return nil, entity.NewError(
+		return 0, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("ошибка при создании вакансии: %w", err),
 		)
 	}
 
-	return &createdVacancy, nil
+	return id, nil
 }
 
 func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacancy, error) {
@@ -220,6 +184,11 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": id,
+			}).Debug("вакансия не найдена")
+
 			return nil, entity.NewError(
 				entity.ErrNotFound,
 				fmt.Errorf("вакансия с id=%d не найдена", id),
@@ -228,13 +197,13 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        id,
+			"vacancyID": id,
 			"error":     err,
-		}).Error("не удалось найти вакансию по id")
+		}).Error("ошибка при получении вакансии")
 
 		return nil, entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось получить вакансию по id=%d", id),
+			fmt.Errorf("ошибка при получении вакансии: %w", err),
 		)
 	}
 
@@ -268,6 +237,7 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
     `
 
 	result, err := r.DB.ExecContext(ctx, query,
+		vacancy.ID,
 		vacancy.Title,
 		vacancy.IsActive,
 		vacancy.EmployerID,
@@ -284,7 +254,6 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 		vacancy.Tasks,
 		vacancy.Requirements,
 		vacancy.OptionalRequirements,
-		vacancy.ID,
 	)
 
 	if err != nil {
@@ -351,7 +320,6 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 			fmt.Errorf("вакансия с id=%d не найдена", vacancy.ID),
 		)
 	}
-
 	return nil
 }
 
@@ -378,8 +346,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
             requirements,
             optional_requirements,
         FROM vacancy
-    `
-
+		`
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
@@ -506,3 +473,265 @@ func (r *VacancyRepository) Delete(ctx context.Context, employerID, vacancyID in
 
 	return nil
 }
+
+func (r *VacancyRepository) GetVacanciesByEmpID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+        SELECT 
+            SELECT 
+            id,
+            title,
+            is_active,
+            employer_id,
+            specialization_id,
+            work_format,
+            employment,
+            schedule,
+            working_hours,
+            salary_from,
+            salary_to,
+            taxes_included,
+            experience,
+            description,
+            tasks,
+            requirements,
+            optional_requirements,
+        FROM vacancy
+        WHERE v.employer_id = $1
+    `
+
+	rows, err := r.DB.QueryContext(ctx, query, employerID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":  requestID,
+			"employerID": employerID,
+			"error":      err,
+		}).Error("не удалось получить вакансии работодателя")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось получить вакансии работодателя: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var vacancies []*entity.Vacancy
+	for rows.Next() {
+		var vacancy entity.Vacancy
+		err := rows.Scan(
+			&vacancy.ID,
+			&vacancy.Title,
+			&vacancy.IsActive,
+			&vacancy.EmployerID,
+			&vacancy.SpecializationID,
+			&vacancy.WorkFormat,
+			&vacancy.Employment,
+			&vacancy.Schedule,
+			&vacancy.WorkingHours,
+			&vacancy.SalaryFrom,
+			&vacancy.SalaryTo,
+			&vacancy.TaxesIncluded,
+			&vacancy.Experience,
+			&vacancy.Description,
+			&vacancy.Tasks,
+			&vacancy.Requirements,
+			&vacancy.OptionalRequirements,
+			&vacancy.CreatedAt,
+			&vacancy.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":  requestID,
+				"employerID": employerID,
+				"error":      err,
+			}).Error("ошибка сканирования вакансии")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка обработки данных вакансии: %w", err),
+			)
+		}
+		vacancies = append(vacancies, &vacancy)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":  requestID,
+			"employerID": employerID,
+			"error":      err,
+		}).Error("ошибка при обработке результатов запроса")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при обработке результатов запроса вакансий: %w", err),
+		)
+	}
+
+	if len(vacancies) == 0 {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":  requestID,
+			"employerID": employerID,
+		}).Debug("вакансии работодателя не найдены")
+
+		return nil, entity.NewError(
+			entity.ErrNotFound,
+			fmt.Errorf("вакансии работодателя не найдены"),
+		)
+	}
+
+	return vacancies, nil
+}
+
+// func (r *VacancyRepository) Unsubscribe(ctx context.Context, vacancyID uint64, applicantID uint64) error {
+// 	requestID := middleware.GetRequestID(ctx)
+
+// 	query := `
+//         DELETE FROM vacancy_subscriber
+//         WHERE vacancy_id = $1 AND applicant_id = $2
+//     `
+
+// 	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
+// 	if err != nil {
+// 		var pqErr *pq.Error
+// 		if errors.As(err, &pqErr) {
+// 			switch pqErr.Code {
+// 			case "23503": // Ошибка внешнего ключа
+// 				return entity.NewError(
+// 					entity.ErrBadRequest,
+// 					fmt.Errorf("вакансия или соискатель с указанными ID не существуют"),
+// 				)
+// 			case "23505": // Уникальное ограничение (если есть)
+// 				return entity.NewError(
+// 					entity.ErrAlreadyExists,
+// 					fmt.Errorf("подписка уже существует"),
+// 				)
+// 			}
+// 		}
+
+// 		l.Log.WithFields(logrus.Fields{
+// 			"requestID":   requestID,
+// 			"vacancyID":   vacancyID,
+// 			"applicantID": applicantID,
+// 			"error":       err,
+// 		}).Error("ошибка при отписке от вакансии")
+
+// 		return entity.NewError(
+// 			entity.ErrInternal,
+// 			fmt.Errorf("не удалось отписаться от вакансии: %w", err),
+// 		)
+// 	}
+
+// 	rowsAffected, err := result.RowsAffected()
+// 	if err != nil {
+// 		l.Log.WithFields(logrus.Fields{
+// 			"requestID":   requestID,
+// 			"vacancyID":   vacancyID,
+// 			"applicantID": applicantID,
+// 			"error":       err,
+// 		}).Error("не удалось проверить количество отписанных строк")
+
+// 		return entity.NewError(
+// 			entity.ErrInternal,
+// 			fmt.Errorf("ошибка при проверке отписки от вакансии: %w", err),
+// 		)
+// 	}
+
+// 	if rowsAffected == 0 {
+// 		l.Log.WithFields(logrus.Fields{
+// 			"requestID":   requestID,
+// 			"vacancyID":   vacancyID,
+// 			"applicantID": applicantID,
+// 		}).Warn("попытка отписаться от несуществующей подписки")
+
+// 		return entity.NewError(
+// 			entity.ErrNotFound,
+// 			fmt.Errorf("подписка на вакансию %d для соискателя %d не найдена", vacancyID, applicantID),
+// 		)
+// 	}
+
+// 	l.Log.WithFields(logrus.Fields{
+// 		"requestID":   requestID,
+// 		"vacancyID":   vacancyID,
+// 		"applicantID": applicantID,
+// 	}).Debug("успешная отписка от вакансии")
+
+// 	return nil
+// }
+
+// func (r *VacancyRepository) Subscribe(ctx context.Context, vacancyID uint64, applicantID uint64) error {
+//     requestID := middleware.GetRequestID(ctx)
+
+//     query := `
+//         INSERT INTO vacancy_subscriber (vacancy_id, applicant_id)
+//         VALUES ($1, $2)
+//         ON CONFLICT (vacancy_id, applicant_id) DO NOTHING
+//     `
+
+//     result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
+//     if err != nil {
+//         var pqErr *pq.Error
+//         if errors.As(err, &pqErr) {
+//             switch pqErr.Code {
+//             case "23503": // Ошибка внешнего ключа
+//                 return entity.NewError(
+//                     entity.ErrBadRequest,
+//                     fmt.Errorf("вакансия или соискатель с указанными ID не существуют"),
+//                 )
+//             case "23505": // Уникальное ограничение (уже обработано ON CONFLICT)
+//                 return entity.NewError(
+//                     entity.ErrAlreadyExists,
+//                     fmt.Errorf("подписка уже существует"),
+//                 )
+//             }
+//         }
+
+//         l.Log.WithFields(logrus.Fields{
+//             "requestID":    requestID,
+//             "vacancyID":    vacancyID,
+//             "applicantID":  applicantID,
+//             "error":        err,
+//         }).Error("ошибка при подписке на вакансию")
+
+//         return entity.NewError(
+//             entity.ErrInternal,
+//             fmt.Errorf("не удалось подписаться на вакансию: %w", err),
+//         )
+//     }
+
+//     rowsAffected, err := result.RowsAffected()
+//     if err != nil {
+//         l.Log.WithFields(logrus.Fields{
+//             "requestID":    requestID,
+//             "vacancyID":    vacancyID,
+//             "applicantID":  applicantID,
+//             "error":        err,
+//         }).Error("не удалось проверить количество добавленных подписок")
+
+//         return entity.NewError(
+//             entity.ErrInternal,
+//             fmt.Errorf("ошибка при проверке подписки на вакансию: %w", err),
+//         )
+//     }
+
+//     if rowsAffected == 0 {
+//         l.Log.WithFields(logrus.Fields{
+//             "requestID":    requestID,
+//             "vacancyID":    vacancyID,
+//             "applicantID":  applicantID,
+//         }).Debug("попытка повторной подписки на вакансию")
+
+//         return entity.NewError(
+//             entity.ErrAlreadyExists,
+//             fmt.Errorf("подписка на вакансию %d уже существует для соискателя %d", vacancyID, applicantID),
+//         )
+//     }
+
+//     l.Log.WithFields(logrus.Fields{
+//         "requestID":    requestID,
+//         "vacancyID":    vacancyID,
+//         "applicantID":  applicantID,
+//     }).Debug("успешная подписка на вакансию")
+
+//     return nil
+// }

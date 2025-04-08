@@ -58,3 +58,20 @@ type WorkExperienceResponse struct {
 	EndDate      string `json:"end_date"`
 	UntilNow     bool   `json:"until_now"`
 }
+
+type UpdateResumeRequest struct {
+	ApplicantID               int                 `json:"applicant_id" validate:"required"`
+	AboutMe                   string              `json:"about_me" validate:"required"`
+	SpecializationID          int                 `json:"specialization_id" validate:"required"`
+	Education                 int                 `json:"education" validate:"required"`
+	EducationalInstitution    string              `json:"educational_institution" validate:"required"`
+	GraduationYear            string              `json:"graduation_year" validate:"required"`
+	Skills                    []int               `json:"skills" validate:"required"`
+	AdditionalSpecializations []int               `json:"additional_specializations"`
+	WorkExperiences           []WorkExperienceDTO `json:"work_experiences"`
+}
+
+type DeleteResumeResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}

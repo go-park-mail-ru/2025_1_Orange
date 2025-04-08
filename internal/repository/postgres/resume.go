@@ -646,3 +646,394 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 
 	return specializations, nil
 }
+
+func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*entity.Resume, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+		UPDATE resume
+		SET 
+			about_me = $1,
+			specialization_id = $2,
+			education = $3,
+			educational_institution = $4,
+			graduation_year = $5,
+			updated_at = NOW()
+		WHERE id = $6 AND applicant_id = $7
+		RETURNING id, applicant_id, about_me, specialization_id, education, 
+				  educational_institution, graduation_year, created_at, updated_at
+	`
+
+	var updatedResume entity.Resume
+	err := r.DB.QueryRowContext(
+		ctx,
+		query,
+		resume.AboutMe,
+		resume.SpecializationID,
+		resume.Education,
+		resume.EducationalInstitution,
+		resume.GraduationYear,
+		resume.ID,
+		resume.ApplicantID,
+	).Scan(
+		&updatedResume.ID,
+		&updatedResume.ApplicantID,
+		&updatedResume.AboutMe,
+		&updatedResume.SpecializationID,
+		&updatedResume.Education,
+		&updatedResume.EducationalInstitution,
+		&updatedResume.GraduationYear,
+		&updatedResume.CreatedAt,
+		&updatedResume.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    resume.ID,
+				"applicantID": resume.ApplicantID,
+				"error":       err,
+			}).Error("резюме не найдено или не принадлежит указанному соискателю")
+
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("резюме с id=%d не найдено или не принадлежит указанному соискателю", resume.ID),
+			)
+		}
+
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			switch pqErr.Code {
+			case entity.PSQLUniqueViolation:
+				return nil, entity.NewError(
+					entity.ErrAlreadyExists,
+					fmt.Errorf("резюме с такими параметрами уже существует"),
+				)
+			case entity.PSQLNotNullViolation:
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("обязательное поле отсутствует"),
+				)
+			case entity.PSQLDatatypeViolation:
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильный формат данных"),
+				)
+			case entity.PSQLCheckViolation:
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильные данные"),
+				)
+			}
+		}
+
+		l.Log.WithFields(logrus.Fields{
+			"requestID":   requestID,
+			"resumeID":    resume.ID,
+			"applicantID": resume.ApplicantID,
+			"error":       err,
+		}).Error("ошибка при обновлении резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при обновлении резюме: %w", err),
+		)
+	}
+
+	return &updatedResume, nil
+}
+
+func (r *ResumeRepository) Delete(ctx context.Context, id int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+		DELETE FROM resume
+		WHERE id = $1
+	`
+
+	result, err := r.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"resumeID":  id,
+			"error":     err,
+		}).Error("ошибка при удалении резюме")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при удалении резюме: %w", err),
+		)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"resumeID":  id,
+			"error":     err,
+		}).Error("ошибка при получении количества затронутых строк")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении количества затронутых строк: %w", err),
+		)
+	}
+
+	if rowsAffected == 0 {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"resumeID":  id,
+		}).Error("резюме не найдено")
+
+		return entity.NewError(
+			entity.ErrNotFound,
+			fmt.Errorf("резюме с id=%d не найдено", id),
+		)
+	}
+
+	return nil
+}
+
+// DeleteSkills удаляет все навыки резюме
+func (r *ResumeRepository) DeleteSkills(ctx context.Context, resumeID int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+		DELETE FROM resume_skill
+		WHERE resume_id = $1
+	`
+
+	_, err := r.DB.ExecContext(ctx, query, resumeID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"resumeID":  resumeID,
+			"error":     err,
+		}).Error("ошибка при удалении навыков резюме")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при удалении навыков резюме: %w", err),
+		)
+	}
+
+	return nil
+}
+
+// DeleteSpecializations удаляет все специализации резюме
+func (r *ResumeRepository) DeleteSpecializations(ctx context.Context, resumeID int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+		DELETE FROM resume_specialization
+		WHERE resume_id = $1
+	`
+
+	_, err := r.DB.ExecContext(ctx, query, resumeID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"resumeID":  resumeID,
+			"error":     err,
+		}).Error("ошибка при удалении специализаций резюме")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при удалении специализаций резюме: %w", err),
+		)
+	}
+
+	return nil
+}
+
+// DeleteWorkExperiences удаляет весь опыт работы резюме
+func (r *ResumeRepository) DeleteWorkExperiences(ctx context.Context, resumeID int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+		DELETE FROM work_experience
+		WHERE resume_id = $1
+	`
+
+	_, err := r.DB.ExecContext(ctx, query, resumeID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"resumeID":  resumeID,
+			"error":     err,
+		}).Error("ошибка при удалении опыта работы резюме")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при удалении опыта работы резюме: %w", err),
+		)
+	}
+
+	return nil
+}
+
+// UpdateWorkExperience обновляет запись об опыте работы
+func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+		UPDATE work_experience
+		SET 
+			employer_name = $1,
+			position = $2,
+			duties = $3,
+			achievements = $4,
+			start_date = $5,
+			end_date = $6,
+			until_now = $7
+		WHERE id = $8 AND resume_id = $9
+		RETURNING id, resume_id, employer_name, position, duties, 
+				  achievements, start_date, end_date, until_now
+	`
+
+	var endDate sql.NullTime
+	if !workExperience.UntilNow {
+		endDate = sql.NullTime{
+			Time:  workExperience.EndDate,
+			Valid: true,
+		}
+	}
+
+	var updatedWorkExperience entity.WorkExperience
+	err := r.DB.QueryRowContext(
+		ctx,
+		query,
+		workExperience.EmployerName,
+		workExperience.Position,
+		workExperience.Duties,
+		workExperience.Achievements,
+		workExperience.StartDate,
+		endDate,
+		workExperience.UntilNow,
+		workExperience.ID,
+		workExperience.ResumeID,
+	).Scan(
+		&updatedWorkExperience.ID,
+		&updatedWorkExperience.ResumeID,
+		&updatedWorkExperience.EmployerName,
+		&updatedWorkExperience.Position,
+		&updatedWorkExperience.Duties,
+		&updatedWorkExperience.Achievements,
+		&updatedWorkExperience.StartDate,
+		&endDate,
+		&updatedWorkExperience.UntilNow,
+	)
+
+	if endDate.Valid {
+		updatedWorkExperience.EndDate = endDate.Time
+	}
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":        requestID,
+				"workExperienceID": workExperience.ID,
+				"resumeID":         workExperience.ResumeID,
+				"error":            err,
+			}).Error("запись об опыте работы не найдена или не принадлежит указанному резюме")
+
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("запись об опыте работы с id=%d не найдена или не принадлежит указанному резюме", workExperience.ID),
+			)
+		}
+
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			switch pqErr.Code {
+			case entity.PSQLUniqueViolation:
+				return nil, entity.NewError(
+					entity.ErrAlreadyExists,
+					fmt.Errorf("запись об опыте работы с такими параметрами уже существует"),
+				)
+			case entity.PSQLNotNullViolation:
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("обязательное поле отсутствует"),
+				)
+			case entity.PSQLDatatypeViolation:
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильный формат данных"),
+				)
+			case entity.PSQLCheckViolation:
+				return nil, entity.NewError(
+					entity.ErrBadRequest,
+					fmt.Errorf("неправильные данные"),
+				)
+			}
+		}
+
+		l.Log.WithFields(logrus.Fields{
+			"requestID":        requestID,
+			"workExperienceID": workExperience.ID,
+			"resumeID":         workExperience.ResumeID,
+			"error":            err,
+		}).Error("ошибка при обновлении записи об опыте работы")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при обновлении записи об опыте работы: %w", err),
+		)
+	}
+
+	return &updatedWorkExperience, nil
+}
+
+// DeleteWorkExperience удаляет запись об опыте работы
+func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	query := `
+		DELETE FROM work_experience
+		WHERE id = $1
+	`
+
+	result, err := r.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":        requestID,
+			"workExperienceID": id,
+			"error":            err,
+		}).Error("ошибка при удалении записи об опыте работы")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при удалении записи об опыте работы: %w", err),
+		)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":        requestID,
+			"workExperienceID": id,
+			"error":            err,
+		}).Error("ошибка при получении количества затронутых строк")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении количества затронутых строк: %w", err),
+		)
+	}
+
+	if rowsAffected == 0 {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":        requestID,
+			"workExperienceID": id,
+		}).Error("запись об опыте работы не найдена")
+
+		return entity.NewError(
+			entity.ErrNotFound,
+			fmt.Errorf("запись об опыте работы с id=%d не найдена", id),
+		)
+	}
+
+	return nil
+}

@@ -14,4 +14,12 @@ type ResumeRepository interface {
 	GetSkillsByResumeID(ctx context.Context, resumeID int) ([]entity.Skill, error)
 	GetSpecializationsByResumeID(ctx context.Context, resumeID int) ([]entity.Specialization, error)
 	GetWorkExperienceByResumeID(ctx context.Context, resumeID int) ([]entity.WorkExperience, error)
+	// Новые методы
+	Update(ctx context.Context, resume *entity.Resume) (*entity.Resume, error)
+	Delete(ctx context.Context, id int) error
+	DeleteSkills(ctx context.Context, resumeID int) error
+	DeleteSpecializations(ctx context.Context, resumeID int) error
+	DeleteWorkExperiences(ctx context.Context, resumeID int) error
+	UpdateWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error)
+	DeleteWorkExperience(ctx context.Context, id int) error
 }

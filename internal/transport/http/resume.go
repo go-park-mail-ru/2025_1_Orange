@@ -27,6 +27,10 @@ func (h *ResumeHandler) Configure(r *http.ServeMux) {
 	resumeMux.HandleFunc("POST /create", h.CreateResume)
 	resumeMux.HandleFunc("GET /{id}", h.GetResume)
 
+	// Новые обработчики
+	resumeMux.HandleFunc("PUT /{id}", h.UpdateResume)
+	resumeMux.HandleFunc("DELETE /{id}", h.DeleteResume)
+
 	r.Handle("/resume/", http.StripPrefix("/resume", resumeMux))
 }
 
@@ -103,6 +107,111 @@ func (h *ResumeHandler) GetResume(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resume); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Проверяем авторизацию
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Проверяем, что пользователь - соискатель
+	if role != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	// Получаем ID резюме из URL
+	resumeIDStr := r.PathValue("id")
+	resumeID, err := strconv.Atoi(resumeIDStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Декодируем запрос
+	var updateResumeRequest dto.UpdateResumeRequest
+	if err := json.NewDecoder(r.Body).Decode(&updateResumeRequest); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Проверяем, что пользователь обновляет свое резюме
+	if updateResumeRequest.ApplicantID != userID {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	// Обновляем резюме
+	resume, err := h.resume.Update(ctx, resumeID, &updateResumeRequest)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Отправляем ответ
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resume); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Проверяем авторизацию
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Проверяем, что пользователь - соискатель
+	if role != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	// Получаем ID резюме из URL
+	resumeIDStr := r.PathValue("id")
+	resumeID, err := strconv.Atoi(resumeIDStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Удаляем резюме
+	response, err := h.resume.Delete(ctx, resumeID, userID)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Отправляем ответ
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

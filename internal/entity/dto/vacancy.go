@@ -92,3 +92,7 @@ type DeleteVacancy struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
+
+type ApplyToVacancyRequest struct {
+	ResumeID int `json:"resume_id"`
+}

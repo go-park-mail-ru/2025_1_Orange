@@ -115,13 +115,13 @@ func Init(cfg *config.Config) *server.Server {
 	authService := service.NewAuthService(sessionRepo)
 	applicantService := service.NewApplicantService(applicantRepo)
 	employerService := service.NewEmployerService(employerRepo)
-	vacancyService := service.NewVacancyService(vacancyRepo)
+	vacancyService := service.NewVacanciesService(vacancyRepo)
 
 	// Transport Init
-	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
-	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
-	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
-	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
+	authHandler := handler.NewAuthHandler(authService)
+	applicantHandler := handler.NewApplicantHandler(authService, applicantService, cfg.CSRF)
+	employmentHandler := handler.NewEmployerHandler(authService, employerService, cfg.CSRF)
+	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 
 	// Server Init
 	srv := server.NewServer(cfg)
@@ -131,7 +131,7 @@ func Init(cfg *config.Config) *server.Server {
 		authHandler.Configure(r)
 		applicantHandler.Configure(r)
 		employmentHandler.Configure(r)
-		resumeHandler.Configure(r)
+		vacancyHandler.Configure(r)
 	})
 
 	return srv

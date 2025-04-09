@@ -25,13 +25,16 @@ func ToAPIError(err error) APIError {
 	var apiError APIError
 	var customError entity.Error
 	if errors.As(err, &customError) {
-		apiError.Message = customError.AppErr().Error()
-		svcError := customError.SvcErr()
+		apiError.Message = customError.InternalErr().Error()
+		svcError := customError.ClientErr()
 		if status, found := errorToStatus[svcError]; found {
 			apiError.Status = status
 		} else {
 			apiError.Status = http.StatusInternalServerError
 		}
+	} else {
+		apiError.Message = "internal server error"
+		apiError.Status = http.StatusInternalServerError
 	}
 	return apiError
 }

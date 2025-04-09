@@ -3,8 +3,8 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -46,7 +46,7 @@ func NewApplicantRepository(cfg config.PostgresConfig) (repository.ApplicantRepo
 }
 
 func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Applicant) (*entity.Applicant, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
         INSERT INTO applicant (email, password_hashed, password_salt, first_name, last_name)
@@ -112,7 +112,7 @@ func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Appl
 }
 
 func (r *ApplicantRepository) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		SELECT id, email, password_hashed, password_salt, first_name, last_name
@@ -154,7 +154,7 @@ func (r *ApplicantRepository) GetByID(ctx context.Context, id int) (*entity.Appl
 }
 
 func (r *ApplicantRepository) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		SELECT id, email, password_hashed, password_salt, first_name, last_name
@@ -196,7 +196,7 @@ func (r *ApplicantRepository) GetByEmail(ctx context.Context, email string) (*en
 }
 
 func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Applicant) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		UPDATE applicant

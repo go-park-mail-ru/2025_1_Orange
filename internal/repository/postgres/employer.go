@@ -3,7 +3,7 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -46,7 +46,7 @@ func NewEmployerRepository(cfg config.PostgresConfig) (*EmployerRepository, erro
 }
 
 func (r *EmployerRepository) Create(ctx context.Context, employer *entity.Employer) (*entity.Employer, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		INSERT INTO employer (email, password_hashed, password_salt, company_name, legal_address)
@@ -112,7 +112,7 @@ func (r *EmployerRepository) Create(ctx context.Context, employer *entity.Employ
 }
 
 func (r *EmployerRepository) GetByID(ctx context.Context, id int) (*entity.Employer, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		SELECT id, email, password_hashed, password_salt, company_name, legal_address
@@ -154,7 +154,7 @@ func (r *EmployerRepository) GetByID(ctx context.Context, id int) (*entity.Emplo
 }
 
 func (r *EmployerRepository) GetByEmail(ctx context.Context, email string) (*entity.Employer, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		SELECT id, email, password_hashed, password_salt, company_name, legal_address
@@ -196,7 +196,7 @@ func (r *EmployerRepository) GetByEmail(ctx context.Context, email string) (*ent
 }
 
 func (r *EmployerRepository) Update(ctx context.Context, employer *entity.Employer) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		UPDATE employer

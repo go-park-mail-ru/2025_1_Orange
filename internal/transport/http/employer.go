@@ -81,7 +81,7 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// проверяем сессию
 	cookie, err := r.Cookie("session")
-	if err != nil {
+	if err != nil || cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}

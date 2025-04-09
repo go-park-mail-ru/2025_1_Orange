@@ -3,8 +3,8 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -44,7 +44,7 @@ func NewCityRepository(cfg config.PostgresConfig) (repository.CityRepository, er
 }
 
 func (r *CityRepository) GetByID(ctx context.Context, id int) (*entity.City, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `SELECT id, name FROM city WHERE id = $1`
 	var city entity.City
@@ -73,7 +73,7 @@ func (r *CityRepository) GetByID(ctx context.Context, id int) (*entity.City, err
 }
 
 func (r *CityRepository) GetAll(ctx context.Context) ([]*entity.City, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `SELECT id, name FROM city ORDER BY name ASC`
 	rows, err := r.DB.QueryContext(ctx, query)
@@ -108,7 +108,7 @@ func (r *CityRepository) GetAll(ctx context.Context) ([]*entity.City, error) {
 }
 
 func (r *CityRepository) GetByName(ctx context.Context, name string) (*entity.City, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `SELECT id, name FROM city WHERE name = $1`
 	var city entity.City

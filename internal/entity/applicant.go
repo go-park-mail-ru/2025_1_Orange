@@ -30,7 +30,7 @@ type Applicant struct {
 	Sex          string          `db:"sex"` // "M" или "F"
 	Status       ApplicantStatus `db:"status"`
 	Quote        string          `db:"quote"`
-	AvatarPath   string          `db:"avatar_path"`
+	AvatarID     int             `db:"avatar_id"`
 	PasswordHash []byte          `db:"-"`
 	PasswordSalt []byte          `db:"-"`
 	CreatedAt    time.Time       `db:"created_at"`

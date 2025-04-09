@@ -11,12 +11,38 @@ import (
 
 type EmployerService struct {
 	employerRepository repository.EmployerRepository
+	staticRepository   repository.StaticRepository
 }
 
-func NewEmployerService(employerRepository repository.EmployerRepository) usecase.Employer {
+func NewEmployerService(employerRepository repository.EmployerRepository, staticRepository repository.StaticRepository) usecase.Employer {
 	return &EmployerService{
 		employerRepository: employerRepository,
+		staticRepository:   staticRepository,
 	}
+}
+
+func (e *EmployerService) employerEntityToDTO(ctx context.Context, employer *entity.Employer) (*dto.EmployerProfileResponse, error) {
+	profile := &dto.EmployerProfileResponse{
+		ID:           employer.ID,
+		CompanyName:  employer.CompanyName,
+		LegalAddress: employer.LegalAddress,
+		Email:        employer.Email,
+		Slogan:       employer.Slogan,
+		Website:      employer.Website,
+		Description:  employer.Description,
+		CreatedAt:    employer.CreatedAt,
+		UpdatedAt:    employer.UpdatedAt,
+	}
+
+	if employer.LogoID > 0 {
+		logo, err := e.staticRepository.GetStatic(ctx, employer.LogoID)
+		if err != nil {
+			return nil, err
+		}
+		profile.LogoPath = logo
+	}
+
+	return profile, nil
 }
 
 func (e *EmployerService) Register(ctx context.Context, registerDTO *dto.EmployerRegister) (int, error) {
@@ -72,15 +98,62 @@ func (e *EmployerService) Login(ctx context.Context, loginDTO *dto.EmployerLogin
 	)
 }
 
-func (e *EmployerService) GetUser(ctx context.Context, employerID int) (*dto.EmployerProfile, error) {
+func (e *EmployerService) GetUser(ctx context.Context, employerID int) (*dto.EmployerProfileResponse, error) {
 	employer, err := e.employerRepository.GetEmployerByID(ctx, employerID)
 	if err != nil {
 		return nil, err
 	}
-	return &dto.EmployerProfile{
-		ID:           employer.ID,
-		CompanyName:  employer.CompanyName,
-		Email:        employer.Email,
-		LegalAddress: employer.LegalAddress,
-	}, nil
+	return e.employerEntityToDTO(ctx, employer)
+}
+
+func (e *EmployerService) UpdateProfile(ctx context.Context, userID int, employerDTO *dto.EmployerProfileUpdate) error {
+	updateFields := make(map[string]interface{})
+
+	if employerDTO.CompanyName != "" {
+		if err := entity.ValidateCompanyName(employerDTO.CompanyName); err != nil {
+			return err
+		}
+		updateFields["company_name"] = employerDTO.CompanyName
+	}
+	if employerDTO.LegalAddress != "" {
+		if err := entity.ValidateLegalAddress(employerDTO.LegalAddress); err != nil {
+			return err
+		}
+		updateFields["legal_address"] = employerDTO.LegalAddress
+	}
+	if employerDTO.Slogan != "" {
+		if err := entity.ValidateSlogan(employerDTO.Slogan); err != nil {
+			return err
+		}
+		updateFields["slogan"] = employerDTO.Slogan
+	}
+	if employerDTO.Website != "" {
+		if err := entity.ValidateWebsite(employerDTO.Website); err != nil {
+			return err
+		}
+		updateFields["website"] = employerDTO.Website
+	}
+	if employerDTO.Description != "" {
+		if err := entity.ValidateDescription(employerDTO.Description); err != nil {
+			return err
+		}
+		updateFields["description"] = employerDTO.Description
+	}
+
+	if len(updateFields) == 0 {
+		return entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("no fields to update"),
+		)
+	}
+
+	return e.employerRepository.UpdateEmployer(ctx, userID, updateFields)
+}
+
+func (e *EmployerService) UpdateLogo(ctx context.Context, userID, logoID int) error {
+	err := e.employerRepository.UpdateEmployer(ctx, userID, map[string]interface{}{"logo_id": logoID})
+	if err != nil {
+		return err
+	}
+	return nil
 }

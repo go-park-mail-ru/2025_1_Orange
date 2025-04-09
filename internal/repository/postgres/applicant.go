@@ -31,7 +31,7 @@ type ScanApplicant struct {
 	Sex          sql.NullString
 	Status       sql.NullString
 	Quote        sql.NullString
-	AvatarPath   sql.NullString
+	AvatarID     sql.NullInt64
 	PasswordHash []byte
 	PasswordSalt []byte
 	CreatedAt    sql.NullTime
@@ -50,7 +50,7 @@ func (a *ScanApplicant) GetEntity() *entity.Applicant {
 		Sex:          a.Sex.String,
 		Status:       toApplicantStatus(a.Status),
 		Quote:        a.Quote.String,
-		AvatarPath:   a.AvatarPath.String,
+		AvatarID:     int(a.AvatarID.Int64),
 		PasswordHash: a.PasswordHash,
 		PasswordSalt: a.PasswordSalt,
 		CreatedAt:    a.CreatedAt.Time,
@@ -145,7 +145,7 @@ func (r *ApplicantRepository) CreateApplicant(
 			default:
 				return nil, entity.NewError(
 					entity.ErrInternal,
-					fmt.Errorf("неизвестная ошибка при создании пользователя err=%w", err),
+					fmt.Errorf("неизвестная ошибка при создании соискателя err=%w", err),
 				)
 			}
 		}
@@ -168,7 +168,7 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
-		       birth_date, sex, email, status, quote, avatar_path,
+		       birth_date, sex, email, status, quote, avatar_id,
 		       password_hashed, password_salt, created_at, updated_at
 		FROM applicant WHERE id = $1
 	`
@@ -185,7 +185,7 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 		&scanApplicant.Email,
 		&scanApplicant.Status,
 		&scanApplicant.Quote,
-		&scanApplicant.AvatarPath,
+		&scanApplicant.AvatarID,
 		&scanApplicant.PasswordHash,
 		&scanApplicant.PasswordSalt,
 		&scanApplicant.CreatedAt,
@@ -222,7 +222,7 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
-		       birth_date, sex, email, status, quote, avatar_path,
+		       birth_date, sex, email, status, quote, avatar_id,
 		       password_hashed, password_salt, created_at, updated_at
 		FROM applicant WHERE email = $1
 	`
@@ -239,7 +239,7 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 		&scanApplicant.Email,
 		&scanApplicant.Status,
 		&scanApplicant.Quote,
-		&scanApplicant.AvatarPath,
+		&scanApplicant.AvatarID,
 		&scanApplicant.PasswordHash,
 		&scanApplicant.PasswordSalt,
 		&scanApplicant.CreatedAt,

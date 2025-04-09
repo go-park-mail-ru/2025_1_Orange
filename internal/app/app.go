@@ -18,6 +18,11 @@ func Init(cfg *config.Config) *server.Server {
 		log.Fatalf("Failed to create city repository: %v", err)
 	}
 
+	staticRepo, err := postgres.NewStaticRepository(cfg.Postgres)
+	if err != nil {
+		log.Fatalf("Failed to create static repository: %v", err)
+	}
+
 	applicantRepo, err := postgres.NewApplicantRepository(cfg.Postgres)
 	if err != nil {
 		log.Fatalf("Failed to create applicant repository: %v", err)
@@ -34,14 +39,14 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
+	staticService := service.NewStaticService(staticRepo)
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
-	applicantService := service.NewApplicantService(applicantRepo, cityRepo)
-	employerService := service.NewEmployerService(employerRepo)
-
+	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
+	employerService := service.NewEmployerService(employerRepo, staticRepo)
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService)
-	applicantHandler := handler.NewApplicantHandler(authService, applicantService, cfg.CSRF)
-	employmentHandler := handler.NewEmployerHandler(authService, employerService, cfg.CSRF)
+	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
+	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
 
 	// Server Init
 	srv := server.NewServer(cfg)

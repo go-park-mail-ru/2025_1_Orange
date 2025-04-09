@@ -14,7 +14,7 @@ type Employer struct {
 	Slogan       string    `db:"slogan"`
 	Website      string    `db:"website"`
 	Description  string    `db:"description"`
-	LogoPath     string    `db:"logo_path"`
+	LogoID       int       `db:"logo_id"`
 	PasswordHash []byte    `db:"-"`
 	PasswordSalt []byte    `db:"-"`
 	CreatedAt    time.Time `db:"created_at"`

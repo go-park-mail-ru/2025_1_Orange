@@ -7,25 +7,23 @@ import (
 	"ResuMatch/internal/usecase"
 	"context"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 type ApplicantService struct {
 	applicantRepository repository.ApplicantRepository
 	cityRepository      repository.CityRepository
+	staticRepository    repository.StaticRepository
 }
 
 func NewApplicantService(
 	applicantRepository repository.ApplicantRepository,
 	cityRepository repository.CityRepository,
+	staticRepository repository.StaticRepository,
 ) usecase.Applicant {
 	return &ApplicantService{
 		applicantRepository: applicantRepository,
 		cityRepository:      cityRepository,
+		staticRepository:    staticRepository,
 	}
 }
 
@@ -40,9 +38,16 @@ func (a *ApplicantService) applicantEntityToDTO(ctx context.Context, applicantEn
 		Sex:        applicantEntity.Sex,
 		Status:     string(applicantEntity.Status),
 		Quote:      applicantEntity.Quote,
-		AvatarPath: applicantEntity.AvatarPath,
 		CreatedAt:  applicantEntity.CreatedAt,
 		UpdatedAt:  applicantEntity.UpdatedAt,
+	}
+
+	if applicantEntity.AvatarID > 0 {
+		avatar, err := a.staticRepository.GetStatic(ctx, applicantEntity.AvatarID)
+		if err != nil {
+			return nil, err
+		}
+		profile.AvatarPath = avatar
 	}
 
 	if applicantEntity.CityID > 0 {
@@ -180,40 +185,10 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 	return a.applicantRepository.UpdateApplicant(ctx, userID, updateFields)
 }
 
-func (a *ApplicantService) UploadAvatar(ctx context.Context, userID int, fileHeader *multipart.FileHeader) (*dto.UploadAvatarResponse, error) {
-	if err := entity.ValidateAvatar(fileHeader); err != nil {
-		return nil, err
-	}
-
-	fileExt := strings.ToLower(filepath.Ext(fileHeader.Filename))
-	relativePath := fmt.Sprintf("/img/applicant/%d%s", userID, fileExt)
-	fullPath := filepath.Join("assets", relativePath)
-
-	file, err := fileHeader.Open()
+func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID, avatarID int) error {
+	err := a.applicantRepository.UpdateApplicant(ctx, userID, map[string]interface{}{"avatar_id": avatarID})
 	if err != nil {
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось открыть файл: %w", err),
-		)
+		return err
 	}
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("не удалось прочитать файл: %w", err)
-	}
-
-	if err := os.WriteFile(fullPath, fileBytes, 0644); err != nil {
-		return nil, fmt.Errorf("не удалось сохранить аватар: %w", err)
-	}
-
-	updateFields := map[string]interface{}{
-		"avatar_path": relativePath,
-	}
-
-	if err := a.applicantRepository.UpdateApplicant(ctx, userID, updateFields); err != nil {
-		os.Remove(fullPath)
-		return nil, fmt.Errorf("не удалось обновить путь до аватара: %w", err)
-	}
-	return &dto.UploadAvatarResponse{AvatarPath: relativePath}, nil
+	return nil
 }

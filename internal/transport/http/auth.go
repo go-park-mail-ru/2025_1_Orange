@@ -28,7 +28,7 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 }
 
 func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 
 	if err != nil || cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
@@ -71,7 +71,7 @@ func (h *AuthHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -88,7 +88,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) LogoutAll(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
 		w.WriteHeader(http.StatusOK)
 		return

@@ -13,10 +13,44 @@ import (
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 type EmployerRepository struct {
 	DB *sql.DB
+}
+
+type ScanEmployer struct {
+	ID           int
+	CompanyName  string
+	LegalAddress string
+	Email        string
+	Slogan       sql.NullString
+	Website      sql.NullString
+	Description  sql.NullString
+	LogoID       sql.NullInt64
+	PasswordHash []byte
+	PasswordSalt []byte
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
+}
+
+func (e *ScanEmployer) GetEntity() *entity.Employer {
+	employer := &entity.Employer{
+		ID:           e.ID,
+		CompanyName:  e.CompanyName,
+		LegalAddress: e.LegalAddress,
+		Email:        e.Email,
+		Slogan:       e.Slogan.String,
+		Website:      e.Website.String,
+		Description:  e.Description.String,
+		LogoID:       int(e.LogoID.Int64),
+		PasswordHash: e.PasswordHash,
+		PasswordSalt: e.PasswordSalt,
+		CreatedAt:    e.CreatedAt.Time,
+		UpdatedAt:    e.UpdatedAt.Time,
+	}
+	return employer
 }
 
 func NewEmployerRepository(cfg config.PostgresConfig) (repository.EmployerRepository, error) {
@@ -95,6 +129,11 @@ func (r *EmployerRepository) CreateEmployer(ctx context.Context, email, companyN
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
 				)
+			default:
+				return nil, entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("неизвестная ошибка при создании работодателя err=%w", err),
+				)
 			}
 		}
 
@@ -116,21 +155,29 @@ func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*enti
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, company_name, legal_address
+		SELECT id, email, password_hashed, password_salt, company_name, legal_address,
+		       slogan, website, description, logo_id, created_at, updated_at
 		FROM employer
 		WHERE id = $1
 	`
 
-	var employer entity.Employer
+	scanEmployer := ScanEmployer{}
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
-		&employer.ID,
-		&employer.Email,
-		&employer.PasswordHash,
-		&employer.PasswordSalt,
-		&employer.CompanyName,
-		&employer.LegalAddress,
+		&scanEmployer.ID,
+		&scanEmployer.Email,
+		&scanEmployer.PasswordHash,
+		&scanEmployer.PasswordSalt,
+		&scanEmployer.CompanyName,
+		&scanEmployer.LegalAddress,
+		&scanEmployer.Slogan,
+		&scanEmployer.Website,
+		&scanEmployer.Description,
+		&scanEmployer.LogoID,
+		&scanEmployer.CreatedAt,
+		&scanEmployer.UpdatedAt,
 	)
 
+	employer := scanEmployer.GetEntity()
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
@@ -151,28 +198,36 @@ func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*enti
 		)
 	}
 
-	return &employer, nil
+	return employer, nil
 }
 
 func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email string) (*entity.Employer, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, company_name, legal_address
+		SELECT id, email, password_hashed, password_salt, company_name, legal_address,
+		       slogan, website, description, logo_id, created_at, updated_at
 		FROM employer
 		WHERE email = $1
 	`
 
-	var employer entity.Employer
+	scanEmployer := ScanEmployer{}
 	err := r.DB.QueryRowContext(ctx, query, email).Scan(
-		&employer.ID,
-		&employer.Email,
-		&employer.PasswordHash,
-		&employer.PasswordSalt,
-		&employer.CompanyName,
-		&employer.LegalAddress,
+		&scanEmployer.ID,
+		&scanEmployer.Email,
+		&scanEmployer.PasswordHash,
+		&scanEmployer.PasswordSalt,
+		&scanEmployer.CompanyName,
+		&scanEmployer.LegalAddress,
+		&scanEmployer.Slogan,
+		&scanEmployer.Website,
+		&scanEmployer.Description,
+		&scanEmployer.LogoID,
+		&scanEmployer.CreatedAt,
+		&scanEmployer.UpdatedAt,
 	)
 
+	employer := scanEmployer.GetEntity()
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
@@ -193,31 +248,28 @@ func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email strin
 		)
 	}
 
-	return &employer, nil
+	return employer, nil
 }
 
-func (r *EmployerRepository) UpdateEmployer(ctx context.Context, employer *entity.Employer) error {
+func (r *EmployerRepository) UpdateEmployer(ctx context.Context, userID int, fields map[string]interface{}) error {
 	requestID := utils.GetRequestID(ctx)
 
-	query := `
-		UPDATE employer
-		SET 
-			email = $1,
-			password_hashed = $2,
-			password_salt = $3,
-			company_name = $4,
-			legal_address = $5
-		WHERE id = $6
-	`
+	query := "UPDATE employer SET "
+	setParts := make([]string, 0, len(fields))
+	args := make([]interface{}, 0, len(fields)+1)
+	i := 1
 
-	result, err := r.DB.ExecContext(ctx, query,
-		employer.Email,
-		employer.PasswordHash,
-		employer.PasswordSalt,
-		employer.CompanyName,
-		employer.LegalAddress,
-		employer.ID,
-	)
+	for field, value := range fields {
+		setParts = append(setParts, fmt.Sprintf("%s = $%d", field, i))
+		args = append(args, value)
+		i++
+	}
+
+	query += strings.Join(setParts, ", ")
+	query += fmt.Sprintf(" WHERE id = $%d", i)
+	args = append(args, userID)
+
+	result, err := r.DB.ExecContext(ctx, query, args...)
 
 	if err != nil {
 		var pqErr *pq.Error
@@ -248,13 +300,13 @@ func (r *EmployerRepository) UpdateEmployer(ctx context.Context, employer *entit
 
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        employer.ID,
+			"id":        userID,
 			"error":     err,
 		}).Error("не удалось обновить работодателя")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось обновить работодателя с id=%d", employer.ID),
+			fmt.Errorf("не удалось обновить работодателя с id=%d", userID),
 		)
 	}
 
@@ -262,26 +314,26 @@ func (r *EmployerRepository) UpdateEmployer(ctx context.Context, employer *entit
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        employer.ID,
+			"id":        userID,
 			"error":     err,
 		}).Error("не удалось получить обновленные строки при обновлении работодателя")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось получить обновленные строки при обновлении работодателя с id=%d", employer.ID),
+			fmt.Errorf("не удалось получить обновленные строки при обновлении работодателя с id=%d", userID),
 		)
 	}
 
 	if rowsAffected == 0 {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        employer.ID,
+			"id":        userID,
 			"error":     err,
 		}).Error("не удалось найти при обновлении работодателя")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось найти при обновлении работодателя с id=%d", employer.ID),
+			fmt.Errorf("не удалось найти при обновлении работодателя с id=%d", userID),
 		)
 	}
 

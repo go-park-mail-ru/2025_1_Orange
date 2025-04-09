@@ -41,7 +41,7 @@ func (a *AuthService) EmailExists(ctx context.Context, email string) (*dto.Email
 	}
 
 	var e entity.Error
-	if errors.As(err, &e) && !errors.Is(e.SvcErr(), entity.ErrNotFound) {
+	if errors.As(err, &e) && !errors.Is(e.ClientErr(), entity.ErrNotFound) {
 		return nil, err
 	}
 

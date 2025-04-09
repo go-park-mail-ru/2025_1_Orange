@@ -8,7 +8,7 @@ import (
 
 func ClearTokenCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
+		Name:     "session_id",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
@@ -34,7 +34,6 @@ func CreateSession(w http.ResponseWriter, r *http.Request, auth usecase.Auth, us
 		WriteAPIError(w, ToAPIError(err))
 		return err
 	}
-	// TODO добавить SessionAliveTime в конфиг
 	expirationTime := time.Now().Add(time.Duration(86400) * time.Second)
 	SetSession(w, session, expirationTime)
 	return nil
@@ -42,7 +41,7 @@ func CreateSession(w http.ResponseWriter, r *http.Request, auth usecase.Auth, us
 
 func SetSession(w http.ResponseWriter, value string, expires time.Time) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
+		Name:     "session_id",
 		Value:    value,
 		Path:     "/",
 		Secure:   true,

@@ -28,22 +28,32 @@ func NewResumeService(
 	}
 }
 
+// Create method update
 func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeRequest) (*dto.ResumeResponse, error) {
-	// Проверяем существование специализации
-	specialization, err := s.specializationRepository.GetByID(ctx, request.SpecializationID)
-	if err != nil {
-		return nil, err
+	// Check if specialization exists if provided
+	var specialization *entity.Specialization
+	var err error
+
+	if request.SpecializationID != 0 {
+		specialization, err = s.specializationRepository.GetByID(ctx, request.SpecializationID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// Преобразуем DTO в сущность
-	graduationYear, err := time.Parse("2006-01-02", request.GraduationYear)
-	if err != nil {
-		return nil, entity.NewError(
-			entity.ErrBadRequest,
-			fmt.Errorf("неверный формат даты окончания учебы: %w", err),
-		)
+	// Parse graduation year if provided
+	var graduationYear time.Time
+	if request.GraduationYear != "" {
+		graduationYear, err = time.Parse("2006-01-02", request.GraduationYear)
+		if err != nil {
+			return nil, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("неверный формат даты окончания учебы: %w", err),
+			)
+		}
 	}
 
+	// Create resume entity
 	resume := &entity.Resume{
 		ApplicantID:               request.ApplicantID,
 		AboutMe:                   request.AboutMe,
@@ -55,32 +65,32 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		AdditionalSpecializations: request.AdditionalSpecializations,
 	}
 
-	// Валидируем резюме
+	// Validate resume
 	if err := resume.Validate(); err != nil {
 		return nil, err
 	}
 
-	// Создаем резюме в БД
+	// Create resume in DB
 	createdResume, err := s.resumeRepository.Create(ctx, resume)
 	if err != nil {
 		return nil, err
 	}
 
-	// Добавляем навыки
+	// Add skills if provided
 	if len(request.Skills) > 0 {
 		if err := s.resumeRepository.AddSkills(ctx, createdResume.ID, request.Skills); err != nil {
 			return nil, err
 		}
 	}
 
-	// Добавляем дополнительные специализации
+	// Add additional specializations if provided
 	if len(request.AdditionalSpecializations) > 0 {
 		if err := s.resumeRepository.AddSpecializations(ctx, createdResume.ID, request.AdditionalSpecializations); err != nil {
 			return nil, err
 		}
 	}
 
-	// Добавляем опыт работы
+	// Add work experiences if provided
 	var workExperiences []entity.WorkExperience
 	for _, we := range request.WorkExperiences {
 		startDate, err := time.Parse("2006-01-02", we.StartDate)
@@ -125,36 +135,54 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		workExperiences = append(workExperiences, *createdWorkExperience)
 	}
 
-	// Получаем навыки для ответа
+	// Get skills for response
 	skills, err := s.resumeRepository.GetSkillsByResumeID(ctx, createdResume.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Получаем дополнительные специализации для ответа
+	// Get additional specializations for response
 	additionalSpecializations, err := s.resumeRepository.GetSpecializationsByResumeID(ctx, createdResume.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Формируем ответ
+	// Build response
 	response := &dto.ResumeResponse{
 		ID:                        createdResume.ID,
 		ApplicantID:               createdResume.ApplicantID,
 		AboutMe:                   createdResume.AboutMe,
-		SpecializationID:          createdResume.SpecializationID,
-		SpecializationName:        specialization.Name,
-		Education:                 createdResume.Education,
-		EducationalInstitution:    createdResume.EducationalInstitution,
-		GraduationYear:            createdResume.GraduationYear.Format("2006-01-02"),
-		CreatedAt:                 createdResume.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:                 createdResume.UpdatedAt.Format(time.RFC3339),
 		Skills:                    make([]dto.SkillDTO, 0, len(skills)),
 		AdditionalSpecializations: make([]dto.SpecializationDTO, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
+		CreatedAt:                 createdResume.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:                 createdResume.UpdatedAt.Format(time.RFC3339),
 	}
 
-	// Добавляем навыки в ответ
+	// Add specialization info if exists
+	if createdResume.SpecializationID != 0 {
+		response.SpecializationID = createdResume.SpecializationID
+		if specialization != nil {
+			response.SpecializationName = specialization.Name
+		}
+	}
+
+	// Add education info if exists
+	if createdResume.Education != "" {
+		response.Education = createdResume.Education
+	}
+
+	// Add educational institution if exists
+	if createdResume.EducationalInstitution != "" {
+		response.EducationalInstitution = createdResume.EducationalInstitution
+	}
+
+	// Add graduation year if exists
+	if !createdResume.GraduationYear.IsZero() {
+		response.GraduationYear = createdResume.GraduationYear.Format("2006-01-02")
+	}
+
+	// Add skills to response
 	for _, skill := range skills {
 		response.Skills = append(response.Skills, dto.SkillDTO{
 			ID:   skill.ID,
@@ -162,7 +190,7 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		})
 	}
 
-	// Добавляем дополнительные специализации в ответ
+	// Add additional specializations to response
 	for _, spec := range additionalSpecializations {
 		response.AdditionalSpecializations = append(response.AdditionalSpecializations, dto.SpecializationDTO{
 			ID:   spec.ID,
@@ -170,7 +198,7 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		})
 	}
 
-	// Добавляем опыт работы в ответ
+	// Add work experiences to response
 	for _, we := range workExperiences {
 		workExp := dto.WorkExperienceResponse{
 			ID:           we.ID,
@@ -180,9 +208,10 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 			Achievements: we.Achievements,
 			StartDate:    we.StartDate.Format("2006-01-02"),
 			UntilNow:     we.UntilNow,
+			UpdatedAt:    we.UpdatedAt.Format(time.RFC3339),
 		}
 
-		if !we.UntilNow {
+		if !we.UntilNow && !we.EndDate.IsZero() {
 			workExp.EndDate = we.EndDate.Format("2006-01-02")
 		}
 
@@ -192,55 +221,76 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 	return response, nil
 }
 
+// GetByID method update
 func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeResponse, error) {
-	// Получаем резюме
+	// Get resume
 	resume, err := s.resumeRepository.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Получаем основную специализацию
-	specialization, err := s.specializationRepository.GetByID(ctx, resume.SpecializationID)
-	if err != nil {
-		return nil, err
+	// Get specialization if exists
+	var specializationName string
+	if resume.SpecializationID != 0 {
+		specialization, err := s.specializationRepository.GetByID(ctx, resume.SpecializationID)
+		if err != nil {
+			return nil, err
+		}
+		specializationName = specialization.Name
 	}
 
-	// Получаем навыки
+	// Get skills
 	skills, err := s.resumeRepository.GetSkillsByResumeID(ctx, resume.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Получаем дополнительные специализации
+	// Get additional specializations
 	additionalSpecializations, err := s.resumeRepository.GetSpecializationsByResumeID(ctx, resume.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Получаем опыт работы
+	// Get work experiences
 	workExperiences, err := s.resumeRepository.GetWorkExperienceByResumeID(ctx, resume.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Формируем ответ
+	// Build response
 	response := &dto.ResumeResponse{
 		ID:                        resume.ID,
 		ApplicantID:               resume.ApplicantID,
 		AboutMe:                   resume.AboutMe,
-		SpecializationID:          resume.SpecializationID,
-		SpecializationName:        specialization.Name,
-		Education:                 resume.Education,
-		EducationalInstitution:    resume.EducationalInstitution,
-		GraduationYear:            resume.GraduationYear.Format("2006-01-02"),
-		CreatedAt:                 resume.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:                 resume.UpdatedAt.Format(time.RFC3339),
 		Skills:                    make([]dto.SkillDTO, 0, len(skills)),
 		AdditionalSpecializations: make([]dto.SpecializationDTO, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
+		CreatedAt:                 resume.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:                 resume.UpdatedAt.Format(time.RFC3339),
 	}
 
-	// Добавляем навыки в ответ
+	// Add specialization info if exists
+	if resume.SpecializationID != 0 {
+		response.SpecializationID = resume.SpecializationID
+		response.SpecializationName = specializationName
+	}
+
+	// Add education info if exists
+	if resume.Education != "" {
+		response.Education = resume.Education
+	}
+
+	// Add educational institution if exists
+	if resume.EducationalInstitution != "" {
+		response.EducationalInstitution = resume.EducationalInstitution
+	}
+
+	// Add graduation year if exists
+	if !resume.GraduationYear.IsZero() {
+		response.GraduationYear = resume.GraduationYear.Format("2006-01-02")
+	}
+
+	// Add skills to response
 	for _, skill := range skills {
 		response.Skills = append(response.Skills, dto.SkillDTO{
 			ID:   skill.ID,
@@ -248,7 +298,7 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 		})
 	}
 
-	// Добавляем дополнительные специализации в ответ
+	// Add additional specializations to response
 	for _, spec := range additionalSpecializations {
 		response.AdditionalSpecializations = append(response.AdditionalSpecializations, dto.SpecializationDTO{
 			ID:   spec.ID,
@@ -256,7 +306,7 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 		})
 	}
 
-	// Добавляем опыт работы в ответ
+	// Add work experiences to response
 	for _, we := range workExperiences {
 		workExp := dto.WorkExperienceResponse{
 			ID:           we.ID,
@@ -266,9 +316,10 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 			Achievements: we.Achievements,
 			StartDate:    we.StartDate.Format("2006-01-02"),
 			UntilNow:     we.UntilNow,
+			UpdatedAt:    we.UpdatedAt.Format(time.RFC3339),
 		}
 
-		if !we.UntilNow {
+		if !we.UntilNow && !we.EndDate.IsZero() {
 			workExp.EndDate = we.EndDate.Format("2006-01-02")
 		}
 
@@ -278,15 +329,15 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 	return response, nil
 }
 
-// Update обновляет резюме
+// Update method update
 func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error) {
-	// Проверяем существование резюме
+	// Check if resume exists
 	existingResume, err := s.resumeRepository.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Проверяем, что резюме принадлежит указанному соискателю
+	// Check if resume belongs to the applicant
 	if existingResume.ApplicantID != request.ApplicantID {
 		return nil, entity.NewError(
 			entity.ErrForbidden,
@@ -294,21 +345,28 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		)
 	}
 
-	// Проверяем существование специализации
-	specialization, err := s.specializationRepository.GetByID(ctx, request.SpecializationID)
-	if err != nil {
-		return nil, err
+	// Check if specialization exists if provided
+	var specialization *entity.Specialization
+	if request.SpecializationID != 0 {
+		specialization, err = s.specializationRepository.GetByID(ctx, request.SpecializationID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// Преобразуем DTO в сущность
-	graduationYear, err := time.Parse("2006-01-02", request.GraduationYear)
-	if err != nil {
-		return nil, entity.NewError(
-			entity.ErrBadRequest,
-			fmt.Errorf("неверный формат даты окончания учебы: %w", err),
-		)
+	// Parse graduation year if provided
+	var graduationYear time.Time
+	if request.GraduationYear != "" {
+		graduationYear, err = time.Parse("2006-01-02", request.GraduationYear)
+		if err != nil {
+			return nil, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("неверный формат даты окончания учебы: %w", err),
+			)
+		}
 	}
 
+	// Create resume entity for update
 	resume := &entity.Resume{
 		ID:                        id,
 		ApplicantID:               request.ApplicantID,
@@ -321,19 +379,18 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		AdditionalSpecializations: request.AdditionalSpecializations,
 	}
 
-	// Валидируем резюме
+	// Validate resume
 	if err := resume.Validate(); err != nil {
 		return nil, err
 	}
 
-	// Начинаем транзакцию обновления
-	// 1. Обновляем основную информацию о резюме
+	// Update resume in DB
 	updatedResume, err := s.resumeRepository.Update(ctx, resume)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Удаляем старые навыки и добавляем новые
+	// Update skills
 	if err := s.resumeRepository.DeleteSkills(ctx, id); err != nil {
 		return nil, err
 	}
@@ -343,7 +400,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		}
 	}
 
-	// 3. Удаляем старые специализации и добавляем новые
+	// Update specializations
 	if err := s.resumeRepository.DeleteSpecializations(ctx, id); err != nil {
 		return nil, err
 	}
@@ -353,7 +410,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		}
 	}
 
-	// 4. Удаляем старый опыт работы и добавляем новый
+	// Update work experiences
 	if err := s.resumeRepository.DeleteWorkExperiences(ctx, id); err != nil {
 		return nil, err
 	}
@@ -402,36 +459,54 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		workExperiences = append(workExperiences, *createdWorkExperience)
 	}
 
-	// Получаем навыки для ответа
+	// Get skills for response
 	skills, err := s.resumeRepository.GetSkillsByResumeID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Получаем дополнительные специализации для ответа
+	// Get additional specializations for response
 	additionalSpecializations, err := s.resumeRepository.GetSpecializationsByResumeID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Формируем ответ
+	// Build response
 	response := &dto.ResumeResponse{
 		ID:                        updatedResume.ID,
 		ApplicantID:               updatedResume.ApplicantID,
 		AboutMe:                   updatedResume.AboutMe,
-		SpecializationID:          updatedResume.SpecializationID,
-		SpecializationName:        specialization.Name,
-		Education:                 updatedResume.Education,
-		EducationalInstitution:    updatedResume.EducationalInstitution,
-		GraduationYear:            updatedResume.GraduationYear.Format("2006-01-02"),
-		CreatedAt:                 updatedResume.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:                 updatedResume.UpdatedAt.Format(time.RFC3339),
 		Skills:                    make([]dto.SkillDTO, 0, len(skills)),
 		AdditionalSpecializations: make([]dto.SpecializationDTO, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
+		CreatedAt:                 updatedResume.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:                 updatedResume.UpdatedAt.Format(time.RFC3339),
 	}
 
-	// Добавляем навыки в ответ
+	// Add specialization info if exists
+	if updatedResume.SpecializationID != 0 {
+		response.SpecializationID = updatedResume.SpecializationID
+		if specialization != nil {
+			response.SpecializationName = specialization.Name
+		}
+	}
+
+	// Add education info if exists
+	if updatedResume.Education != "" {
+		response.Education = updatedResume.Education
+	}
+
+	// Add educational institution if exists
+	if updatedResume.EducationalInstitution != "" {
+		response.EducationalInstitution = updatedResume.EducationalInstitution
+	}
+
+	// Add graduation year if exists
+	if !updatedResume.GraduationYear.IsZero() {
+		response.GraduationYear = updatedResume.GraduationYear.Format("2006-01-02")
+	}
+
+	// Add skills to response
 	for _, skill := range skills {
 		response.Skills = append(response.Skills, dto.SkillDTO{
 			ID:   skill.ID,
@@ -439,7 +514,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		})
 	}
 
-	// Добавляем дополнительные специализации в ответ
+	// Add additional specializations to response
 	for _, spec := range additionalSpecializations {
 		response.AdditionalSpecializations = append(response.AdditionalSpecializations, dto.SpecializationDTO{
 			ID:   spec.ID,
@@ -447,7 +522,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		})
 	}
 
-	// Добавляем опыт работы в ответ
+	// Add work experiences to response
 	for _, we := range workExperiences {
 		workExp := dto.WorkExperienceResponse{
 			ID:           we.ID,
@@ -457,9 +532,10 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 			Achievements: we.Achievements,
 			StartDate:    we.StartDate.Format("2006-01-02"),
 			UntilNow:     we.UntilNow,
+			UpdatedAt:    we.UpdatedAt.Format(time.RFC3339),
 		}
 
-		if !we.UntilNow {
+		if !we.UntilNow && !we.EndDate.IsZero() {
 			workExp.EndDate = we.EndDate.Format("2006-01-02")
 		}
 

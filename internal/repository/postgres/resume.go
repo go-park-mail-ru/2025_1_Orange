@@ -224,14 +224,14 @@ func (r *ResumeRepository) AddWorkExperience(ctx context.Context, workExperience
 	query := `
 		INSERT INTO work_experience (
 			resume_id, employer_name, position, duties, 
-			achievements, start_date, end_date, until_now
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			achievements, start_date, end_date, until_now, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
 		RETURNING id, resume_id, employer_name, position, duties, 
-				  achievements, start_date, end_date, until_now
+				  achievements, start_date, end_date, until_now, updated_at
 	`
 
 	var endDate sql.NullTime
-	if !workExperience.UntilNow {
+	if !workExperience.UntilNow && !workExperience.EndDate.IsZero() {
 		endDate = sql.NullTime{
 			Time:  workExperience.EndDate,
 			Valid: true,
@@ -260,6 +260,7 @@ func (r *ResumeRepository) AddWorkExperience(ctx context.Context, workExperience
 		&createdWorkExperience.StartDate,
 		&endDate,
 		&createdWorkExperience.UntilNow,
+		&createdWorkExperience.UpdatedAt,
 	)
 
 	if endDate.Valid {
@@ -417,7 +418,7 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 
 	query := `
 		SELECT id, resume_id, employer_name, position, duties, 
-			   achievements, start_date, end_date, until_now
+			   achievements, start_date, end_date, until_now, updated_at
 		FROM work_experience
 		WHERE resume_id = $1
 		ORDER BY start_date DESC
@@ -453,6 +454,7 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 			&experience.StartDate,
 			&endDate,
 			&experience.UntilNow,
+			&experience.UpdatedAt,
 		); err != nil {
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
@@ -886,14 +888,15 @@ func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperie
 			achievements = $4,
 			start_date = $5,
 			end_date = $6,
-			until_now = $7
+			until_now = $7,
+			updated_at = NOW()
 		WHERE id = $8 AND resume_id = $9
 		RETURNING id, resume_id, employer_name, position, duties, 
-				  achievements, start_date, end_date, until_now
+				  achievements, start_date, end_date, until_now, updated_at
 	`
 
 	var endDate sql.NullTime
-	if !workExperience.UntilNow {
+	if !workExperience.UntilNow && !workExperience.EndDate.IsZero() {
 		endDate = sql.NullTime{
 			Time:  workExperience.EndDate,
 			Valid: true,
@@ -923,6 +926,7 @@ func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperie
 		&updatedWorkExperience.StartDate,
 		&endDate,
 		&updatedWorkExperience.UntilNow,
+		&updatedWorkExperience.UpdatedAt,
 	)
 
 	if endDate.Valid {

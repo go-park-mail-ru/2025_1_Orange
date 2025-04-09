@@ -6,14 +6,26 @@ import (
 	"unicode/utf8"
 )
 
+// EducationType represents the education level enum
+type EducationType string
+
+const (
+	SecondarySchool  EducationType = "secondary_school"
+	IncompleteHigher EducationType = "incomplete_higher"
+	Higher           EducationType = "higher"
+	Bachelor         EducationType = "bachelor"
+	Master           EducationType = "master"
+	PhD              EducationType = "phd"
+)
+
 type Resume struct {
 	ID                        int              `json:"id"`
 	ApplicantID               int              `json:"applicant_id"`
-	AboutMe                   string           `json:"about_me"`
-	SpecializationID          int              `json:"specialization_id"`
-	Education                 int              `json:"education"`
-	EducationalInstitution    string           `json:"educational_institution"`
-	GraduationYear            time.Time        `json:"graduation_year"`
+	AboutMe                   string           `json:"about_me,omitempty"`
+	SpecializationID          int              `json:"specialization_id,omitempty"`
+	Education                 EducationType    `json:"education,omitempty"`
+	EducationalInstitution    string           `json:"educational_institution,omitempty"`
+	GraduationYear            time.Time        `json:"graduation_year,omitempty"`
 	CreatedAt                 time.Time        `json:"created_at"`
 	UpdatedAt                 time.Time        `json:"updated_at"`
 	Skills                    []int            `json:"-"`
@@ -26,11 +38,12 @@ type WorkExperience struct {
 	ResumeID     int       `json:"resume_id"`
 	EmployerName string    `json:"employer_name"`
 	Position     string    `json:"position"`
-	Duties       string    `json:"duties"`
-	Achievements string    `json:"achievements"`
+	Duties       string    `json:"duties,omitempty"`
+	Achievements string    `json:"achievements,omitempty"`
 	StartDate    time.Time `json:"start_date"`
-	EndDate      time.Time `json:"end_date"`
+	EndDate      time.Time `json:"end_date,omitempty"`
 	UntilNow     bool      `json:"until_now"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 func (r *Resume) Validate() error {
@@ -41,31 +54,17 @@ func (r *Resume) Validate() error {
 		)
 	}
 
-	if utf8.RuneCountInString(r.AboutMe) > 2000 {
+	if r.AboutMe != "" && utf8.RuneCountInString(r.AboutMe) > 2000 {
 		return NewError(
 			ErrBadRequest,
 			fmt.Errorf("информация о себе не может быть длиннее 2000 символов"),
 		)
 	}
 
-	if r.SpecializationID <= 0 {
+	if r.SpecializationID < 0 {
 		return NewError(
 			ErrBadRequest,
 			fmt.Errorf("некорректный ID специализации"),
-		)
-	}
-
-	if r.Education < 1 || r.Education > 5 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("некорректный тип образования"),
-		)
-	}
-
-	if utf8.RuneCountInString(r.EducationalInstitution) > 255 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("название учебного заведения не может быть длиннее 255 символов"),
 		)
 	}
 
@@ -73,35 +72,35 @@ func (r *Resume) Validate() error {
 }
 
 func (w *WorkExperience) Validate() error {
-	if utf8.RuneCountInString(w.EmployerName) > 100 {
+	if utf8.RuneCountInString(w.EmployerName) > 64 {
 		return NewError(
 			ErrBadRequest,
-			fmt.Errorf("название работодателя не может быть длиннее 100 символов"),
+			fmt.Errorf("название работодателя не может быть длиннее 64 символов"),
 		)
 	}
 
-	if utf8.RuneCountInString(w.Position) > 100 {
+	if utf8.RuneCountInString(w.Position) > 64 {
 		return NewError(
 			ErrBadRequest,
-			fmt.Errorf("должность не может быть длиннее 100 символов"),
+			fmt.Errorf("должность не может быть длиннее 64 символов"),
 		)
 	}
 
-	if utf8.RuneCountInString(w.Duties) > 1000 {
+	if w.Duties != "" && utf8.RuneCountInString(w.Duties) > 1000 {
 		return NewError(
 			ErrBadRequest,
 			fmt.Errorf("обязанности не могут быть длиннее 1000 символов"),
 		)
 	}
 
-	if utf8.RuneCountInString(w.Achievements) > 1000 {
+	if w.Achievements != "" && utf8.RuneCountInString(w.Achievements) > 1000 {
 		return NewError(
 			ErrBadRequest,
 			fmt.Errorf("достижения не могут быть длиннее 1000 символов"),
 		)
 	}
 
-	if !w.UntilNow && w.EndDate.Before(w.StartDate) {
+	if !w.UntilNow && !w.EndDate.IsZero() && w.EndDate.Before(w.StartDate) {
 		return NewError(
 			ErrBadRequest,
 			fmt.Errorf("дата окончания работы не может быть раньше даты начала"),

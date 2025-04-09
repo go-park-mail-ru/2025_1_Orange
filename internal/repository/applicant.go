@@ -6,8 +6,8 @@ import (
 )
 
 type ApplicantRepository interface {
-	Create(ctx context.Context, applicant *entity.Applicant) (*entity.Applicant, error)
-	GetByID(ctx context.Context, id int) (*entity.Applicant, error)
-	GetByEmail(ctx context.Context, email string) (*entity.Applicant, error)
-	Update(ctx context.Context, applicant *entity.Applicant) error
+	CreateApplicant(ctx context.Context, email, firstName, lastName string, passwordHash, passwordSalt []byte) (*entity.Applicant, error)
+	GetApplicantByID(ctx context.Context, id int) (*entity.Applicant, error)
+	GetApplicantByEmail(ctx context.Context, email string) (*entity.Applicant, error)
+	UpdateApplicant(ctx context.Context, id int, fields map[string]interface{}) error
 }

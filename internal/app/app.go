@@ -13,6 +13,11 @@ import (
 
 func Init(cfg *config.Config) *server.Server {
 	// Repositories Init
+	cityRepo, err := postgres.NewCityRepository(cfg.Postgres)
+	if err != nil {
+		log.Fatalf("Failed to create city repository: %v", err)
+	}
+
 	applicantRepo, err := postgres.NewApplicantRepository(cfg.Postgres)
 	if err != nil {
 		log.Fatalf("Failed to create applicant repository: %v", err)
@@ -30,7 +35,7 @@ func Init(cfg *config.Config) *server.Server {
 
 	// Use Cases Init
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
-	applicantService := service.NewApplicantService(applicantRepo)
+	applicantService := service.NewApplicantService(applicantRepo, cityRepo)
 	employerService := service.NewEmployerService(employerRepo)
 
 	// Transport Init

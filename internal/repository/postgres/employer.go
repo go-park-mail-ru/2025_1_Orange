@@ -3,6 +3,7 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
@@ -18,7 +19,7 @@ type EmployerRepository struct {
 	DB *sql.DB
 }
 
-func NewEmployerRepository(cfg config.PostgresConfig) (*EmployerRepository, error) {
+func NewEmployerRepository(cfg config.PostgresConfig) (repository.EmployerRepository, error) {
 	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
@@ -45,7 +46,7 @@ func NewEmployerRepository(cfg config.PostgresConfig) (*EmployerRepository, erro
 	return &EmployerRepository{DB: db}, nil
 }
 
-func (r *EmployerRepository) Create(ctx context.Context, employer *entity.Employer) (*entity.Employer, error) {
+func (r *EmployerRepository) CreateEmployer(ctx context.Context, email, companyName, legalAddress string, passwordHash, passwordSalt []byte) (*entity.Employer, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -56,11 +57,11 @@ func (r *EmployerRepository) Create(ctx context.Context, employer *entity.Employ
 
 	var createdEmployer entity.Employer
 	err := r.DB.QueryRowContext(ctx, query,
-		employer.Email,
-		employer.PasswordHash,
-		employer.PasswordSalt,
-		employer.CompanyName,
-		employer.LegalAddress,
+		email,
+		passwordHash,
+		passwordSalt,
+		companyName,
+		legalAddress,
 	).Scan(
 		&createdEmployer.ID,
 		&createdEmployer.Email,
@@ -111,7 +112,7 @@ func (r *EmployerRepository) Create(ctx context.Context, employer *entity.Employ
 	return &createdEmployer, nil
 }
 
-func (r *EmployerRepository) GetByID(ctx context.Context, id int) (*entity.Employer, error) {
+func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*entity.Employer, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -153,7 +154,7 @@ func (r *EmployerRepository) GetByID(ctx context.Context, id int) (*entity.Emplo
 	return &employer, nil
 }
 
-func (r *EmployerRepository) GetByEmail(ctx context.Context, email string) (*entity.Employer, error) {
+func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email string) (*entity.Employer, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -182,7 +183,7 @@ func (r *EmployerRepository) GetByEmail(ctx context.Context, email string) (*ent
 
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"email":     employer.Email,
+			"email":     email,
 			"error":     err,
 		}).Error("не удалось найти работодателя по email")
 
@@ -195,7 +196,7 @@ func (r *EmployerRepository) GetByEmail(ctx context.Context, email string) (*ent
 	return &employer, nil
 }
 
-func (r *EmployerRepository) Update(ctx context.Context, employer *entity.Employer) error {
+func (r *EmployerRepository) UpdateEmployer(ctx context.Context, employer *entity.Employer) error {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `

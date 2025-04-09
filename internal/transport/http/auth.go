@@ -42,8 +42,8 @@ func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: userID, Role: role})
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: userID, Role: role}); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
 }
@@ -65,8 +65,7 @@ func (h *AuthHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(response); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

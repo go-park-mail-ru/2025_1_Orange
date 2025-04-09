@@ -113,8 +113,9 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(employer)
-	if err != nil {
+
+	if err = json.NewEncoder(w).Encode(employer); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
 }

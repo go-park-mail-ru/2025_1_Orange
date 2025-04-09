@@ -25,7 +25,16 @@ func (e *EmployerService) Register(ctx context.Context, registerDTO *dto.Employe
 	if err := entity.ValidateEmail(registerDTO.Email); err != nil {
 		return -1, err
 	}
+
 	if err := entity.ValidatePassword(registerDTO.Password); err != nil {
+		return -1, err
+	}
+
+	if err := entity.ValidateCompanyName(registerDTO.CompanyName); err != nil {
+		return -1, err
+	}
+
+	if err := entity.ValidateLegalAddress(registerDTO.LegalAddress); err != nil {
 		return -1, err
 	}
 
@@ -34,13 +43,7 @@ func (e *EmployerService) Register(ctx context.Context, registerDTO *dto.Employe
 		return -1, err
 	}
 
-	employer.Email = registerDTO.Email
-	employer.PasswordHash = hash
-	employer.PasswordSalt = salt
-	employer.CompanyName = registerDTO.CompanyName
-	employer.LegalAddress = registerDTO.LegalAddress
-
-	employer, err = e.employerRepository.Create(ctx, employer)
+	employer, err = e.employerRepository.CreateEmployer(ctx, registerDTO.Email, registerDTO.CompanyName, registerDTO.LegalAddress, hash, salt)
 	if err != nil {
 		return -1, err
 	}
@@ -52,11 +55,15 @@ func (e *EmployerService) Login(ctx context.Context, loginDTO *dto.EmployerLogin
 		return -1, err
 	}
 
-	employer, err := e.employerRepository.GetByEmail(ctx, loginDTO.Email)
+	if err := entity.ValidatePassword(loginDTO.Password); err != nil {
+		return -1, err
+	}
+
+	employer, err := e.employerRepository.GetEmployerByEmail(ctx, loginDTO.Email)
 	if err != nil {
 		return -1, err
 	}
-	if employer.CheckPassword(loginDTO.Password) {
+	if entity.CheckPassword(loginDTO.Password, employer.PasswordHash, employer.PasswordSalt) {
 		return employer.ID, nil
 	}
 	return -1, entity.NewError(
@@ -66,7 +73,7 @@ func (e *EmployerService) Login(ctx context.Context, loginDTO *dto.EmployerLogin
 }
 
 func (e *EmployerService) GetUser(ctx context.Context, employerID int) (*dto.EmployerProfile, error) {
-	employer, err := e.employerRepository.GetByID(ctx, employerID)
+	employer, err := e.employerRepository.GetEmployerByID(ctx, employerID)
 	if err != nil {
 		return nil, err
 	}

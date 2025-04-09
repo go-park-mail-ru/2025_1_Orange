@@ -32,27 +32,25 @@ func (a *AuthService) EmailExists(ctx context.Context, email string) (*dto.Email
 		return nil, err
 	}
 
-	applicant, err := a.applicantRepository.GetByEmail(ctx, email)
+	applicant, err := a.applicantRepository.GetApplicantByEmail(ctx, email)
 	if err == nil && applicant != nil {
 		return &dto.EmailExistsResponse{
 			Exists: true,
 			Role:   "applicant",
 		}, err
 	}
+
 	var e entity.Error
-	if errors.As(err, &e) && !errors.Is(e.ClientErr(), entity.ErrNotFound) {
+	if errors.As(err, &e) && !errors.Is(e.SvcErr(), entity.ErrNotFound) {
 		return nil, err
 	}
 
-	employer, err := a.employerRepository.GetByEmail(ctx, email)
+	employer, err := a.employerRepository.GetEmployerByEmail(ctx, email)
 	if err == nil && employer != nil {
 		return &dto.EmailExistsResponse{
 			Exists: true,
 			Role:   "employer",
 		}, err
-	}
-	if errors.As(err, &e) && !errors.Is(e.ClientErr(), entity.ErrNotFound) {
-		return nil, err
 	}
 
 	return nil, err

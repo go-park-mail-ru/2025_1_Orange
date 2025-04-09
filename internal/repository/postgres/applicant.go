@@ -13,10 +13,57 @@ import (
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 type ApplicantRepository struct {
 	DB *sql.DB
+}
+
+type ScanApplicant struct {
+	ID           int
+	FirstName    string
+	LastName     string
+	MiddleName   sql.NullString
+	Email        string
+	CityID       sql.NullInt64
+	BirthDate    sql.NullTime
+	Sex          sql.NullString
+	Status       sql.NullString
+	Quote        sql.NullString
+	AvatarPath   sql.NullString
+	PasswordHash []byte
+	PasswordSalt []byte
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
+}
+
+func (a *ScanApplicant) GetEntity() *entity.Applicant {
+	applicant := &entity.Applicant{
+		ID:           a.ID,
+		FirstName:    a.FirstName,
+		LastName:     a.LastName,
+		MiddleName:   a.MiddleName.String,
+		BirthDate:    a.BirthDate.Time,
+		Email:        a.Email,
+		CityID:       int(a.CityID.Int64),
+		Sex:          a.Sex.String,
+		Status:       toApplicantStatus(a.Status),
+		Quote:        a.Quote.String,
+		AvatarPath:   a.AvatarPath.String,
+		PasswordHash: a.PasswordHash,
+		PasswordSalt: a.PasswordSalt,
+		CreatedAt:    a.CreatedAt.Time,
+		UpdatedAt:    a.UpdatedAt.Time,
+	}
+	return applicant
+}
+
+func toApplicantStatus(status sql.NullString) entity.ApplicantStatus {
+	if status.Valid {
+		return entity.ApplicantStatus(status.String)
+	}
+	return ""
 }
 
 func NewApplicantRepository(cfg config.PostgresConfig) (repository.ApplicantRepository, error) {
@@ -45,7 +92,8 @@ func NewApplicantRepository(cfg config.PostgresConfig) (repository.ApplicantRepo
 	return &ApplicantRepository{DB: db}, nil
 }
 
-func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Applicant) (*entity.Applicant, error) {
+func (r *ApplicantRepository) CreateApplicant(
+	ctx context.Context, email, firstName, lastName string, passwordHash, passwordSalt []byte) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -56,11 +104,11 @@ func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Appl
 
 	var createdApplicant entity.Applicant
 	err := r.DB.QueryRowContext(ctx, query,
-		applicant.Email,
-		applicant.PasswordHash,
-		applicant.PasswordSalt,
-		applicant.FirstName,
-		applicant.LastName,
+		email,
+		passwordHash,
+		passwordSalt,
+		firstName,
+		lastName,
 	).Scan(
 		&createdApplicant.ID,
 		&createdApplicant.Email,
@@ -94,6 +142,11 @@ func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Appl
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
 				)
+			default:
+				return nil, entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("неизвестная ошибка при создании пользователя err=%w", err),
+				)
 			}
 		}
 
@@ -107,28 +160,39 @@ func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Appl
 			fmt.Errorf("ошибка при создании соискателя: %w", err),
 		)
 	}
-
 	return &createdApplicant, nil
 }
 
-func (r *ApplicantRepository) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
+func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, first_name, last_name
-		FROM applicant
-		WHERE id = $1
+		SELECT id, first_name, last_name, middle_name, city_id, 
+		       birth_date, sex, email, status, quote, avatar_path,
+		       password_hashed, password_salt, created_at, updated_at
+		FROM applicant WHERE id = $1
 	`
 
-	var applicant entity.Applicant
+	scanApplicant := ScanApplicant{}
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
-		&applicant.ID,
-		&applicant.Email,
-		&applicant.PasswordHash,
-		&applicant.PasswordSalt,
-		&applicant.FirstName,
-		&applicant.LastName,
+		&scanApplicant.ID,
+		&scanApplicant.FirstName,
+		&scanApplicant.LastName,
+		&scanApplicant.MiddleName,
+		&scanApplicant.CityID,
+		&scanApplicant.BirthDate,
+		&scanApplicant.Sex,
+		&scanApplicant.Email,
+		&scanApplicant.Status,
+		&scanApplicant.Quote,
+		&scanApplicant.AvatarPath,
+		&scanApplicant.PasswordHash,
+		&scanApplicant.PasswordSalt,
+		&scanApplicant.CreatedAt,
+		&scanApplicant.UpdatedAt,
 	)
+
+	applicant := scanApplicant.GetEntity()
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -150,27 +214,39 @@ func (r *ApplicantRepository) GetByID(ctx context.Context, id int) (*entity.Appl
 		)
 	}
 
-	return &applicant, nil
+	return applicant, nil
 }
 
-func (r *ApplicantRepository) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
+func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, first_name, last_name
-		FROM applicant
-		WHERE email = $1
+		SELECT id, first_name, last_name, middle_name, city_id, 
+		       birth_date, sex, email, status, quote, avatar_path,
+		       password_hashed, password_salt, created_at, updated_at
+		FROM applicant WHERE email = $1
 	`
 
-	var applicant entity.Applicant
+	scanApplicant := ScanApplicant{}
 	err := r.DB.QueryRowContext(ctx, query, email).Scan(
-		&applicant.ID,
-		&applicant.Email,
-		&applicant.PasswordHash,
-		&applicant.PasswordSalt,
-		&applicant.FirstName,
-		&applicant.LastName,
+		&scanApplicant.ID,
+		&scanApplicant.FirstName,
+		&scanApplicant.LastName,
+		&scanApplicant.MiddleName,
+		&scanApplicant.CityID,
+		&scanApplicant.BirthDate,
+		&scanApplicant.Sex,
+		&scanApplicant.Email,
+		&scanApplicant.Status,
+		&scanApplicant.Quote,
+		&scanApplicant.AvatarPath,
+		&scanApplicant.PasswordHash,
+		&scanApplicant.PasswordSalt,
+		&scanApplicant.CreatedAt,
+		&scanApplicant.UpdatedAt,
 	)
+
+	applicant := scanApplicant.GetEntity()
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -192,31 +268,28 @@ func (r *ApplicantRepository) GetByEmail(ctx context.Context, email string) (*en
 		)
 	}
 
-	return &applicant, nil
+	return applicant, nil
 }
 
-func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Applicant) error {
+func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, fields map[string]interface{}) error {
 	requestID := utils.GetRequestID(ctx)
 
-	query := `
-		UPDATE applicant
-		SET 
-			email = $1,
-			password_hashed = $2,
-			password_salt = $3,
-			first_name = $4,
-			last_name = $5
-		WHERE id = $6
-	`
+	query := "UPDATE applicant SET "
+	setParts := make([]string, 0, len(fields))
+	args := make([]interface{}, 0, len(fields)+1)
+	i := 1
 
-	result, err := r.DB.ExecContext(ctx, query,
-		applicant.Email,
-		applicant.PasswordHash,
-		applicant.PasswordSalt,
-		applicant.FirstName,
-		applicant.LastName,
-		applicant.ID,
-	)
+	for field, value := range fields {
+		setParts = append(setParts, fmt.Sprintf("%s = $%d", field, i))
+		args = append(args, value)
+		i++
+	}
+
+	query += strings.Join(setParts, ", ")
+	query += fmt.Sprintf(" WHERE id = $%d", i)
+	args = append(args, userID)
+
+	_, err := r.DB.ExecContext(ctx, query, args...)
 
 	if err != nil {
 		var pqErr *pq.Error
@@ -247,40 +320,13 @@ func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Appl
 
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        applicant.ID,
+			"id":        userID,
 			"error":     err,
 		}).Error("не удалось обновить соискателя")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось обновить соискателя с id=%d", applicant.ID),
-		)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"id":        applicant.ID,
-			"error":     err,
-		}).Error("не удалось получить обновленные строки при обновлении соискателя")
-
-		return entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось получить обновленные строки при обновлении соискателя с id=%d", applicant.ID),
-		)
-	}
-
-	if rowsAffected == 0 {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"id":        applicant.ID,
-			"error":     err,
-		}).Error("не удалось найти при обновлении соискателя")
-
-		return entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось найти при обновлении соискателя с id=%d", applicant.ID),
+			fmt.Errorf("не удалось обновить соискателя с id=%d", userID),
 		)
 	}
 

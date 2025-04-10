@@ -28,7 +28,3 @@ type ApplicantProfileUpdate struct {
 	Status     string    `json:"status"`
 	Quote      string    `json:"quote"`
 }
-
-type UploadAvatarResponse struct {
-	AvatarPath string `json:"avatar_path"`
-}

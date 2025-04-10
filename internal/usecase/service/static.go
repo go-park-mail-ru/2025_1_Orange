@@ -2,6 +2,7 @@ package service
 
 import (
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"bytes"
@@ -21,7 +22,7 @@ type StaticService struct {
 var allowedTypes = map[string]string{
 	"image/jpeg": ".jpg",
 	"image/png":  ".png",
-	//"image/webp": ".webp",
+	// "image/webp": ".webp",
 }
 
 func NewStaticService(staticRepository repository.StaticRepository) usecase.Static {
@@ -30,29 +31,34 @@ func NewStaticService(staticRepository repository.StaticRepository) usecase.Stat
 	}
 }
 
-func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (int, error) {
+func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (*dto.UploadStaticResponse, error) {
 	const maxFileSize = 5 << 20
 	if len(data) > maxFileSize {
-		return -1, entity.NewError(entity.ErrBadRequest, fmt.Errorf("размер файла превышает 5MB"))
+		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("размер файла превышает 5MB"))
 	}
 
 	contentType := http.DetectContentType(data)
 	ext, allowed := allowedTypes[contentType]
 	if !allowed {
-		return -1, entity.NewError(entity.ErrBadRequest, fmt.Errorf("недопустимый формат файла"))
+		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("недопустимый формат файла"))
 	}
 
 	if err := s.validateImageContent(data, contentType); err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	fileName := uuid.New().String() + ext
 	filePath := "assets/img"
-	id, err := s.staticRepository.UploadStatic(ctx, filePath, fileName, data)
+	static, err := s.staticRepository.UploadStatic(ctx, filePath, fileName, data)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
-	return id, nil
+	return &dto.UploadStaticResponse{
+		ID:        static.ID,
+		Path:      fmt.Sprintf("%s/%s", static.FilePath, static.FileName),
+		CreatedAt: static.CreatedAt,
+		UpdatedAt: static.UpdatedAt,
+	}, nil
 }
 
 func (s *StaticService) validateImageContent(data []byte, contentType string) error {

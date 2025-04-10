@@ -22,7 +22,3 @@ type EmployerProfileUpdate struct {
 	Website      string `json:"website"`
 	Description  string `json:"description"`
 }
-
-type UploadLogoResponse struct {
-	LogoPath string `json:"logo_path"`
-}

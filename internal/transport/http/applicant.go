@@ -36,6 +36,20 @@ func (h *ApplicantHandler) Configure(r *http.ServeMux) {
 	r.Handle("/applicant/", http.StripPrefix("/applicant", applicantMux))
 }
 
+// Register godoc
+// @Tags Applicant
+// @Summary Регистрация соискателя
+// @Accept json
+// @Produce json
+// @Param registerData body dto.ApplicantRegister true "Данные для регистрации"
+// @Header 200 {string} Set-Cookie "Сессионные cookies"
+// @Header 200 {string} X-CSRF-Token "CSRF-токен"
+// @Success 200
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 409 {object} utils.APIError "Пользователь уже существует"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /applicant/register [post]
+// @Security csrf_token
 func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -60,14 +74,14 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login godoc
-// @Tags Авторизация
-// @Summary Авторизация пользователя
-// @Description Авторизация пользователя. При успешной авторизации отправляет куки с сессией.
+// @Tags Applicant
+// @Summary Авторизация соискателя
+// @Description Авторизация соискателя. При успешной авторизации отправляет куки с сессией.
 // Если пользователь уже авторизован, предыдущие cookies с сессией перезаписываются.
 // Также устанавливает CSRF-токен при успешной авторизации.
 // @Accept json
 // @Produce json
-// @Param loginData body dto.ApplicantLogin true "Данные для входа (email и пароль)"
+// @Param loginData body dto.ApplicantLogin true "Данные для авторизации (email и пароль)"
 // @Header 200 {string} Set-Cookie "Сессионные cookies"
 // @Header 200 {string} X-CSRF-Token "CSRF-токен"
 // @Success 200
@@ -76,7 +90,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} utils.APIError "Пользователь не найден"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /applicant/login [post]
-// @Security _csrf
+// @Security csrf_token
 func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -99,6 +113,20 @@ func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
+// GetProfile godoc
+// @Tags Applicant
+// @Summary Получить профиль соискателя
+// @Description Возвращает профиль соискателя по ID. Требует авторизации. Доступен только для владельца профиля.
+// @Produce json
+// @Param id path int true "ID соискателя"
+// @Success 200 {object} dto.ApplicantProfileResponse "Профиль соискателя"
+// @Failure 400 {object} utils.APIError "Неверный ID"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Нет доступа к этому профилю"
+// @Failure 404 {object} utils.APIError "Профиль не найден"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /applicant/profile/{id} [get]
+// @Security session_cookie
 func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// проверяем сессию
@@ -141,6 +169,21 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateProfile godoc
+// @Tags Applicant
+// @Summary Обновить профиль соискателя
+// @Description Обновляет данные профиля соискателя, кроме аватара. Требует авторизации.
+// @Accept json
+// @Param updateData body dto.ApplicantProfileUpdate true "Данные для обновления профиля"
+// @Success 204
+// @Failure 400 {object} utils.APIError "Неверный формат данных"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Нет доступа"
+// @Failure 409 {object} utils.APIError "Пользователь уже существует"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /applicant/profile [put]
+// @Security csrf_token
+// @Security session_cookie
 func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// проверяем сессию
@@ -170,6 +213,22 @@ func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UploadAvatar godoc
+// @Tags Applicant
+// @Summary Загрузить аватар
+// @Description Загружает изображение аватара для профиля соискателя. Требует авторизации и CSRF-токена.
+// @Accept multipart/form-data
+// @Produce json
+// @Param avatar formData file true "Файл изображения (JPEG/PNG, макс. 5MB)"
+// @Success 200 {object} dto.UploadStaticResponse "Информация о файле"
+// @Failure 400 {object} utils.APIError "Неверный формат файла"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен"
+// @Failure 413 {object} utils.APIError "Файл слишком большой"
+// @Failure 500 {object} utils.APIError "Ошибка загрузки файла"
+// @Router /applicant/avatar [post]
+// @Security session_cookie
+// @Security csrf_token
 func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// проверяем сессию
@@ -201,14 +260,19 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	avatarID, err := h.static.UploadStatic(ctx, data)
+	avatar, err := h.static.UploadStatic(ctx, data)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
-	if err = h.applicant.UpdateAvatar(ctx, userID, avatarID); err != nil {
+	if err = h.applicant.UpdateAvatar(ctx, userID, avatar.ID); err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(avatar); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
 }

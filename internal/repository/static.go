@@ -1,8 +1,11 @@
 package repository
 
-import "context"
+import (
+	"ResuMatch/internal/entity"
+	"context"
+)
 
 type StaticRepository interface {
-	UploadStatic(ctx context.Context, filePath, fileName string, data []byte) (int, error)
+	UploadStatic(ctx context.Context, filePath, fileName string, data []byte) (*entity.Static, error)
 	GetStatic(ctx context.Context, id int) (string, error)
 }

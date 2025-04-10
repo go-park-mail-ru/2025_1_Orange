@@ -6,15 +6,86 @@
         "contact": {},
         "version": "1.0.0"
     },
+    "basePath": "/api/v1",
     "paths": {
+        "/applicant/avatar": {
+            "post": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    },
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Загружает изображение аватара для профиля соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Applicant"
+                ],
+                "summary": "Загрузить аватар",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Файл изображения (JPEG/PNG, макс. 5MB)",
+                        "name": "avatar",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о файле",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UploadStaticResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат файла",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "413": {
+                        "description": "Файл слишком большой",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка загрузки файла",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/applicant/login": {
             "post": {
                 "security": [
                     {
-                        "_csrf": []
+                        "csrf_token": []
                     }
                 ],
-                "description": "Авторизация пользователя. При успешной авторизации отправляет куки с сессией.",
+                "description": "Авторизация соискателя. При успешной авторизации отправляет куки с сессией.",
                 "consumes": [
                     "application/json"
                 ],
@@ -22,12 +93,12 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Авторизация"
+                    "Applicant"
                 ],
-                "summary": "Авторизация пользователя",
+                "summary": "Авторизация соискателя",
                 "parameters": [
                     {
-                        "description": "Данные для входа (email и пароль)",
+                        "description": "Данные для авторизации (email и пароль)",
                         "name": "loginData",
                         "in": "body",
                         "required": true,
@@ -66,6 +137,491 @@
                     }
                 }
             }
+        },
+        "/applicant/profile": {
+            "put": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Обновляет данные профиля соискателя, кроме аватара. Требует авторизации.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Applicant"
+                ],
+                "summary": "Обновить профиль соискателя",
+                "parameters": [
+                    {
+                        "description": "Данные для обновления профиля",
+                        "name": "updateData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ApplicantProfileUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Неверный формат данных",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Нет доступа",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "409": {
+                        "description": "Пользователь уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/applicant/profile/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Возвращает профиль соискателя по ID. Требует авторизации. Доступен только для владельца профиля.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Applicant"
+                ],
+                "summary": "Получить профиль соискателя",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID соискателя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Профиль соискателя",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ApplicantProfileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Нет доступа к этому профилю",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Профиль не найден",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/applicant/register": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Applicant"
+                ],
+                "summary": "Регистрация соискателя",
+                "parameters": [
+                    {
+                        "description": "Данные для регистрации",
+                        "name": "registerData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ApplicantRegister"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "409": {
+                        "description": "Пользователь уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/employer/login": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Авторизация работодателя. При успешной авторизации отправляет куки с сессией.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employer"
+                ],
+                "summary": "Авторизация работодателя",
+                "parameters": [
+                    {
+                        "description": "Данные для авторизации (email и пароль)",
+                        "name": "loginData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmployerLogin"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (неверные учетные данные)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/employer/logo": {
+            "post": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    },
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Загружает изображение логотипа для профиля работодателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employer"
+                ],
+                "summary": "Загрузить логотип",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Файл изображения (JPEG/PNG, макс. 5MB)",
+                        "name": "logo",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о файле",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UploadStaticResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат файла",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "413": {
+                        "description": "Файл слишком большой",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка загрузки файла",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/employer/profile": {
+            "put": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Обновляет данные профиля работодателя, кроме лого. Требует авторизации.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employer"
+                ],
+                "summary": "Обновить профиль работодателя",
+                "parameters": [
+                    {
+                        "description": "Данные для обновления профиля",
+                        "name": "updateData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmployerProfileUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Неверный формат данных",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Нет доступа",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "409": {
+                        "description": "Пользователь уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/employer/profile/{id}": {
+            "get": {
+                "description": "Возвращает профиль работодателя по ID. Доступен всем.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employer"
+                ],
+                "summary": "Получить профиль работодателя",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID работодателя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Профиль работодателя",
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmployerProfileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Профиль не найден",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/employer/register": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employer"
+                ],
+                "summary": "Регистрация работодателя",
+                "parameters": [
+                    {
+                        "description": "Данные для регистрации",
+                        "name": "registerData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmployerRegister"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "409": {
+                        "description": "Пользователь уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -84,6 +640,217 @@
                 }
             }
         },
+        "dto.ApplicantProfileResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_path": {
+                    "type": "string"
+                },
+                "birth_date": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "middle_name": {
+                    "type": "string"
+                },
+                "quote": {
+                    "type": "string"
+                },
+                "sex": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ApplicantProfileUpdate": {
+            "type": "object",
+            "properties": {
+                "birth_date": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "middle_name": {
+                    "type": "string"
+                },
+                "quote": {
+                    "type": "string"
+                },
+                "sex": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ApplicantRegister": {
+            "type": "object",
+            "required": [
+                "email",
+                "first_name",
+                "last_name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string",
+                    "maxLength": 30
+                },
+                "last_name": {
+                    "type": "string",
+                    "maxLength": 30
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "dto.EmployerLogin": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.EmployerProfileResponse": {
+            "type": "object",
+            "properties": {
+                "company_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "legal_address": {
+                    "type": "string"
+                },
+                "logo_path": {
+                    "type": "string"
+                },
+                "slogan": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.EmployerProfileUpdate": {
+            "type": "object",
+            "properties": {
+                "company_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "legal_address": {
+                    "type": "string"
+                },
+                "slogan": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.EmployerRegister": {
+            "type": "object",
+            "required": [
+                "company_name",
+                "email",
+                "password"
+            ],
+            "properties": {
+                "company_name": {
+                    "type": "string",
+                    "maxLength": 64
+                },
+                "email": {
+                    "type": "string"
+                },
+                "legal_address": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "dto.UploadStaticResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "utils.APIError": {
             "type": "object",
             "properties": {
@@ -94,6 +861,18 @@
                     "type": "integer"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "csrf_token": {
+            "type": "apiKey",
+            "name": "X-CSRF-Token",
+            "in": "header"
+        },
+        "session_cookie": {
+            "type": "apiKey",
+            "name": "session_id",
+            "in": "cookie"
         }
     }
 }

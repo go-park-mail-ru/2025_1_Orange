@@ -45,7 +45,7 @@ func NewStaticRepository(cfg config.PostgresConfig) (repository.StaticRepository
 	return &StaticRepository{DB: db}, nil
 }
 
-func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName string, data []byte) (int, error) {
+func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName string, data []byte) (*entity.Static, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -58,7 +58,7 @@ func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName 
 	err := os.MkdirAll(dir, 0755)
 
 	if err != nil {
-		return -1, entity.NewError(
+		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось создать файл: %w", err),
 		)
@@ -66,36 +66,46 @@ func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName 
 
 	dest, err := os.Create(filepath.Join(dir, fileName))
 	if err != nil {
-		return -1, entity.NewError(
+		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("внутренная ошибка при создании файла: %w", err),
 		)
 	}
 
 	if _, err := dest.Write(data); err != nil {
-		return -1, entity.NewError(
+		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("внутренная ошибка при записи данных в файл: %w", err),
 		)
 	}
 
 	if err := dest.Close(); err != nil {
-		return -1, entity.NewError(
+		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("внутренная ошибка при закрытии файла: %w", err),
 		)
 	}
 
-	var id int
-	query := `INSERT INTO static (file_path, file_name) VALUES ($1, $2) RETURNING id`
-	err = r.DB.QueryRow(query, filePath, fileName).Scan(&id)
+	var static entity.Static
+	query := `
+        INSERT INTO static (file_path, file_name) 
+        VALUES ($1, $2) 
+        RETURNING id, file_path, file_name, created_at, updated_at
+    `
+	err = r.DB.QueryRow(query, filePath, fileName).Scan(
+		&static.ID,
+		&static.FilePath,
+		&static.FileName,
+		&static.CreatedAt,
+		&static.UpdatedAt,
+	)
 	if err != nil {
-		return -1, entity.NewError(
+		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("внутренная ошибка при выполнении sql-запроса UploadStatic: %w", err),
 		)
 	}
-	return id, nil
+	return &static, nil
 }
 
 func (r *StaticRepository) GetStatic(ctx context.Context, id int) (string, error) {

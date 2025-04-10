@@ -3,11 +3,15 @@ package service
 import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
+	l "ResuMatch/pkg/logger"
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ResumeService struct {
@@ -28,14 +32,29 @@ func NewResumeService(
 	}
 }
 
-// Create method update
+// Create method updated to handle string-based specializations and skills
 func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeRequest) (*dto.ResumeResponse, error) {
-	// Check if specialization exists if provided
-	var specialization *entity.Specialization
-	var err error
+	requestID := middleware.GetRequestID(ctx)
 
-	if request.SpecializationID != 0 {
-		specialization, err = s.specializationRepository.GetByID(ctx, request.SpecializationID)
+	// Extract applicant ID from context
+	applicantID, ok := ctx.Value("applicantID").(int)
+	if !ok {
+		return nil, entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("не удалось получить ID соискателя из контекста"),
+		)
+	}
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"applicantID": applicantID,
+	}).Info("Создание резюме")
+
+	// Find specialization ID by name
+	var specializationID int
+	var err error
+	if request.Specialization != "" {
+		specializationID, err = s.resumeRepository.FindSpecializationIDByName(ctx, request.Specialization)
 		if err != nil {
 			return nil, err
 		}
@@ -55,14 +74,12 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 
 	// Create resume entity
 	resume := &entity.Resume{
-		ApplicantID:               request.ApplicantID,
-		AboutMe:                   request.AboutMe,
-		SpecializationID:          request.SpecializationID,
-		Education:                 request.Education,
-		EducationalInstitution:    request.EducationalInstitution,
-		GraduationYear:            graduationYear,
-		Skills:                    request.Skills,
-		AdditionalSpecializations: request.AdditionalSpecializations,
+		ApplicantID:            applicantID,
+		AboutMe:                request.AboutMe,
+		SpecializationID:       specializationID,
+		Education:              request.Education,
+		EducationalInstitution: request.EducationalInstitution,
+		GraduationYear:         graduationYear,
 	}
 
 	// Validate resume
@@ -76,17 +93,31 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		return nil, err
 	}
 
-	// Add skills if provided
+	// Find skill IDs by names and add them
 	if len(request.Skills) > 0 {
-		if err := s.resumeRepository.AddSkills(ctx, createdResume.ID, request.Skills); err != nil {
+		skillIDs, err := s.resumeRepository.FindSkillIDsByNames(ctx, request.Skills)
+		if err != nil {
 			return nil, err
+		}
+
+		if len(skillIDs) > 0 {
+			if err := s.resumeRepository.AddSkills(ctx, createdResume.ID, skillIDs); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	// Add additional specializations if provided
+	// Find additional specialization IDs by names and add them
 	if len(request.AdditionalSpecializations) > 0 {
-		if err := s.resumeRepository.AddSpecializations(ctx, createdResume.ID, request.AdditionalSpecializations); err != nil {
+		specIDs, err := s.resumeRepository.FindSpecializationIDsByNames(ctx, request.AdditionalSpecializations)
+		if err != nil {
 			return nil, err
+		}
+
+		if len(specIDs) > 0 {
+			if err := s.resumeRepository.AddSpecializations(ctx, createdResume.ID, specIDs); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -135,6 +166,16 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		workExperiences = append(workExperiences, *createdWorkExperience)
 	}
 
+	// Get specialization name
+	var specializationName string
+	if createdResume.SpecializationID != 0 {
+		specialization, err := s.specializationRepository.GetByID(ctx, createdResume.SpecializationID)
+		if err != nil {
+			return nil, err
+		}
+		specializationName = specialization.Name
+	}
+
 	// Get skills for response
 	skills, err := s.resumeRepository.GetSkillsByResumeID(ctx, createdResume.ID)
 	if err != nil {
@@ -152,19 +193,12 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		ID:                        createdResume.ID,
 		ApplicantID:               createdResume.ApplicantID,
 		AboutMe:                   createdResume.AboutMe,
-		Skills:                    make([]dto.SkillDTO, 0, len(skills)),
-		AdditionalSpecializations: make([]dto.SpecializationDTO, 0, len(additionalSpecializations)),
+		Specialization:            specializationName,
+		Skills:                    make([]string, 0, len(skills)),
+		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
 		CreatedAt:                 createdResume.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:                 createdResume.UpdatedAt.Format(time.RFC3339),
-	}
-
-	// Add specialization info if exists
-	if createdResume.SpecializationID != 0 {
-		response.SpecializationID = createdResume.SpecializationID
-		if specialization != nil {
-			response.SpecializationName = specialization.Name
-		}
 	}
 
 	// Add education info if exists
@@ -182,20 +216,14 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 		response.GraduationYear = createdResume.GraduationYear.Format("2006-01-02")
 	}
 
-	// Add skills to response
+	// Add skills to response (just names)
 	for _, skill := range skills {
-		response.Skills = append(response.Skills, dto.SkillDTO{
-			ID:   skill.ID,
-			Name: skill.Name,
-		})
+		response.Skills = append(response.Skills, skill.Name)
 	}
 
-	// Add additional specializations to response
+	// Add additional specializations to response (just names)
 	for _, spec := range additionalSpecializations {
-		response.AdditionalSpecializations = append(response.AdditionalSpecializations, dto.SpecializationDTO{
-			ID:   spec.ID,
-			Name: spec.Name,
-		})
+		response.AdditionalSpecializations = append(response.AdditionalSpecializations, spec.Name)
 	}
 
 	// Add work experiences to response
@@ -221,15 +249,22 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 	return response, nil
 }
 
-// GetByID method update
+// GetByID method updated to return string-based specializations and skills
 func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeResponse, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"resumeID":  id,
+	}).Info("Получение резюме по ID")
+
 	// Get resume
 	resume, err := s.resumeRepository.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get specialization if exists
+	// Get specialization name
 	var specializationName string
 	if resume.SpecializationID != 0 {
 		specialization, err := s.specializationRepository.GetByID(ctx, resume.SpecializationID)
@@ -262,17 +297,12 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 		ID:                        resume.ID,
 		ApplicantID:               resume.ApplicantID,
 		AboutMe:                   resume.AboutMe,
-		Skills:                    make([]dto.SkillDTO, 0, len(skills)),
-		AdditionalSpecializations: make([]dto.SpecializationDTO, 0, len(additionalSpecializations)),
+		Specialization:            specializationName,
+		Skills:                    make([]string, 0, len(skills)),
+		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
 		CreatedAt:                 resume.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:                 resume.UpdatedAt.Format(time.RFC3339),
-	}
-
-	// Add specialization info if exists
-	if resume.SpecializationID != 0 {
-		response.SpecializationID = resume.SpecializationID
-		response.SpecializationName = specializationName
 	}
 
 	// Add education info if exists
@@ -290,20 +320,14 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 		response.GraduationYear = resume.GraduationYear.Format("2006-01-02")
 	}
 
-	// Add skills to response
+	// Add skills to response (just names)
 	for _, skill := range skills {
-		response.Skills = append(response.Skills, dto.SkillDTO{
-			ID:   skill.ID,
-			Name: skill.Name,
-		})
+		response.Skills = append(response.Skills, skill.Name)
 	}
 
-	// Add additional specializations to response
+	// Add additional specializations to response (just names)
 	for _, spec := range additionalSpecializations {
-		response.AdditionalSpecializations = append(response.AdditionalSpecializations, dto.SpecializationDTO{
-			ID:   spec.ID,
-			Name: spec.Name,
-		})
+		response.AdditionalSpecializations = append(response.AdditionalSpecializations, spec.Name)
 	}
 
 	// Add work experiences to response
@@ -329,8 +353,25 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 	return response, nil
 }
 
-// Update method update
+// Update method updated to handle string-based specializations and skills
 func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	// Extract applicant ID from context
+	applicantID, ok := ctx.Value("applicantID").(int)
+	if !ok {
+		return nil, entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("не удалось получить ID соискателя из контекста"),
+		)
+	}
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"resumeID":    id,
+		"applicantID": applicantID,
+	}).Info("Обновление резюме")
+
 	// Check if resume exists
 	existingResume, err := s.resumeRepository.GetByID(ctx, id)
 	if err != nil {
@@ -338,17 +379,17 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 	}
 
 	// Check if resume belongs to the applicant
-	if existingResume.ApplicantID != request.ApplicantID {
+	if existingResume.ApplicantID != applicantID {
 		return nil, entity.NewError(
 			entity.ErrForbidden,
-			fmt.Errorf("резюме с id=%d не принадлежит соискателю с id=%d", id, request.ApplicantID),
+			fmt.Errorf("резюме с id=%d не принадлежит соискателю с id=%d", id, applicantID),
 		)
 	}
 
-	// Check if specialization exists if provided
-	var specialization *entity.Specialization
-	if request.SpecializationID != 0 {
-		specialization, err = s.specializationRepository.GetByID(ctx, request.SpecializationID)
+	// Find specialization ID by name
+	var specializationID int
+	if request.Specialization != "" {
+		specializationID, err = s.resumeRepository.FindSpecializationIDByName(ctx, request.Specialization)
 		if err != nil {
 			return nil, err
 		}
@@ -368,15 +409,13 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 
 	// Create resume entity for update
 	resume := &entity.Resume{
-		ID:                        id,
-		ApplicantID:               request.ApplicantID,
-		AboutMe:                   request.AboutMe,
-		SpecializationID:          request.SpecializationID,
-		Education:                 request.Education,
-		EducationalInstitution:    request.EducationalInstitution,
-		GraduationYear:            graduationYear,
-		Skills:                    request.Skills,
-		AdditionalSpecializations: request.AdditionalSpecializations,
+		ID:                     id,
+		ApplicantID:            applicantID,
+		AboutMe:                request.AboutMe,
+		SpecializationID:       specializationID,
+		Education:              request.Education,
+		EducationalInstitution: request.EducationalInstitution,
+		GraduationYear:         graduationYear,
 	}
 
 	// Validate resume
@@ -395,8 +434,14 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		return nil, err
 	}
 	if len(request.Skills) > 0 {
-		if err := s.resumeRepository.AddSkills(ctx, id, request.Skills); err != nil {
+		skillIDs, err := s.resumeRepository.FindSkillIDsByNames(ctx, request.Skills)
+		if err != nil {
 			return nil, err
+		}
+		if len(skillIDs) > 0 {
+			if err := s.resumeRepository.AddSkills(ctx, id, skillIDs); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -405,8 +450,14 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		return nil, err
 	}
 	if len(request.AdditionalSpecializations) > 0 {
-		if err := s.resumeRepository.AddSpecializations(ctx, id, request.AdditionalSpecializations); err != nil {
+		specIDs, err := s.resumeRepository.FindSpecializationIDsByNames(ctx, request.AdditionalSpecializations)
+		if err != nil {
 			return nil, err
+		}
+		if len(specIDs) > 0 {
+			if err := s.resumeRepository.AddSpecializations(ctx, id, specIDs); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -459,6 +510,16 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		workExperiences = append(workExperiences, *createdWorkExperience)
 	}
 
+	// Get specialization name
+	var specializationName string
+	if updatedResume.SpecializationID != 0 {
+		specialization, err := s.specializationRepository.GetByID(ctx, updatedResume.SpecializationID)
+		if err != nil {
+			return nil, err
+		}
+		specializationName = specialization.Name
+	}
+
 	// Get skills for response
 	skills, err := s.resumeRepository.GetSkillsByResumeID(ctx, id)
 	if err != nil {
@@ -476,19 +537,12 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		ID:                        updatedResume.ID,
 		ApplicantID:               updatedResume.ApplicantID,
 		AboutMe:                   updatedResume.AboutMe,
-		Skills:                    make([]dto.SkillDTO, 0, len(skills)),
-		AdditionalSpecializations: make([]dto.SpecializationDTO, 0, len(additionalSpecializations)),
+		Specialization:            specializationName,
+		Skills:                    make([]string, 0, len(skills)),
+		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
 		CreatedAt:                 updatedResume.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:                 updatedResume.UpdatedAt.Format(time.RFC3339),
-	}
-
-	// Add specialization info if exists
-	if updatedResume.SpecializationID != 0 {
-		response.SpecializationID = updatedResume.SpecializationID
-		if specialization != nil {
-			response.SpecializationName = specialization.Name
-		}
 	}
 
 	// Add education info if exists
@@ -506,20 +560,14 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 		response.GraduationYear = updatedResume.GraduationYear.Format("2006-01-02")
 	}
 
-	// Add skills to response
+	// Add skills to response (just names)
 	for _, skill := range skills {
-		response.Skills = append(response.Skills, dto.SkillDTO{
-			ID:   skill.ID,
-			Name: skill.Name,
-		})
+		response.Skills = append(response.Skills, skill.Name)
 	}
 
-	// Add additional specializations to response
+	// Add additional specializations to response (just names)
 	for _, spec := range additionalSpecializations {
-		response.AdditionalSpecializations = append(response.AdditionalSpecializations, dto.SpecializationDTO{
-			ID:   spec.ID,
-			Name: spec.Name,
-		})
+		response.AdditionalSpecializations = append(response.AdditionalSpecializations, spec.Name)
 	}
 
 	// Add work experiences to response
@@ -547,6 +595,14 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 
 // Delete удаляет резюме
 func (s *ResumeService) Delete(ctx context.Context, id int, applicantID int) (*dto.DeleteResumeResponse, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"resumeID":    id,
+		"applicantID": applicantID,
+	}).Info("Удаление резюме")
+
 	// Проверяем существование резюме
 	existingResume, err := s.resumeRepository.GetByID(ctx, id)
 	if err != nil {
@@ -583,4 +639,83 @@ func (s *ResumeService) Delete(ctx context.Context, id int, applicantID int) (*d
 		Success: true,
 		Message: fmt.Sprintf("Резюме с id=%d успешно удалено", id),
 	}, nil
+}
+
+// GetAll returns a list of all resumes (for employers)
+func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("Получение списка всех резюме")
+
+	// Get all resumes
+	resumes, err := s.resumeRepository.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build response
+	response := make([]dto.ResumeShortResponse, 0, len(resumes))
+	for _, resume := range resumes {
+		// Get specialization name
+		var specializationName string
+		if resume.SpecializationID != 0 {
+			specialization, err := s.specializationRepository.GetByID(ctx, resume.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":        requestID,
+					"resumeID":         resume.ID,
+					"specializationID": resume.SpecializationID,
+					"error":            err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		// Get the most recent work experience
+		workExperiences, err := s.resumeRepository.GetWorkExperienceByResumeID(ctx, resume.ID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"resumeID":  resume.ID,
+				"error":     err,
+			}).Error("ошибка при получении опыта работы")
+			continue
+		}
+
+		// Create short resume response
+		shortResume := dto.ResumeShortResponse{
+			ID:             resume.ID,
+			ApplicantID:    resume.ApplicantID,
+			Specialization: specializationName,
+			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
+		}
+
+		// Add the most recent work experience if available
+		if len(workExperiences) > 0 {
+			we := workExperiences[0] // The first one is the most recent due to ORDER BY in the query
+			workExp := dto.WorkExperienceShort{
+				ID:           we.ID,
+				EmployerName: we.EmployerName,
+				Position:     we.Position,
+				Duties:       we.Duties,
+				Achievements: we.Achievements,
+				StartDate:    we.StartDate.Format("2006-01-02"),
+				UntilNow:     we.UntilNow,
+			}
+
+			if !we.UntilNow && !we.EndDate.IsZero() {
+				workExp.EndDate = we.EndDate.Format("2006-01-02")
+			}
+
+			shortResume.WorkExperience = workExp
+		}
+
+		response = append(response, shortResume)
+	}
+
+	return response, nil
 }

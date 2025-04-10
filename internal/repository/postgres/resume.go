@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -47,6 +48,10 @@ func NewResumeRepository(cfg config.PostgresConfig) (repository.ResumeRepository
 
 func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*entity.Resume, error) {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на создание резюме Create")
 
 	query := `
 		INSERT INTO resume (
@@ -122,6 +127,10 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 
 func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs []int) error {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на добавление навыков к резюме AddSkills")
 
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -221,6 +230,10 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 func (r *ResumeRepository) AddWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error) {
 	requestID := middleware.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на добавление опыта работы AddWorkExperience")
+
 	query := `
 		INSERT INTO work_experience (
 			resume_id, employer_name, position, duties, 
@@ -311,6 +324,10 @@ func (r *ResumeRepository) AddWorkExperience(ctx context.Context, workExperience
 func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume, error) {
 	requestID := middleware.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение резюме по ID GetByID")
+
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, created_at, updated_at
@@ -356,6 +373,10 @@ func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume,
 
 func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int) ([]entity.Skill, error) {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение навыков резюме GetSkillsByResumeID")
 
 	query := `
 		SELECT s.id, s.name
@@ -415,6 +436,10 @@ func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int
 
 func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resumeID int) ([]entity.WorkExperience, error) {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение опыта работы GetWorkExperienceByResumeID")
 
 	query := `
 		SELECT id, resume_id, employer_name, position, duties, 
@@ -491,9 +516,12 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 	return experiences, nil
 }
 
-// Добавим новый метод в ResumeRepository
 func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int, specializationIDs []int) error {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на добавление специализаций AddSpecializations")
 
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -593,6 +621,10 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, resumeID int) ([]entity.Specialization, error) {
 	requestID := middleware.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение специализаций GetSpecializationsByResumeID")
+
 	query := `
 		SELECT s.id, s.name
 		FROM specialization s
@@ -651,6 +683,10 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 
 func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*entity.Resume, error) {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на обновление резюме Update")
 
 	query := `
 		UPDATE resume
@@ -749,6 +785,10 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 func (r *ResumeRepository) Delete(ctx context.Context, id int) error {
 	requestID := middleware.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление резюме Delete")
+
 	query := `
 		DELETE FROM resume
 		WHERE id = $1
@@ -801,6 +841,10 @@ func (r *ResumeRepository) Delete(ctx context.Context, id int) error {
 func (r *ResumeRepository) DeleteSkills(ctx context.Context, resumeID int) error {
 	requestID := middleware.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление навыков резюме DeleteSkills")
+
 	query := `
 		DELETE FROM resume_skill
 		WHERE resume_id = $1
@@ -826,6 +870,10 @@ func (r *ResumeRepository) DeleteSkills(ctx context.Context, resumeID int) error
 // DeleteSpecializations удаляет все специализации резюме
 func (r *ResumeRepository) DeleteSpecializations(ctx context.Context, resumeID int) error {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление специализаций резюме DeleteSpecializations")
 
 	query := `
 		DELETE FROM resume_specialization
@@ -853,6 +901,10 @@ func (r *ResumeRepository) DeleteSpecializations(ctx context.Context, resumeID i
 func (r *ResumeRepository) DeleteWorkExperiences(ctx context.Context, resumeID int) error {
 	requestID := middleware.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление опыта работы резюме DeleteWorkExperiences")
+
 	query := `
 		DELETE FROM work_experience
 		WHERE resume_id = $1
@@ -878,6 +930,10 @@ func (r *ResumeRepository) DeleteWorkExperiences(ctx context.Context, resumeID i
 // UpdateWorkExperience обновляет запись об опыте работы
 func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error) {
 	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на обновление опыта работы UpdateWorkExperience")
 
 	query := `
 		UPDATE work_experience
@@ -994,6 +1050,10 @@ func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperie
 func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) error {
 	requestID := middleware.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление записи об опыте работы DeleteWorkExperience")
+
 	query := `
 		DELETE FROM work_experience
 		WHERE id = $1
@@ -1040,4 +1100,259 @@ func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) err
 	}
 
 	return nil
+}
+
+// GetAll получает список всех резюме
+func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение всех резюме GetAll")
+
+	query := `
+		SELECT id, applicant_id, about_me, specialization_id, education, 
+			   educational_institution, graduation_year, created_at, updated_at
+		FROM resume
+		ORDER BY updated_at DESC
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при получении списка резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении списка резюме: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var resumes []entity.Resume
+	for rows.Next() {
+		var resume entity.Resume
+		err := rows.Scan(
+			&resume.ID,
+			&resume.ApplicantID,
+			&resume.AboutMe,
+			&resume.SpecializationID,
+			&resume.Education,
+			&resume.EducationalInstitution,
+			&resume.GraduationYear,
+			&resume.CreatedAt,
+			&resume.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании резюме")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании резюме: %w", err),
+			)
+		}
+		resumes = append(resumes, resume)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по резюме: %w", err),
+		)
+	}
+
+	return resumes, nil
+}
+
+// FindSkillIDsByNames находит ID навыков по их названиям
+func (r *ResumeRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на поиск ID навыков по названиям FindSkillIDsByNames")
+
+	if len(skillNames) == 0 {
+		return []int{}, nil
+	}
+
+	// Создаем параметры для запроса
+	params := make([]interface{}, len(skillNames))
+	placeholders := make([]string, len(skillNames))
+	for i, name := range skillNames {
+		params[i] = name
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id
+		FROM skill
+		WHERE name IN (%s)
+	`, strings.Join(placeholders, ", "))
+
+	rows, err := r.DB.QueryContext(ctx, query, params...)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске ID навыков по названиям")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске ID навыков по названиям: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var skillIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании ID навыка")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании ID навыка: %w", err),
+			)
+		}
+		skillIDs = append(skillIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по ID навыков")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по ID навыков: %w", err),
+		)
+	}
+
+	return skillIDs, nil
+}
+
+// FindSpecializationIDByName находит ID специализации по её названию
+func (r *ResumeRepository) FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на поиск ID специализации по названию FindSpecializationIDByName")
+
+	query := `
+		SELECT id
+		FROM specialization
+		WHERE name = $1
+	`
+
+	var id int
+	err := r.DB.QueryRowContext(ctx, query, specializationName).Scan(&id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("специализация с названием '%s' не найдена", specializationName),
+			)
+		}
+
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"name":      specializationName,
+			"error":     err,
+		}).Error("ошибка при поиске ID специализации по названию")
+
+		return 0, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске ID специализации по названию: %w", err),
+		)
+	}
+
+	return id, nil
+}
+
+// FindSpecializationIDsByNames находит ID специализаций по их названиям
+func (r *ResumeRepository) FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на поиск ID специализаций по названиям FindSpecializationIDsByNames")
+
+	if len(specializationNames) == 0 {
+		return []int{}, nil
+	}
+
+	// Создаем параметры для запроса
+	params := make([]interface{}, len(specializationNames))
+	placeholders := make([]string, len(specializationNames))
+	for i, name := range specializationNames {
+		params[i] = name
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id
+		FROM specialization
+		WHERE name IN (%s)
+	`, strings.Join(placeholders, ", "))
+
+	rows, err := r.DB.QueryContext(ctx, query, params...)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске ID специализаций по названиям")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске ID специализаций по названиям: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var specializationIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании ID специализации")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании ID специализации: %w", err),
+			)
+		}
+		specializationIDs = append(specializationIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по ID специализаций")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по ID специализаций: %w", err),
+		)
+	}
+
+	return specializationIDs, nil
 }

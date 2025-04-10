@@ -1,16 +1,18 @@
 package dto
 
-import "ResuMatch/internal/entity"
+import (
+	"ResuMatch/internal/entity"
+)
 
+// Updated CreateResumeRequest - removed applicant_id, changed specialization and skills to strings
 type CreateResumeRequest struct {
-	ApplicantID               int                  `json:"applicant_id" validate:"required"`
 	AboutMe                   string               `json:"about_me"`
-	SpecializationID          int                  `json:"specialization_id"`
+	Specialization            string               `json:"specialization"`
 	Education                 entity.EducationType `json:"education"`
 	EducationalInstitution    string               `json:"educational_institution"`
 	GraduationYear            string               `json:"graduation_year"`
-	Skills                    []int                `json:"skills"`
-	AdditionalSpecializations []int                `json:"additional_specializations"`
+	Skills                    []string             `json:"skills"`
+	AdditionalSpecializations []string             `json:"additional_specializations"`
 	WorkExperiences           []WorkExperienceDTO  `json:"work_experiences"`
 }
 
@@ -24,31 +26,23 @@ type WorkExperienceDTO struct {
 	UntilNow     bool   `json:"until_now"`
 }
 
+// Updated ResumeResponse - renamed specialization_name to specialization, changed skills and specializations to string arrays
 type ResumeResponse struct {
 	ID                        int                      `json:"id"`
 	ApplicantID               int                      `json:"applicant_id"`
 	AboutMe                   string                   `json:"about_me,omitempty"`
-	SpecializationID          int                      `json:"specialization_id,omitempty"`
-	SpecializationName        string                   `json:"specialization_name,omitempty"`
+	Specialization            string                   `json:"specialization,omitempty"`
 	Education                 entity.EducationType     `json:"education,omitempty"`
 	EducationalInstitution    string                   `json:"educational_institution,omitempty"`
 	GraduationYear            string                   `json:"graduation_year,omitempty"`
 	CreatedAt                 string                   `json:"created_at"`
 	UpdatedAt                 string                   `json:"updated_at"`
-	Skills                    []SkillDTO               `json:"skills"`
-	AdditionalSpecializations []SpecializationDTO      `json:"additional_specializations"`
+	Skills                    []string                 `json:"skills"`
+	AdditionalSpecializations []string                 `json:"additional_specializations"`
 	WorkExperiences           []WorkExperienceResponse `json:"work_experiences"`
 }
 
-type SkillDTO struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-type SpecializationDTO struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
+// Removed SkillDTO and SpecializationDTO as they're no longer needed
 
 type WorkExperienceResponse struct {
 	ID           int    `json:"id"`
@@ -62,19 +56,40 @@ type WorkExperienceResponse struct {
 	UpdatedAt    string `json:"updated_at"`
 }
 
+// Updated UpdateResumeRequest - similar changes as CreateResumeRequest
 type UpdateResumeRequest struct {
-	ApplicantID               int                  `json:"applicant_id" validate:"required"`
 	AboutMe                   string               `json:"about_me"`
-	SpecializationID          int                  `json:"specialization_id"`
+	Specialization            string               `json:"specialization"`
 	Education                 entity.EducationType `json:"education"`
 	EducationalInstitution    string               `json:"educational_institution"`
 	GraduationYear            string               `json:"graduation_year"`
-	Skills                    []int                `json:"skills"`
-	AdditionalSpecializations []int                `json:"additional_specializations"`
+	Skills                    []string             `json:"skills"`
+	AdditionalSpecializations []string             `json:"additional_specializations"`
 	WorkExperiences           []WorkExperienceDTO  `json:"work_experiences"`
 }
 
 type DeleteResumeResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
+}
+
+// New DTO for resume list
+type ResumeShortResponse struct {
+	ID             int                 `json:"id"`
+	ApplicantID    int                 `json:"applicant_id"`
+	Specialization string              `json:"specialization"`
+	WorkExperience WorkExperienceShort `json:"work_experience"`
+	CreatedAt      string              `json:"created_at"`
+	UpdatedAt      string              `json:"updated_at"`
+}
+
+type WorkExperienceShort struct {
+	ID           int    `json:"id"`
+	EmployerName string `json:"employer_name"`
+	Position     string `json:"position"`
+	Duties       string `json:"duties,omitempty"`
+	Achievements string `json:"achievements,omitempty"`
+	StartDate    string `json:"start_date"`
+	EndDate      string `json:"end_date,omitempty"`
+	UntilNow     bool   `json:"until_now"`
 }

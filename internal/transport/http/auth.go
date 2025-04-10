@@ -28,14 +28,15 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 }
 
 func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session_id")
+	ctx := r.Context()
 
+	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
 
-	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -71,13 +72,15 @@ func (h *AuthHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	err = h.auth.Logout(cookie.Value)
+	err = h.auth.Logout(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -88,19 +91,21 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) LogoutAll(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
-	if err := h.auth.LogoutAll(userID, role); err != nil {
+	if err := h.auth.LogoutAll(ctx, userID, role); err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}

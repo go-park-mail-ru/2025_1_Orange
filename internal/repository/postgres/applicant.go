@@ -96,6 +96,10 @@ func (r *ApplicantRepository) CreateApplicant(
 	ctx context.Context, email, firstName, lastName string, passwordHash, passwordSalt []byte) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса создания соискателя CreateApplicant")
+
 	query := `
         INSERT INTO applicant (email, password_hashed, password_salt, first_name, last_name)
         VALUES ($1, $2, $3, $4, $5)
@@ -166,6 +170,11 @@ func (r *ApplicantRepository) CreateApplicant(
 func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"id":        id,
+	}).Info("выполнение sql-запроса получения соискателя по ID GetApplicantByID")
+
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
 		       birth_date, sex, email, status, quote, avatar_id,
@@ -220,6 +229,11 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"email":     email,
+	}).Info("выполнение sql-запроса получения соискателя по почте GetApplicantByEmail")
+
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
 		       birth_date, sex, email, status, quote, avatar_id,
@@ -273,6 +287,10 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 
 func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, fields map[string]interface{}) error {
 	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса обновления информации соискателя UpdateApplicant")
 
 	query := "UPDATE applicant SET "
 	setParts := make([]string, 0, len(fields))

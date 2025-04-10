@@ -4,6 +4,7 @@ import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -45,6 +46,14 @@ func NewStaticRepository(cfg config.PostgresConfig) (repository.StaticRepository
 }
 
 func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName string, data []byte) (int, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"filePath":  filePath,
+		"fileName":  fileName,
+	}).Info("выполнение sql-запроса сохранения статики UploadStatic")
+
 	dir := filepath.Dir(fmt.Sprintf("%s/", filePath))
 	err := os.MkdirAll(dir, 0755)
 
@@ -90,6 +99,13 @@ func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName 
 }
 
 func (r *StaticRepository) GetStatic(ctx context.Context, id int) (string, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"id":        id,
+	}).Info("выполнение sql-запроса получения статики по id GetStatic")
+
 	query := `SELECT file_path, file_name FROM static WHERE id = $1`
 
 	var filePath, fileName string

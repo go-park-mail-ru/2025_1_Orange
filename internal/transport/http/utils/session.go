@@ -29,7 +29,8 @@ func ClearTokenCookies(w http.ResponseWriter) {
 }
 
 func CreateSession(w http.ResponseWriter, r *http.Request, auth usecase.Auth, userID int, role string) error {
-	session, err := auth.CreateSession(userID, role)
+	ctx := r.Context()
+	session, err := auth.CreateSession(ctx, userID, role)
 	if err != nil {
 		WriteAPIError(w, ToAPIError(err))
 		return err

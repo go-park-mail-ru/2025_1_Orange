@@ -90,7 +90,7 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUserID, _, err := h.auth.GetUserIDBySession(cookie.Value)
+	currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -132,7 +132,7 @@ func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, _, err := h.auth.GetUserIDBySession(cookie.Value)
+	userID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -161,7 +161,7 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID, _, err := h.auth.GetUserIDBySession(cookie.Value)
+	userID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

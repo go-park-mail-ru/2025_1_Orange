@@ -51,7 +51,7 @@ func (a *ApplicantService) applicantEntityToDTO(ctx context.Context, applicantEn
 	}
 
 	if applicantEntity.CityID > 0 {
-		city, err := a.cityRepository.GetByID(ctx, applicantEntity.CityID)
+		city, err := a.cityRepository.GetCityByID(ctx, applicantEntity.CityID)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +168,7 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 		updateFields["quote"] = applicantDTO.Quote
 	}
 	if applicantDTO.City != "" {
-		city, err := a.cityRepository.GetByName(ctx, applicantDTO.City)
+		city, err := a.cityRepository.GetCityByName(ctx, applicantDTO.City)
 		if err != nil {
 			return err
 		}

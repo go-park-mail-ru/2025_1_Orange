@@ -83,6 +83,10 @@ func NewEmployerRepository(cfg config.PostgresConfig) (repository.EmployerReposi
 func (r *EmployerRepository) CreateEmployer(ctx context.Context, email, companyName, legalAddress string, passwordHash, passwordSalt []byte) (*entity.Employer, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса создания работодателя CreateEmployer")
+
 	query := `
 		INSERT INTO employer (email, password_hashed, password_salt, company_name, legal_address)
 		VALUES ($1, $2, $3, $4, $5)
@@ -154,6 +158,11 @@ func (r *EmployerRepository) CreateEmployer(ctx context.Context, email, companyN
 func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*entity.Employer, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"id":        id,
+	}).Info("выполнение sql-запроса получения работодателя по ID GetEmployerByID")
+
 	query := `
 		SELECT id, email, password_hashed, password_salt, company_name, legal_address,
 		       slogan, website, description, logo_id, created_at, updated_at
@@ -204,6 +213,11 @@ func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*enti
 func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email string) (*entity.Employer, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"email":     email,
+	}).Info("выполнение sql-запроса получения работодателя по почте GetEmployerByEmail")
+
 	query := `
 		SELECT id, email, password_hashed, password_salt, company_name, legal_address,
 		       slogan, website, description, logo_id, created_at, updated_at
@@ -253,6 +267,10 @@ func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email strin
 
 func (r *EmployerRepository) UpdateEmployer(ctx context.Context, userID int, fields map[string]interface{}) error {
 	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса обновления информации работодателя UpdateEmployer")
 
 	query := "UPDATE employer SET "
 	setParts := make([]string, 0, len(fields))

@@ -6,6 +6,7 @@ import (
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"context"
+	"fmt"
 )
 
 type ApplicantService struct {
@@ -24,6 +25,7 @@ func (a *ApplicantService) Register(ctx context.Context, registerDTO *dto.Applic
 	if err := entity.ValidateEmail(registerDTO.Email); err != nil {
 		return -1, err
 	}
+
 	if err := entity.ValidatePassword(registerDTO.Password); err != nil {
 		return -1, err
 	}
@@ -59,7 +61,10 @@ func (a *ApplicantService) Login(ctx context.Context, loginDTO *dto.ApplicantLog
 	if applicant.CheckPassword(loginDTO.Password) {
 		return applicant.ID, nil
 	}
-	return -1, entity.NewClientError("Неверный пароль", entity.ErrForbidden)
+	return -1, entity.NewError(
+		entity.ErrForbidden,
+		fmt.Errorf("неверный пароль"),
+	)
 }
 
 func (a *ApplicantService) GetUser(ctx context.Context, applicantID int) (*dto.ApplicantProfile, error) {

@@ -18,7 +18,7 @@ func Init(cfg *config.Config) *server.Server {
 		log.Fatalf("Failed to create applicant repository: %v", err)
 	}
 
-	employerRepo, err := postgres.NewEmployerDB(cfg.Postgres)
+	employerRepo, err := postgres.NewEmployerRepository(cfg.Postgres)
 	if err != nil {
 		log.Fatalf("Failed to create employer repository: %v", err)
 	}
@@ -29,7 +29,7 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-	authService := service.NewAuthService(sessionRepo)
+	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo)
 	employerService := service.NewEmployerService(employerRepo)
 

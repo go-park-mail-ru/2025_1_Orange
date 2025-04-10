@@ -25,25 +25,6 @@ func NewServer(cfg *config.Config) *Server {
 	}
 }
 
-//func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
-//	router := http.NewServeMux()
-//
-//	// Add prefix
-//	apiRouter := http.NewServeMux()
-//	apiRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", router))
-//
-//	// Middleware chain
-//	handler := middleware.CreateMiddlewareChain(
-//		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
-//		middleware.CSRFMiddleware(s.config.CSRF),
-//	)
-//
-//	// Router config
-//	routeConfig(apiRouter)
-//
-//	s.httpServer.Handler = handler(router)
-//}
-
 func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	subrouter := http.NewServeMux()
 
@@ -55,6 +36,8 @@ func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	handler := middleware.CreateMiddlewareChain(
 		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
 		middleware.CSRFMiddleware(s.config.CSRF),
+		middleware.RequestIDMiddleware(),
+		middleware.AccessLogMiddleware(),
 	)(mainRouter)
 
 	s.httpServer.Handler = handler

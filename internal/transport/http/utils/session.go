@@ -31,7 +31,7 @@ func ClearTokenCookies(w http.ResponseWriter) {
 func CreateSession(w http.ResponseWriter, r *http.Request, auth usecase.Auth, userID int, role string) error {
 	session, err := auth.CreateSession(userID, role)
 	if err != nil {
-		NewError(w, http.StatusInternalServerError, err)
+		WriteAPIError(w, ToAPIError(err))
 		return err
 	}
 	// TODO добавить SessionAliveTime в конфиг

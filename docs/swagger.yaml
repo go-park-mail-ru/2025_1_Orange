@@ -1,0 +1,64 @@
+definitions:
+  dto.ApplicantLogin:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  utils.APIError:
+    properties:
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: API веб-приложения ResuMatch для поиска работы и сотрудников.
+  title: ResuMatch API
+  version: 1.0.0
+paths:
+  /applicant/login:
+    post:
+      consumes:
+      - application/json
+      description: Авторизация пользователя. При успешной авторизации отправляет куки
+        с сессией.
+      parameters:
+      - description: Данные для входа (email и пароль)
+        in: body
+        name: loginData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ApplicantLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (неверные учетные данные)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - _csrf: []
+      summary: Авторизация пользователя
+      tags:
+      - Авторизация
+swagger: "2.0"

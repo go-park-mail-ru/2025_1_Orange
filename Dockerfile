@@ -20,6 +20,7 @@ COPY --from=builder /app/configs/main.yml ./configs/main.yml
 COPY --from=builder /app/.bin .
 COPY --from=builder /app/db/migrations ./migrations
 COPY --from=builder /go/bin/migrate .
+COPY --from=builder /app/docs ./docs
 
 # Директория для аватарок
 RUN mkdir -p /app/assets/img/applicant

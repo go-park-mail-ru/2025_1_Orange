@@ -11,6 +11,9 @@ import (
 	"syscall"
 )
 
+// @title ResuMatch API
+// @version 1.0.0
+// @description API веб-приложения ResuMatch для поиска работы и сотрудников.
 func main() {
 	// 1. Загрузка конфигурации
 	cfg, err := config.Load()

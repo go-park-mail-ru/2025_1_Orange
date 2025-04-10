@@ -59,6 +59,24 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 	middleware.SetCSRFToken(w, r, h.cfg)
 }
 
+// Login godoc
+// @Tags Авторизация
+// @Summary Авторизация пользователя
+// @Description Авторизация пользователя. При успешной авторизации отправляет куки с сессией.
+// Если пользователь уже авторизован, предыдущие cookies с сессией перезаписываются.
+// Также устанавливает CSRF-токен при успешной авторизации.
+// @Accept json
+// @Produce json
+// @Param loginData body dto.ApplicantLogin true "Данные для входа (email и пароль)"
+// @Header 200 {string} Set-Cookie "Сессионные cookies"
+// @Header 200 {string} X-CSRF-Token "CSRF-токен"
+// @Success 200
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (неверные учетные данные)"
+// @Failure 404 {object} utils.APIError "Пользователь не найден"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /applicant/login [post]
+// @Security _csrf
 func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

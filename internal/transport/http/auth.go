@@ -27,6 +27,16 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 	r.Handle("/auth/", http.StripPrefix("/auth", authMux))
 }
 
+// IsAuth godoc
+// @Tags Auth
+// @Summary Проверка авторизации
+// @Description Проверяет авторизован пользователь или нет.
+// @Security session_cookie
+// @Produce json
+// @Success 200 {object} dto.AuthResponse
+// @Failure 401 {object} utils.APIError
+// @Failure 500 {object} utils.APIError
+// @Router /auth/isAuth [get]
 func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -49,6 +59,20 @@ func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// EmailExists godoc
+// @Tags Auth
+// @Summary Проверка email
+// @Description Проверяет, зарегистрирован ли email в системе
+// @Accept json
+// @Produce json
+// @Param input body dto.EmailExistsRequest true "Email для проверки"
+// @Success 200 {object} dto.EmailExistsResponse
+// @Failure 400 {object} utils.APIError
+// @Failure 403 {object} utils.APIError
+// @Failure 404 {object} utils.APIError
+// @Failure 500 {object} utils.APIError
+// @Router /auth/emailExists [post]
+// @Security csrf_token
 func (h *AuthHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -71,6 +95,16 @@ func (h *AuthHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// Logout godoc
+// @Tags Auth
+// @Summary Выход из системы
+// @Description Завершает текущую сессию пользователя
+// @Success 200
+// @Failure 500 {object} utils.APIError
+// @Router /auth/logout [post]
+// @Security session_cookie
+// @Security csrf_token
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -90,6 +124,16 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// LogoutAll godoc
+// @Tags Auth
+// @Summary Выход со всех устройств
+// @Description Завершает все активные сессии пользователя
+// @Success 200
+// @Failure 404 {object} utils.APIError
+// @Failure 500 {object} utils.APIError
+// @Router /auth/logoutAll [post]
+// @Security session_cookie
+// @Security csrf_token
 func (h *AuthHandler) LogoutAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

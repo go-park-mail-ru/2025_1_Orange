@@ -88,8 +88,8 @@ func (a *ApplicantService) Register(ctx context.Context, registerDTO *dto.Applic
 		return -1, err
 	}
 
-	sanitizedFirstName := sanitizer.SrictPolicy.Sanitize(registerDTO.FirstName)
-	sanitizedLastName := sanitizer.SrictPolicy.Sanitize(registerDTO.LastName)
+	sanitizedFirstName := sanitizer.StrictPolicy.Sanitize(registerDTO.FirstName)
+	sanitizedLastName := sanitizer.StrictPolicy.Sanitize(registerDTO.LastName)
 	applicant, err := a.applicantRepository.CreateApplicant(ctx, registerDTO.Email, sanitizedFirstName, sanitizedLastName, hash, salt)
 	if err != nil {
 		return -1, err
@@ -135,19 +135,19 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 		if err := entity.ValidateFirstName(applicantDTO.FirstName); err != nil {
 			return err
 		}
-		updateFields["first_name"] = sanitizer.SrictPolicy.Sanitize(applicantDTO.FirstName)
+		updateFields["first_name"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.FirstName)
 	}
 	if applicantDTO.LastName != "" {
 		if err := entity.ValidateLastName(applicantDTO.LastName); err != nil {
 			return err
 		}
-		updateFields["last_name"] = sanitizer.SrictPolicy.Sanitize(applicantDTO.LastName)
+		updateFields["last_name"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.LastName)
 	}
 	if applicantDTO.MiddleName != "" {
 		if err := entity.ValidateMiddleName(applicantDTO.MiddleName); err != nil {
 			return err
 		}
-		updateFields["middle_name"] = sanitizer.SrictPolicy.Sanitize(applicantDTO.MiddleName)
+		updateFields["middle_name"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.MiddleName)
 	}
 	if !applicantDTO.BirthDate.IsZero() {
 		if err := entity.ValidateBirthDate(applicantDTO.BirthDate); err != nil {
@@ -171,25 +171,25 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 		if err := entity.ValidateQuote(applicantDTO.Quote); err != nil {
 			return err
 		}
-		updateFields["quote"] = sanitizer.SrictPolicy.Sanitize(applicantDTO.Quote)
+		updateFields["quote"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Quote)
 	}
 	if applicantDTO.Vk != "" {
 		if err := entity.ValidateURL(applicantDTO.Vk); err != nil {
 			return err
 		}
-		updateFields["vk"] = sanitizer.SrictPolicy.Sanitize(applicantDTO.Vk)
+		updateFields["vk"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Vk)
 	}
 	if applicantDTO.Telegram != "" {
 		if err := entity.ValidateURL(applicantDTO.Telegram); err != nil {
 			return err
 		}
-		updateFields["telegram"] = sanitizer.SrictPolicy.Sanitize(applicantDTO.Telegram)
+		updateFields["telegram"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Telegram)
 	}
 	if applicantDTO.Facebook != "" {
 		if err := entity.ValidateURL(applicantDTO.Facebook); err != nil {
 			return err
 		}
-		updateFields["facebook"] = sanitizer.SrictPolicy.Sanitize(applicantDTO.Facebook)
+		updateFields["facebook"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Facebook)
 	}
 	if applicantDTO.City != "" {
 		city, err := a.cityRepository.GetCityByName(ctx, applicantDTO.City)

@@ -2,4 +2,4 @@ package sanitizer
 
 import "github.com/microcosm-cc/bluemonday"
 
-var SrictPolicy = bluemonday.StrictPolicy()
+var StrictPolicy = bluemonday.StrictPolicy()

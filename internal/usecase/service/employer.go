@@ -73,8 +73,8 @@ func (e *EmployerService) Register(ctx context.Context, registerDTO *dto.Employe
 		return -1, err
 	}
 
-	sanitizedCompanyName := sanitizer.SrictPolicy.Sanitize(registerDTO.CompanyName)
-	sanitizedLegalAddress := sanitizer.SrictPolicy.Sanitize(registerDTO.LegalAddress)
+	sanitizedCompanyName := sanitizer.StrictPolicy.Sanitize(registerDTO.CompanyName)
+	sanitizedLegalAddress := sanitizer.StrictPolicy.Sanitize(registerDTO.LegalAddress)
 	employer, err = e.employerRepository.CreateEmployer(ctx, registerDTO.Email, sanitizedCompanyName, sanitizedLegalAddress, hash, salt)
 	if err != nil {
 		return -1, err
@@ -119,49 +119,49 @@ func (e *EmployerService) UpdateProfile(ctx context.Context, userID int, employe
 		if err := entity.ValidateCompanyName(employerDTO.CompanyName); err != nil {
 			return err
 		}
-		updateFields["company_name"] = sanitizer.SrictPolicy.Sanitize(employerDTO.CompanyName)
+		updateFields["company_name"] = sanitizer.StrictPolicy.Sanitize(employerDTO.CompanyName)
 	}
 	if employerDTO.LegalAddress != "" {
 		if err := entity.ValidateLegalAddress(employerDTO.LegalAddress); err != nil {
 			return err
 		}
-		updateFields["legal_address"] = sanitizer.SrictPolicy.Sanitize(employerDTO.LegalAddress)
+		updateFields["legal_address"] = sanitizer.StrictPolicy.Sanitize(employerDTO.LegalAddress)
 	}
 	if employerDTO.Slogan != "" {
 		if err := entity.ValidateSlogan(employerDTO.Slogan); err != nil {
 			return err
 		}
-		updateFields["slogan"] = sanitizer.SrictPolicy.Sanitize(employerDTO.Slogan)
+		updateFields["slogan"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Slogan)
 	}
 	if employerDTO.Website != "" {
 		if err := entity.ValidateURL(employerDTO.Website); err != nil {
 			return err
 		}
-		updateFields["website"] = sanitizer.SrictPolicy.Sanitize(employerDTO.Website)
+		updateFields["website"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Website)
 	}
 	if employerDTO.Description != "" {
 		if err := entity.ValidateDescription(employerDTO.Description); err != nil {
 			return err
 		}
-		updateFields["description"] = sanitizer.SrictPolicy.Sanitize(employerDTO.Description)
+		updateFields["description"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Description)
 	}
 	if employerDTO.Vk != "" {
 		if err := entity.ValidateURL(employerDTO.Vk); err != nil {
 			return err
 		}
-		updateFields["vk"] = sanitizer.SrictPolicy.Sanitize(employerDTO.Vk)
+		updateFields["vk"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Vk)
 	}
 	if employerDTO.Telegram != "" {
 		if err := entity.ValidateURL(employerDTO.Telegram); err != nil {
 			return err
 		}
-		updateFields["telegram"] = sanitizer.SrictPolicy.Sanitize(employerDTO.Telegram)
+		updateFields["telegram"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Telegram)
 	}
 	if employerDTO.Facebook != "" {
 		if err := entity.ValidateURL(employerDTO.Facebook); err != nil {
 			return err
 		}
-		updateFields["facebook"] = sanitizer.SrictPolicy.Sanitize(employerDTO.Facebook)
+		updateFields["facebook"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Facebook)
 	}
 
 	if len(updateFields) == 0 {

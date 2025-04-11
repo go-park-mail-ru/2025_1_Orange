@@ -28,3 +28,12 @@ type AuthResponse struct {
 	UserID int    `json:"user_id"`
 	Role   string `json:"role"`
 }
+
+type EmailExistsRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type EmailExistsResponse struct {
+	Exists bool   `json:"exists"`
+	Role   string `json:"role"`
+}

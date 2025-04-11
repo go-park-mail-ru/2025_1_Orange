@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -44,7 +45,7 @@ func NewVacancyRepository(cfg config.PostgresConfig) (*VacancyRepository, error)
 	return &VacancyRepository{DB: db}, nil
 }
 
-func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy) (int, error) {
+func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
 	requestID := middleware.GetRequestID(ctx)
 
 	query := `
@@ -65,11 +66,13 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
             tasks,
             requirements,
             optional_requirements
+			created_at
+			updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
         RETURNING id
     `
-	var id int
+	var createdVacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query,
 		vacancy.EmployerID,
 		vacancy.Title,
@@ -87,34 +90,54 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 		vacancy.Tasks,
 		vacancy.Requirements,
 		vacancy.OptionalRequirements,
-	).Scan(&id)
+	).Scan(
+		&createdVacancy.ID,
+		&createdVacancy.EmployerID,
+		&createdVacancy.Title,
+		&createdVacancy.IsActive,
+		&createdVacancy.SpecializationID,
+		&createdVacancy.WorkFormat,
+		&createdVacancy.Employment,
+		&createdVacancy.Schedule,
+		&createdVacancy.WorkingHours,
+		&createdVacancy.SalaryFrom,
+		&createdVacancy.SalaryTo,
+		&createdVacancy.TaxesIncluded,
+		&createdVacancy.Experience,
+		&createdVacancy.Description,
+		&createdVacancy.Tasks,
+		&createdVacancy.Requirements,
+		&createdVacancy.OptionalRequirements,
+		&createdVacancy.CreatedAt,
+		&createdVacancy.UpdatedAt,
+	)
 
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
 			case "23505": // Уникальное ограничение
-				return 0, entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrAlreadyExists,
 					fmt.Errorf("вакансия с такими параметрами уже существует"),
 				)
 			case "23503": // Ошибка внешнего ключа
-				return 0, entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("работодатель или специализация с указанным ID не существует"),
 				)
 			case "23502": // NOT NULL ограничение
-				return 0, entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("обязательное поле отсутствует"),
 				)
 			case "22P02": // Ошибка типа данных
-				return 0, entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильный формат данных"),
 				)
 			case "23514": // Ошибка constraint
-				return 0, entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
 				)
@@ -126,13 +149,221 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 			"error":     err,
 		}).Error("ошибка при создании вакансии")
 
-		return 0, entity.NewError(
+		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("ошибка при создании вакансии: %w", err),
 		)
 	}
 
-	return id, nil
+	return &createdVacancy, nil
+}
+
+func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillIDs []int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на добавление навыков к вакансии AddSkills")
+
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при начале транзакции для добавления навыков")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при начале транзакции для добавления навыков: %w", err),
+		)
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID": requestID,
+					"error":     rollbackErr,
+				}).Error("ошибка при откате транзакции добавления навыков")
+			}
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, `
+		INSERT INTO vacancy_skill (vacancy_id, skill_id)
+		VALUES ($1, $2)
+	`)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при подготовке запроса для добавления навыков")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при подготовке запроса для добавления навыков: %w", err),
+		)
+	}
+	defer stmt.Close()
+
+	for _, skillID := range skillIDs {
+		_, err = stmt.ExecContext(ctx, vacancyID, skillID)
+		if err != nil {
+			var pqErr *pq.Error
+			if errors.As(err, &pqErr) {
+				switch pqErr.Code {
+				case entity.PSQLUniqueViolation:
+					continue // Пропускаем дубликаты
+				case entity.PSQLNotNullViolation:
+					return entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("обязательное поле отсутствует"),
+					)
+				case entity.PSQLDatatypeViolation:
+					return entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("неправильный формат данных"),
+					)
+				case entity.PSQLCheckViolation:
+					return entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("неправильные данные"),
+					)
+				}
+			}
+
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": vacancyID,
+				"skillID":   skillID,
+				"error":     err,
+			}).Error("ошибка при добавлении навыка к вакансии")
+
+			return entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при добавлении навыка к вакансии: %w", err),
+			)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при коммите транзакции добавления навыков")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при коммите транзакции добавления навыков: %w", err),
+		)
+	}
+
+	return nil
+}
+
+func (r *VacancyRepository) AddApplicant(ctx context.Context, vacancyID, applicantID int) error {
+	return nil
+}
+
+func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs []int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на добавление города к вакансии AddSkills")
+
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при начале транзакции для добавления городов")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при начале транзакции для добавления городов: %w", err),
+		)
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID": requestID,
+					"error":     rollbackErr,
+				}).Error("ошибка при откате транзакции добавления городов")
+			}
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, `
+		INSERT INTO vacancy_city (vacancy_id, city_id)
+		VALUES ($1, $2)
+	`)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при подготовке запроса для добавления городов")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при подготовке запроса для добавления городов: %w", err),
+		)
+	}
+	defer stmt.Close()
+
+	for _, cityID := range cityIDs {
+		_, err = stmt.ExecContext(ctx, vacancyID, cityID)
+		if err != nil {
+			var pqErr *pq.Error
+			if errors.As(err, &pqErr) {
+				switch pqErr.Code {
+				case entity.PSQLUniqueViolation:
+					continue
+				case entity.PSQLNotNullViolation:
+					return entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("обязательное поле отсутствует"),
+					)
+				case entity.PSQLDatatypeViolation:
+					return entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("неправильный формат данных"),
+					)
+				case entity.PSQLCheckViolation:
+					return entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("неправильные данные"),
+					)
+				}
+			}
+
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": vacancyID,
+				"cityID":    cityID,
+				"error":     err,
+			}).Error("ошибка при добавлении города к вакансии")
+
+			return entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при добавлении города к вакансии: %w", err),
+			)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при коммите транзакции добавления городов")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при коммите транзакции добавления городов: %w", err),
+		)
+	}
+
+	return nil
 }
 
 func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacancy, error) {
@@ -164,9 +395,9 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 	var vacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
 		&vacancy.ID,
+		&vacancy.EmployerID,
 		&vacancy.Title,
 		&vacancy.IsActive,
-		&vacancy.EmployerID,
 		&vacancy.SpecializationID,
 		&vacancy.WorkFormat,
 		&vacancy.Employment,
@@ -180,6 +411,8 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 		&vacancy.Tasks,
 		&vacancy.Requirements,
 		&vacancy.OptionalRequirements,
+		&vacancy.CreatedAt,
+		&vacancy.UpdatedAt,
 	)
 
 	if err != nil {
@@ -210,7 +443,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 	return &vacancy, nil
 }
 
-func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy) error {
+func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
 	requestID := middleware.GetRequestID(ctx)
 
 	query := `
@@ -235,12 +468,12 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $17
     `
-
-	result, err := r.DB.ExecContext(ctx, query,
+	var updatedVacancy entity.Vacancy
+	err := r.DB.QueryRowContext(ctx, query,
 		vacancy.ID,
+		vacancy.EmployerID,
 		vacancy.Title,
 		vacancy.IsActive,
-		vacancy.EmployerID,
 		vacancy.SpecializationID,
 		vacancy.WorkFormat,
 		vacancy.Employment,
@@ -254,6 +487,26 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 		vacancy.Tasks,
 		vacancy.Requirements,
 		vacancy.OptionalRequirements,
+	).Scan(
+		&updatedVacancy.ID,
+		&updatedVacancy.EmployerID,
+		&updatedVacancy.Title,
+		&updatedVacancy.IsActive,
+		&updatedVacancy.SpecializationID,
+		&updatedVacancy.WorkFormat,
+		&updatedVacancy.Employment,
+		&updatedVacancy.Schedule,
+		&updatedVacancy.WorkingHours,
+		&updatedVacancy.SalaryFrom,
+		&updatedVacancy.SalaryTo,
+		&updatedVacancy.TaxesIncluded,
+		&updatedVacancy.Experience,
+		&updatedVacancy.Description,
+		&updatedVacancy.Tasks,
+		&updatedVacancy.Requirements,
+		&updatedVacancy.OptionalRequirements,
+		&updatedVacancy.CreatedAt,
+		&updatedVacancy.UpdatedAt,
 	)
 
 	if err != nil {
@@ -261,27 +514,27 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
 			case "23505": // Уникальное ограничение
-				return entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrAlreadyExists,
 					fmt.Errorf("конфликт уникальных данных вакансии"),
 				)
 			case "23503": // Ошибка внешнего ключа
-				return entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("работодатель или специализация с указанным ID не существует"),
 				)
 			case "23502": // NOT NULL ограничение
-				return entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("обязательное поле отсутствует"),
 				)
 			case "22P02": // Ошибка типа данных
-				return entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильный формат данных"),
 				)
 			case "23514": // Ошибка constraint
-				return entity.NewError(
+				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные (например, salary_from > salary_to)"),
 				)
@@ -294,33 +547,12 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 			"error":     err,
 		}).Error("не удалось обновить вакансию")
 
-		return entity.NewError(
+		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось обновить вакансию с id=%d", vacancy.ID),
 		)
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"id":        vacancy.ID,
-			"error":     err,
-		}).Error("не удалось получить обновленные строки при обновлении вакансии")
-
-		return entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось получить обновленные строки при обновлении вакансии с id=%d", vacancy.ID),
-		)
-	}
-
-	if rowsAffected == 0 {
-		return entity.NewError(
-			entity.ErrNotFound,
-			fmt.Errorf("вакансия с id=%d не найдена", vacancy.ID),
-		)
-	}
-	return nil
+	return &updatedVacancy, nil
 }
 
 func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, error) {
@@ -366,9 +598,9 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 		var vacancy entity.Vacancy
 		err := rows.Scan(
 			&vacancy.ID,
+			&vacancy.EmployerID,
 			&vacancy.Title,
 			&vacancy.IsActive,
-			&vacancy.EmployerID,
 			&vacancy.SpecializationID,
 			&vacancy.WorkFormat,
 			&vacancy.Employment,
@@ -419,319 +651,621 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 	return vacancies, nil
 }
 
-func (r *VacancyRepository) Delete(ctx context.Context, employerID, vacancyID int) error {
+func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 	requestID := middleware.GetRequestID(ctx)
 
 	query := `
         DELETE FROM vacancy
         WHERE id = $1
-        AND employer_id = $2
     `
 
-	result, err := r.DB.ExecContext(ctx, query, vacancyID, employerID)
+	result, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
-			"requestID":  requestID,
-			"employerID": employerID,
-			"vacancyID":  vacancyID,
-			"error":      err,
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
 		}).Error("не удалось удалить вакансию")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось удалить вакансию с id=%d для работодателя id=%d", vacancyID, employerID),
+			fmt.Errorf("не удалось удалить вакансию с id=%d", vacancyID),
 		)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
-			"requestID":  requestID,
-			"employerID": employerID,
-			"vacancyID":  vacancyID,
-			"error":      err,
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
 		}).Error("не удалось получить количество удаленных строк")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось проверить удаление вакансии с id=%d для работодателя id=%d", vacancyID, employerID),
+			fmt.Errorf("не удалось проверить удаление вакансии с id=%d", vacancyID),
 		)
 	}
 
 	if rowsAffected == 0 {
 		l.Log.WithFields(logrus.Fields{
-			"requestID":  requestID,
-			"employerID": employerID,
-			"vacancyID":  vacancyID,
+			"requestID": requestID,
+			"vacancyID": vacancyID,
 		}).Warn("попытка удаления несуществующей вакансии")
 
 		return entity.NewError(
 			entity.ErrNotFound,
-			fmt.Errorf("вакансия с id=%d для работодателя id=%d не найдена", vacancyID, employerID),
+			fmt.Errorf("вакансия с id=%d не найдена", vacancyID),
+		)
+	}
+	return nil
+}
+
+func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение навыков вакансии GetSkillsByVacancyID")
+
+	query := `
+		SELECT s.id, s.name
+		FROM skill s
+		JOIN vacancy_skill vs ON s.id = vs.skill_id
+		WHERE vs.vacancy_id = $1
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при получении навыков резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении навыков резюме: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var skills []entity.Skill
+	for rows.Next() {
+		var skill entity.Skill
+		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": vacancyID,
+				"error":     err,
+			}).Error("ошибка при сканировании навыка")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании навыка: %w", err),
+			)
+		}
+		skills = append(skills, skill)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при итерации по навыкам")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по навыкам: %w", err),
+		)
+	}
+
+	return skills, nil
+}
+
+func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID int) ([]entity.City, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение городов вакансии GetSkillsByVacancyID")
+
+	query := `
+		SELECT c.id, c.name
+		FROM city c
+		JOIN vacancy_city vc ON c.id = vc.skill_id
+		WHERE vc.vacancy_id = $1
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при получении городов резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении городов резюме: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var cities []entity.City
+	for rows.Next() {
+		var skill entity.City
+		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": vacancyID,
+				"error":     err,
+			}).Error("ошибка при сканировании навыка")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании навыка: %w", err),
+			)
+		}
+		cities = append(cities, skill)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"resumeID":  vacancyID,
+			"error":     err,
+		}).Error("ошибка при итерации по навыкам")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по навыкам: %w", err),
+		)
+	}
+
+	return cities, nil
+}
+
+func (r *VacancyRepository) GetVacancyResponsesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyResponses, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"vacancyID": vacancyID,
+	}).Info("SQL запрос на получение откликов по вакансии")
+
+	query := `
+		SELECT 
+			r.id,
+			r.vacancy_id,
+			r.applicant_id,
+			r.applied_at,
+		FROM vacancy_response
+        WHERE vacancy_id = $1
+        ORDER BY applied_at DESC
+	`
+	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при получении откликов на вакансию")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении откликов на вакансию: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var responses []entity.VacancyResponses
+	for rows.Next() {
+		var response entity.VacancyResponses
+		if err := rows.Scan(
+			&response.ID,
+			&response.VacancyID,
+			&response.ApplicantID,
+			&response.AppliedAt,
+		); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": vacancyID,
+				"error":     err,
+			}).Error("ошибка при сканировании отклика")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании отклика: %w", err),
+			)
+		}
+		responses = append(responses, response)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при итерации по откликам")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по откликам: %w", err),
+		)
+	}
+	return responses, nil
+}
+
+func (r *VacancyRepository) GetVacancyLikesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyLike, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"vacancyID": vacancyID,
+	}).Info("SQL запрос на получение лайкнутых вакансий")
+
+	query := `
+        SELECT 
+            id,
+            vacancy_id,
+            applicant_id,
+            liked_at
+        FROM vacancy_like
+        WHERE vacancy_id = $1
+        ORDER BY liked_at DESC
+    `
+
+	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при получении лайкнутых вакансий")
+
+		return nil, fmt.Errorf("failed to get liked vacancies: %w", err)
+	}
+	defer rows.Close()
+
+	var likes []entity.VacancyLike
+	for rows.Next() {
+		var like entity.VacancyLike
+		if err := rows.Scan(
+			&like.ID,
+			&like.VacancyID,
+			&like.ApplicantID,
+			&like.LikedAt,
+		); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": vacancyID,
+				"error":     err,
+			}).Error("ошибка при сканировании лайка")
+
+			return nil, fmt.Errorf("ошибка при сканировании лайка: %w", err)
+		}
+		likes = append(likes, like)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":   requestID,
+			"applicantID": vacancyID,
+			"error":       err,
+		}).Error("ошибка при итерации по лайкам")
+
+		return nil, fmt.Errorf("error iterating vacancy likes: %w", err)
+	}
+
+	return likes, nil
+}
+
+func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) error {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление навыков вакансии DeleteSkills")
+
+	query := `
+		DELETE FROM vacancy_skill
+		WHERE vacancy_id = $1
+	`
+
+	_, err := r.DB.ExecContext(ctx, query, vacancyID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при удалении навыков вакансии")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при удалении навыков вакансии: %w", err),
 		)
 	}
 
 	return nil
 }
 
-func (r *VacancyRepository) GetVacanciesByEmpID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
+func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error {
 	requestID := middleware.GetRequestID(ctx)
 
-	query := `
-        SELECT 
-            SELECT 
-            id,
-            title,
-            is_active,
-            employer_id,
-            specialization_id,
-            work_format,
-            employment,
-            schedule,
-            working_hours,
-            salary_from,
-            salary_to,
-            taxes_included,
-            experience,
-            description,
-            tasks,
-            requirements,
-            optional_requirements,
-        FROM vacancy
-        WHERE v.employer_id = $1
-    `
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление городов вакансии DeleteSkills")
 
-	rows, err := r.DB.QueryContext(ctx, query, employerID)
+	query := `
+		DELETE FROM vacancy_city
+		WHERE vacancy_id = $1
+	`
+
+	_, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
-			"requestID":  requestID,
-			"employerID": employerID,
-			"error":      err,
-		}).Error("не удалось получить вакансии работодателя")
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при удалении городов вакансии")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при удалении городов вакансии: %w", err),
+		)
+	}
+
+	return nil
+}
+
+func (r *VacancyRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на поиск ID навыков по названиям FindSkillIDsByNames")
+
+	if len(skillNames) == 0 {
+		return []int{}, nil
+	}
+
+	// Создаем параметры для запроса
+	params := make([]interface{}, len(skillNames))
+	placeholders := make([]string, len(skillNames))
+	for i, name := range skillNames {
+		params[i] = name
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id
+		FROM skill
+		WHERE name IN (%s)
+	`, strings.Join(placeholders, ", "))
+
+	rows, err := r.DB.QueryContext(ctx, query, params...)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске ID навыков по названиям")
 
 		return nil, entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось получить вакансии работодателя: %w", err),
+			fmt.Errorf("ошибка при поиске ID навыков по названиям: %w", err),
 		)
 	}
 	defer rows.Close()
 
-	var vacancies []*entity.Vacancy
+	var skillIDs []int
 	for rows.Next() {
-		var vacancy entity.Vacancy
-		err := rows.Scan(
-			&vacancy.ID,
-			&vacancy.Title,
-			&vacancy.IsActive,
-			&vacancy.EmployerID,
-			&vacancy.SpecializationID,
-			&vacancy.WorkFormat,
-			&vacancy.Employment,
-			&vacancy.Schedule,
-			&vacancy.WorkingHours,
-			&vacancy.SalaryFrom,
-			&vacancy.SalaryTo,
-			&vacancy.TaxesIncluded,
-			&vacancy.Experience,
-			&vacancy.Description,
-			&vacancy.Tasks,
-			&vacancy.Requirements,
-			&vacancy.OptionalRequirements,
-			&vacancy.CreatedAt,
-			&vacancy.UpdatedAt,
-		)
-		if err != nil {
+		var id int
+		if err := rows.Scan(&id); err != nil {
 			l.Log.WithFields(logrus.Fields{
-				"requestID":  requestID,
-				"employerID": employerID,
-				"error":      err,
-			}).Error("ошибка сканирования вакансии")
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании ID навыка")
 
 			return nil, entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("ошибка обработки данных вакансии: %w", err),
+				fmt.Errorf("ошибка при сканировании ID навыка: %w", err),
 			)
 		}
-		vacancies = append(vacancies, &vacancy)
+		skillIDs = append(skillIDs, id)
 	}
 
 	if err := rows.Err(); err != nil {
 		l.Log.WithFields(logrus.Fields{
-			"requestID":  requestID,
-			"employerID": employerID,
-			"error":      err,
-		}).Error("ошибка при обработке результатов запроса")
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по ID навыков")
 
 		return nil, entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("ошибка при обработке результатов запроса вакансий: %w", err),
+			fmt.Errorf("ошибка при итерации по ID навыков: %w", err),
 		)
 	}
 
-	if len(vacancies) == 0 {
-		l.Log.WithFields(logrus.Fields{
-			"requestID":  requestID,
-			"employerID": employerID,
-		}).Debug("вакансии работодателя не найдены")
-
-		return nil, entity.NewError(
-			entity.ErrNotFound,
-			fmt.Errorf("вакансии работодателя не найдены"),
-		)
-	}
-
-	return vacancies, nil
+	return skillIDs, nil
 }
 
-// func (r *VacancyRepository) Unsubscribe(ctx context.Context, vacancyID uint64, applicantID uint64) error {
+func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []string) ([]int, error) {
+	requestID := middleware.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на поиск ID городов по названиям FindCityIDsByNames")
+
+	if len(cityNames) == 0 {
+		return []int{}, nil
+	}
+
+	params := make([]interface{}, len(cityNames))
+	placeholders := make([]string, len(cityNames))
+	for i, name := range cityNames {
+		params[i] = name
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	query := fmt.Sprintf(`
+        SELECT id
+        FROM city
+        WHERE name IN (%s)
+    `, strings.Join(placeholders, ", "))
+
+	rows, err := r.DB.QueryContext(ctx, query, params...)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске ID городов по названиям")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске ID городов по названиям: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var cityIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании ID города")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании ID города: %w", err),
+			)
+		}
+		cityIDs = append(cityIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по ID городов")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по ID городов: %w", err),
+		)
+	}
+
+	return cityIDs, nil
+}
+
+// func (r *VacancyRepository) GetVacanciesByEmpID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
 // 	requestID := middleware.GetRequestID(ctx)
 
 // 	query := `
-//         DELETE FROM vacancy_subscriber
-//         WHERE vacancy_id = $1 AND applicant_id = $2
+//         SELECT
+//             SELECT
+//             id,
+//             title,
+//             is_active,
+//             employer_id,
+//             specialization_id,
+//             work_format,
+//             employment,
+//             schedule,
+//             working_hours,
+//             salary_from,
+//             salary_to,
+//             taxes_included,
+//             experience,
+//             description,
+//             tasks,
+//             requirements,
+//             optional_requirements,
+//         FROM vacancy
+//         WHERE v.employer_id = $1
 //     `
 
-// 	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
+// 	rows, err := r.DB.QueryContext(ctx, query, employerID)
 // 	if err != nil {
-// 		var pqErr *pq.Error
-// 		if errors.As(err, &pqErr) {
-// 			switch pqErr.Code {
-// 			case "23503": // Ошибка внешнего ключа
-// 				return entity.NewError(
-// 					entity.ErrBadRequest,
-// 					fmt.Errorf("вакансия или соискатель с указанными ID не существуют"),
-// 				)
-// 			case "23505": // Уникальное ограничение (если есть)
-// 				return entity.NewError(
-// 					entity.ErrAlreadyExists,
-// 					fmt.Errorf("подписка уже существует"),
-// 				)
-// 			}
+// 		l.Log.WithFields(logrus.Fields{
+// 			"requestID":  requestID,
+// 			"employerID": employerID,
+// 			"error":      err,
+// 		}).Error("не удалось получить вакансии работодателя")
+
+// 		return nil, entity.NewError(
+// 			entity.ErrInternal,
+// 			fmt.Errorf("не удалось получить вакансии работодателя: %w", err),
+// 		)
+// 	}
+// 	defer rows.Close()
+
+// 	var vacancies []*entity.Vacancy
+// 	for rows.Next() {
+// 		var vacancy entity.Vacancy
+// 		err := rows.Scan(
+// 			&vacancy.ID,
+// 			&vacancy.Title,
+// 			&vacancy.IsActive,
+// 			&vacancy.EmployerID,
+// 			&vacancy.SpecializationID,
+// 			&vacancy.WorkFormat,
+// 			&vacancy.Employment,
+// 			&vacancy.Schedule,
+// 			&vacancy.WorkingHours,
+// 			&vacancy.SalaryFrom,
+// 			&vacancy.SalaryTo,
+// 			&vacancy.TaxesIncluded,
+// 			&vacancy.Experience,
+// 			&vacancy.Description,
+// 			&vacancy.Tasks,
+// 			&vacancy.Requirements,
+// 			&vacancy.OptionalRequirements,
+// 			&vacancy.CreatedAt,
+// 			&vacancy.UpdatedAt,
+// 		)
+// 		if err != nil {
+// 			l.Log.WithFields(logrus.Fields{
+// 				"requestID":  requestID,
+// 				"employerID": employerID,
+// 				"error":      err,
+// 			}).Error("ошибка сканирования вакансии")
+
+// 			return nil, entity.NewError(
+// 				entity.ErrInternal,
+// 				fmt.Errorf("ошибка обработки данных вакансии: %w", err),
+// 			)
 // 		}
+// 		vacancies = append(vacancies, &vacancy)
+// 	}
 
+// 	if err := rows.Err(); err != nil {
 // 		l.Log.WithFields(logrus.Fields{
-// 			"requestID":   requestID,
-// 			"vacancyID":   vacancyID,
-// 			"applicantID": applicantID,
-// 			"error":       err,
-// 		}).Error("ошибка при отписке от вакансии")
+// 			"requestID":  requestID,
+// 			"employerID": employerID,
+// 			"error":      err,
+// 		}).Error("ошибка при обработке результатов запроса")
 
-// 		return entity.NewError(
+// 		return nil, entity.NewError(
 // 			entity.ErrInternal,
-// 			fmt.Errorf("не удалось отписаться от вакансии: %w", err),
+// 			fmt.Errorf("ошибка при обработке результатов запроса вакансий: %w", err),
 // 		)
 // 	}
 
-// 	rowsAffected, err := result.RowsAffected()
-// 	if err != nil {
+// 	if len(vacancies) == 0 {
 // 		l.Log.WithFields(logrus.Fields{
-// 			"requestID":   requestID,
-// 			"vacancyID":   vacancyID,
-// 			"applicantID": applicantID,
-// 			"error":       err,
-// 		}).Error("не удалось проверить количество отписанных строк")
+// 			"requestID":  requestID,
+// 			"employerID": employerID,
+// 		}).Debug("вакансии работодателя не найдены")
 
-// 		return entity.NewError(
-// 			entity.ErrInternal,
-// 			fmt.Errorf("ошибка при проверке отписки от вакансии: %w", err),
-// 		)
-// 	}
-
-// 	if rowsAffected == 0 {
-// 		l.Log.WithFields(logrus.Fields{
-// 			"requestID":   requestID,
-// 			"vacancyID":   vacancyID,
-// 			"applicantID": applicantID,
-// 		}).Warn("попытка отписаться от несуществующей подписки")
-
-// 		return entity.NewError(
+// 		return nil, entity.NewError(
 // 			entity.ErrNotFound,
-// 			fmt.Errorf("подписка на вакансию %d для соискателя %d не найдена", vacancyID, applicantID),
+// 			fmt.Errorf("вакансии работодателя не найдены"),
 // 		)
 // 	}
 
-// 	l.Log.WithFields(logrus.Fields{
-// 		"requestID":   requestID,
-// 		"vacancyID":   vacancyID,
-// 		"applicantID": applicantID,
-// 	}).Debug("успешная отписка от вакансии")
-
-// 	return nil
-// }
-
-// func (r *VacancyRepository) Subscribe(ctx context.Context, vacancyID uint64, applicantID uint64) error {
-//     requestID := middleware.GetRequestID(ctx)
-
-//     query := `
-//         INSERT INTO vacancy_subscriber (vacancy_id, applicant_id)
-//         VALUES ($1, $2)
-//         ON CONFLICT (vacancy_id, applicant_id) DO NOTHING
-//     `
-
-//     result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
-//     if err != nil {
-//         var pqErr *pq.Error
-//         if errors.As(err, &pqErr) {
-//             switch pqErr.Code {
-//             case "23503": // Ошибка внешнего ключа
-//                 return entity.NewError(
-//                     entity.ErrBadRequest,
-//                     fmt.Errorf("вакансия или соискатель с указанными ID не существуют"),
-//                 )
-//             case "23505": // Уникальное ограничение (уже обработано ON CONFLICT)
-//                 return entity.NewError(
-//                     entity.ErrAlreadyExists,
-//                     fmt.Errorf("подписка уже существует"),
-//                 )
-//             }
-//         }
-
-//         l.Log.WithFields(logrus.Fields{
-//             "requestID":    requestID,
-//             "vacancyID":    vacancyID,
-//             "applicantID":  applicantID,
-//             "error":        err,
-//         }).Error("ошибка при подписке на вакансию")
-
-//         return entity.NewError(
-//             entity.ErrInternal,
-//             fmt.Errorf("не удалось подписаться на вакансию: %w", err),
-//         )
-//     }
-
-//     rowsAffected, err := result.RowsAffected()
-//     if err != nil {
-//         l.Log.WithFields(logrus.Fields{
-//             "requestID":    requestID,
-//             "vacancyID":    vacancyID,
-//             "applicantID":  applicantID,
-//             "error":        err,
-//         }).Error("не удалось проверить количество добавленных подписок")
-
-//         return entity.NewError(
-//             entity.ErrInternal,
-//             fmt.Errorf("ошибка при проверке подписки на вакансию: %w", err),
-//         )
-//     }
-
-//     if rowsAffected == 0 {
-//         l.Log.WithFields(logrus.Fields{
-//             "requestID":    requestID,
-//             "vacancyID":    vacancyID,
-//             "applicantID":  applicantID,
-//         }).Debug("попытка повторной подписки на вакансию")
-
-//         return entity.NewError(
-//             entity.ErrAlreadyExists,
-//             fmt.Errorf("подписка на вакансию %d уже существует для соискателя %d", vacancyID, applicantID),
-//         )
-//     }
-
-//     l.Log.WithFields(logrus.Fields{
-//         "requestID":    requestID,
-//         "vacancyID":    vacancyID,
-//         "applicantID":  applicantID,
-//     }).Debug("успешная подписка на вакансию")
-
-//     return nil
+// 	return vacancies, nil
 // }

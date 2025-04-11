@@ -81,7 +81,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 // Также устанавливает CSRF-токен при успешной авторизации.
 // @Accept json
 // @Produce json
-// @Param loginData body dto.ApplicantLogin true "Данные для авторизации (email и пароль)"
+// @Param loginData body dto.Login true "Данные для авторизации (email и пароль)"
 // @Header 200 {string} Set-Cookie "Сессионные cookies"
 // @Header 200 {string} X-CSRF-Token "CSRF-токен"
 // @Success 200
@@ -94,7 +94,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var loginDTO dto.ApplicantLogin
+	var loginDTO dto.Login
 	if err := json.NewDecoder(r.Body).Decode(&loginDTO); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
@@ -136,7 +136,7 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	currentUserID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -149,7 +149,7 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if applicantID != currentUserID {
+	if applicantID != currentUserID || role != "applicant" {
 		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
@@ -193,9 +193,14 @@ func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if role != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
 
@@ -238,10 +243,14 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
+	}
+
+	if role != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 	}
 
 	file, _, err := r.FormFile("avatar")

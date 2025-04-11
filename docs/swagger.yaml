@@ -1,15 +1,5 @@
 basePath: /api/v1
 definitions:
-  dto.ApplicantLogin:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-    required:
-    - email
-    - password
-    type: object
   dto.ApplicantProfileResponse:
     properties:
       avatar_path:
@@ -21,6 +11,8 @@ definitions:
       created_at:
         type: string
       email:
+        type: string
+      facebook:
         type: string
       first_name:
         type: string
@@ -36,7 +28,11 @@ definitions:
         type: string
       status:
         type: string
+      telegram:
+        type: string
       updated_at:
+        type: string
+      vk:
         type: string
     type: object
   dto.ApplicantProfileUpdate:
@@ -44,6 +40,8 @@ definitions:
       birth_date:
         type: string
       city:
+        type: string
+      facebook:
         type: string
       first_name:
         type: string
@@ -56,6 +54,10 @@ definitions:
       sex:
         type: string
       status:
+        type: string
+      telegram:
+        type: string
+      vk:
         type: string
     type: object
   dto.ApplicantRegister:
@@ -98,16 +100,6 @@ definitions:
       role:
         type: string
     type: object
-  dto.EmployerLogin:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-    required:
-    - email
-    - password
-    type: object
   dto.EmployerProfileResponse:
     properties:
       company_name:
@@ -118,6 +110,8 @@ definitions:
         type: string
       email:
         type: string
+      facebook:
+        type: string
       id:
         type: integer
       legal_address:
@@ -126,7 +120,11 @@ definitions:
         type: string
       slogan:
         type: string
+      telegram:
+        type: string
       updated_at:
+        type: string
+      vk:
         type: string
       website:
         type: string
@@ -137,9 +135,15 @@ definitions:
         type: string
       description:
         type: string
+      facebook:
+        type: string
       legal_address:
         type: string
       slogan:
+        type: string
+      telegram:
+        type: string
+      vk:
         type: string
       website:
         type: string
@@ -159,6 +163,16 @@ definitions:
         type: string
     required:
     - company_name
+    - email
+    - password
+    type: object
+  dto.Login:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
     - email
     - password
     type: object
@@ -243,7 +257,7 @@ paths:
         name: loginData
         required: true
         schema:
-          $ref: '#/definitions/dto.ApplicantLogin'
+          $ref: '#/definitions/dto.Login'
       produces:
       - application/json
       responses:
@@ -497,7 +511,7 @@ paths:
         name: loginData
         required: true
         schema:
-          $ref: '#/definitions/dto.EmployerLogin'
+          $ref: '#/definitions/dto.Login'
       produces:
       - application/json
       responses:

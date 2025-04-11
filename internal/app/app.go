@@ -28,6 +28,7 @@ func Init(cfg *config.Config) *server.Server {
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to city postgres: %v", err)
+
 	}
 
 	staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
@@ -92,6 +93,7 @@ func Init(cfg *config.Config) *server.Server {
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
 	employerService := service.NewEmployerService(employerRepo, staticRepo)
 	vacancyService := service.NewVacanciesService(vacanciesRepo, cityRepo, applicantRepo, specializationRepo)
+
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)

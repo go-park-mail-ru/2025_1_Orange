@@ -3,6 +3,7 @@ package service
 import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"ResuMatch/internal/utils"
@@ -15,8 +16,7 @@ import (
 )
 
 type VacanciesService struct {
-	vacanciesRepository repository.VacancyRepository
-	//skillRepository          repository.SkillRepository
+	vacanciesRepository      repository.VacancyRepository
 	cityRepository           repository.CityRepository
 	applicantRepository      repository.ApplicantRepository
 	specializationRepository repository.SpecializationRepository
@@ -36,6 +36,7 @@ func NewVacanciesService(vacancyRepo repository.VacancyRepository,
 }
 
 func (s *VacanciesService) CreateVacancy(ctx context.Context, request *dto.VacancyCreate) (*dto.VacancyResponse, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	employerID, ok := ctx.Value("employerID").(int)
@@ -229,6 +230,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 }
 
 func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	employerID, ok := ctx.Value("employerID").(int)
@@ -365,6 +367,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 }
 
 func (vs *VacanciesService) DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -450,21 +453,20 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 	}
 
 	return response, nil
-}
 
-func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
-	if _, err := s.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
-		return err
-	}
-	// Проверяем, не откликался ли уже
-	hasResponded, err := s.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
-	if err != nil {
-		return err
-	}
-	if hasResponded {
-		return entity.NewError(entity.ErrAlreadyExists,
-			fmt.Errorf("you have already applied to this vacancy"))
-	}
+// func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
+// 	if _, err := s.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
+// 		return err
+// 	}
+// 	// Проверяем, не откликался ли уже
+// 	hasResponded, err := s.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if hasResponded {
+// 		return entity.NewError(entity.ErrAlreadyExists,
+// 			fmt.Errorf("you have already applied to this vacancy"))
+// 	}
 
-	return s.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)
-}
+// 	return s.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)
+// }

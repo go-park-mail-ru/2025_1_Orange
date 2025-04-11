@@ -94,7 +94,7 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var loginDTO dto.EmployerLogin
+	var loginDTO dto.Login
 	if err := json.NewDecoder(r.Body).Decode(&loginDTO); err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrBadRequest)
 		return
@@ -173,9 +173,14 @@ func (h *EmployerHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if role != "employer" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
 
@@ -218,9 +223,14 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if role != "employer" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
 

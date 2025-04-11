@@ -13,6 +13,9 @@ type Employer struct {
 	Email        string    `db:"email"`
 	Slogan       string    `db:"slogan"`
 	Website      string    `db:"website"`
+	Vk           string    `db:"vk"`
+	Telegram     string    `db:"telegram"`
+	Facebook     string    `db:"facebook"`
 	Description  string    `db:"description"`
 	LogoID       int       `db:"logo_id"`
 	PasswordHash []byte    `db:"-"`
@@ -51,11 +54,11 @@ func ValidateSlogan(slogan string) error {
 	return nil
 }
 
-func ValidateWebsite(website string) error {
-	if utf8.RuneCountInString(website) > 64 {
+func ValidateURL(url string) error {
+	if utf8.RuneCountInString(url) > 128 {
 		return NewError(
 			ErrBadRequest,
-			fmt.Errorf("адрес сайта компании не может быть длиннее 255 символов"),
+			fmt.Errorf("url не может быть длиннее 128 символов"),
 		)
 	}
 	return nil

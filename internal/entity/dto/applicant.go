@@ -13,6 +13,9 @@ type ApplicantProfileResponse struct {
 	Email      string    `json:"email"`
 	Status     string    `json:"status"`
 	Quote      string    `json:"quote"`
+	Vk         string    `json:"vk"`
+	Telegram   string    `json:"telegram"`
+	Facebook   string    `json:"facebook"`
 	AvatarPath string    `json:"avatar_path"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
@@ -27,4 +30,7 @@ type ApplicantProfileUpdate struct {
 	Sex        string    `json:"sex"`
 	Status     string    `json:"status"`
 	Quote      string    `json:"quote"`
+	Vk         string    `json:"vk"`
+	Telegram   string    `json:"telegram"`
+	Facebook   string    `json:"facebook"`
 }

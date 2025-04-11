@@ -38,6 +38,9 @@ func (a *ApplicantService) applicantEntityToDTO(ctx context.Context, applicantEn
 		Sex:        applicantEntity.Sex,
 		Status:     string(applicantEntity.Status),
 		Quote:      applicantEntity.Quote,
+		Vk:         applicantEntity.Vk,
+		Telegram:   applicantEntity.Telegram,
+		Facebook:   applicantEntity.Facebook,
 		CreatedAt:  applicantEntity.CreatedAt,
 		UpdatedAt:  applicantEntity.UpdatedAt,
 	}
@@ -166,6 +169,24 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 			return err
 		}
 		updateFields["quote"] = applicantDTO.Quote
+	}
+	if applicantDTO.Vk != "" {
+		if err := entity.ValidateURL(applicantDTO.Vk); err != nil {
+			return err
+		}
+		updateFields["vk"] = applicantDTO.Vk
+	}
+	if applicantDTO.Telegram != "" {
+		if err := entity.ValidateURL(applicantDTO.Telegram); err != nil {
+			return err
+		}
+		updateFields["telegram"] = applicantDTO.Telegram
+	}
+	if applicantDTO.Facebook != "" {
+		if err := entity.ValidateURL(applicantDTO.Facebook); err != nil {
+			return err
+		}
+		updateFields["facebook"] = applicantDTO.Facebook
 	}
 	if applicantDTO.City != "" {
 		city, err := a.cityRepository.GetCityByName(ctx, applicantDTO.City)

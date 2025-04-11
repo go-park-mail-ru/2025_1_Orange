@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS applicant
         email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?$'
     )
     CONSTRAINT email_length CHECK (LENGTH(email) <= 255) NOT NULL UNIQUE,
+    vk         TEXT
+    CONSTRAINT employer_vk_url_length CHECK (LENGTH(vk) <= 128) UNIQUE,
+    telegram         TEXT
+    CONSTRAINT employer_telegram_url_length CHECK (LENGTH(telegram) <= 128) UNIQUE,
+    facebook         TEXT
+    CONSTRAINT employer_facebook_url_length CHECK (LENGTH(facebook) <= 128) UNIQUE,
     password_hashed  bytea
     CONSTRAINT password_hashed_length CHECK (OCTET_LENGTH(password_hashed) <= 32) NOT NULL,
     password_salt  bytea
@@ -65,7 +71,13 @@ CREATE TABLE IF NOT EXISTS employer
     CONSTRAINT employer_company_name_length CHECK (LENGTH(company_name) <= 64) NOT NULL UNIQUE,
     slogan          TEXT,
     website         TEXT
-    CONSTRAINT employer_website_url_length CHECK (LENGTH(website) <= 255) UNIQUE,
+    CONSTRAINT employer_website_url_length CHECK (LENGTH(website) <= 128) UNIQUE,
+    vk         TEXT
+    CONSTRAINT employer_vk_url_length CHECK (LENGTH(vk) <= 128) UNIQUE,
+    telegram         TEXT
+    CONSTRAINT employer_telegram_url_length CHECK (LENGTH(telegram) <= 128) UNIQUE,
+    facebook         TEXT
+    CONSTRAINT employer_facebook_url_length CHECK (LENGTH(facebook) <= 128) UNIQUE,
     description     TEXT,
     legal_address   TEXT
     CONSTRAINT employer_legal_address_length CHECK (LENGTH(legal_address) <= 255),

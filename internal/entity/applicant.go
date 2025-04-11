@@ -2,9 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"mime/multipart"
-	"path/filepath"
-	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -30,6 +27,9 @@ type Applicant struct {
 	Sex          string          `db:"sex"` // "M" или "F"
 	Status       ApplicantStatus `db:"status"`
 	Quote        string          `db:"quote"`
+	Vk           string          `db:"vk"`
+	Telegram     string          `db:"telegram"`
+	Facebook     string          `db:"facebook"`
 	AvatarID     int             `db:"avatar_id"`
 	PasswordHash []byte          `db:"-"`
 	PasswordSalt []byte          `db:"-"`
@@ -116,24 +116,5 @@ func ValidateBirthDate(birthDate time.Time) error {
 			fmt.Errorf("дата рождения не может быть позже текущей даты"),
 		)
 	}
-	return nil
-}
-
-func ValidateAvatar(fileHeader *multipart.FileHeader) error {
-	if fileHeader.Size > 5<<20 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("размер изображения не должен превышать 5MB"),
-		)
-	}
-
-	fileExt := strings.ToLower(filepath.Ext(fileHeader.Filename))
-	if fileExt != ".jpg" && fileExt != ".jpeg" && fileExt != ".png" {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("допустимы только форматы jpg, jpeg, png"),
-		)
-	}
-
 	return nil
 }

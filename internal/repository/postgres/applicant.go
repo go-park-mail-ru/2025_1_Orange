@@ -31,6 +31,9 @@ type ScanApplicant struct {
 	Sex          sql.NullString
 	Status       sql.NullString
 	Quote        sql.NullString
+	Vk           sql.NullString
+	Telegram     sql.NullString
+	Facebook     sql.NullString
 	AvatarID     sql.NullInt64
 	PasswordHash []byte
 	PasswordSalt []byte
@@ -50,6 +53,9 @@ func (a *ScanApplicant) GetEntity() *entity.Applicant {
 		Sex:          a.Sex.String,
 		Status:       toApplicantStatus(a.Status),
 		Quote:        a.Quote.String,
+		Vk:           a.Vk.String,
+		Telegram:     a.Telegram.String,
+		Facebook:     a.Facebook.String,
 		AvatarID:     int(a.AvatarID.Int64),
 		PasswordHash: a.PasswordHash,
 		PasswordSalt: a.PasswordSalt,
@@ -177,7 +183,8 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
-		       birth_date, sex, email, status, quote, avatar_id,
+		       birth_date, sex, email, status, quote, vk,
+		       telegram, facebook, avatar_id,
 		       password_hashed, password_salt, created_at, updated_at
 		FROM applicant WHERE id = $1
 	`
@@ -194,6 +201,9 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 		&scanApplicant.Email,
 		&scanApplicant.Status,
 		&scanApplicant.Quote,
+		&scanApplicant.Vk,
+		&scanApplicant.Telegram,
+		&scanApplicant.Facebook,
 		&scanApplicant.AvatarID,
 		&scanApplicant.PasswordHash,
 		&scanApplicant.PasswordSalt,
@@ -236,7 +246,8 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 
 	query := `
 		SELECT id, first_name, last_name, middle_name, city_id, 
-		       birth_date, sex, email, status, quote, avatar_id,
+		       birth_date, sex, email, status, quote, vk,
+		       telegram, facebook, avatar_id,
 		       password_hashed, password_salt, created_at, updated_at
 		FROM applicant WHERE email = $1
 	`
@@ -253,6 +264,9 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 		&scanApplicant.Email,
 		&scanApplicant.Status,
 		&scanApplicant.Quote,
+		&scanApplicant.Vk,
+		&scanApplicant.Telegram,
+		&scanApplicant.Facebook,
 		&scanApplicant.AvatarID,
 		&scanApplicant.PasswordHash,
 		&scanApplicant.PasswordSalt,

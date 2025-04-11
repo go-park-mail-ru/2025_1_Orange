@@ -28,6 +28,9 @@ type ScanEmployer struct {
 	Slogan       sql.NullString
 	Website      sql.NullString
 	Description  sql.NullString
+	Vk           sql.NullString
+	Telegram     sql.NullString
+	Facebook     sql.NullString
 	LogoID       sql.NullInt64
 	PasswordHash []byte
 	PasswordSalt []byte
@@ -44,6 +47,9 @@ func (e *ScanEmployer) GetEntity() *entity.Employer {
 		Slogan:       e.Slogan.String,
 		Website:      e.Website.String,
 		Description:  e.Description.String,
+		Vk:           e.Vk.String,
+		Telegram:     e.Telegram.String,
+		Facebook:     e.Facebook.String,
 		LogoID:       int(e.LogoID.Int64),
 		PasswordHash: e.PasswordHash,
 		PasswordSalt: e.PasswordSalt,
@@ -164,8 +170,9 @@ func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*enti
 	}).Info("выполнение sql-запроса получения работодателя по ID GetEmployerByID")
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, company_name, legal_address,
-		       slogan, website, description, logo_id, created_at, updated_at
+		SELECT id, email, password_hashed, password_salt, company_name,
+		       legal_address, vk, telegram, facebook, slogan, 
+		       website, description, logo_id, created_at, updated_at
 		FROM employer
 		WHERE id = $1
 	`
@@ -178,6 +185,9 @@ func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*enti
 		&scanEmployer.PasswordSalt,
 		&scanEmployer.CompanyName,
 		&scanEmployer.LegalAddress,
+		&scanEmployer.Vk,
+		&scanEmployer.Telegram,
+		&scanEmployer.Facebook,
 		&scanEmployer.Slogan,
 		&scanEmployer.Website,
 		&scanEmployer.Description,
@@ -219,8 +229,9 @@ func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email strin
 	}).Info("выполнение sql-запроса получения работодателя по почте GetEmployerByEmail")
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, company_name, legal_address,
-		       slogan, website, description, logo_id, created_at, updated_at
+		SELECT id, email, password_hashed, password_salt, company_name,
+		       legal_address, vk, telegram, facebook, slogan,
+		       website, description, logo_id, created_at, updated_at
 		FROM employer
 		WHERE email = $1
 	`
@@ -233,6 +244,9 @@ func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email strin
 		&scanEmployer.PasswordSalt,
 		&scanEmployer.CompanyName,
 		&scanEmployer.LegalAddress,
+		&scanEmployer.Vk,
+		&scanEmployer.Telegram,
+		&scanEmployer.Facebook,
 		&scanEmployer.Slogan,
 		&scanEmployer.Website,
 		&scanEmployer.Description,

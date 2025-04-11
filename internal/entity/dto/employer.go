@@ -10,6 +10,9 @@ type EmployerProfileResponse struct {
 	Slogan       string    `json:"slogan"`
 	Website      string    `json:"website"`
 	Description  string    `json:"description"`
+	Vk           string    `json:"vk"`
+	Telegram     string    `json:"telegram"`
+	Facebook     string    `json:"facebook"`
 	LogoPath     string    `json:"logo_path"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -21,4 +24,7 @@ type EmployerProfileUpdate struct {
 	Slogan       string `json:"slogan"`
 	Website      string `json:"website"`
 	Description  string `json:"description"`
+	Vk           string `json:"vk"`
+	Telegram     string `json:"telegram"`
+	Facebook     string `json:"facebook"`
 }

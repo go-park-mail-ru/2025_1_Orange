@@ -128,7 +128,7 @@ func (e *EmployerService) UpdateProfile(ctx context.Context, userID int, employe
 		updateFields["slogan"] = employerDTO.Slogan
 	}
 	if employerDTO.Website != "" {
-		if err := entity.ValidateWebsite(employerDTO.Website); err != nil {
+		if err := entity.ValidateURL(employerDTO.Website); err != nil {
 			return err
 		}
 		updateFields["website"] = employerDTO.Website

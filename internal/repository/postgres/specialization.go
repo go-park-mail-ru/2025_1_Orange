@@ -22,8 +22,8 @@ func NewSpecializationRepository(db *sql.DB) (repository.SpecializationRepositor
 }
 
 func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity.Specialization, error) {
-	requestID := utils.GetRequestID(ctx)
 
+	requestID := utils.GetRequestID(ctx)
 	query := `
 		SELECT id, name
 		FROM specialization
@@ -42,6 +42,7 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 			fmt.Errorf("специализация с id=%d не найдена", id),
 		)
 	} else if err != nil {
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        id,
@@ -58,6 +59,7 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 }
 
 func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Specialization, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	query := `

@@ -4,14 +4,20 @@ import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 
+<<<<<<< HEAD
 =======
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+>>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"

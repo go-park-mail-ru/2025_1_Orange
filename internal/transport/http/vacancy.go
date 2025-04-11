@@ -36,12 +36,16 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
+<<<<<<< HEAD
 =======
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.CreateResponse)
 >>>>>>> a6396a4 (Fix mistakes)
 =======
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
 >>>>>>> e918c1a (Fix issues with conflicts)
+=======
+
+>>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -159,6 +163,8 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
+	return
+
 }
 
 func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
@@ -330,4 +336,5 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusCreated)
+
 }

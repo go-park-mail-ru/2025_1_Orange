@@ -1,6 +1,7 @@
 package dto
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import (
 	"time"
 )
@@ -99,25 +100,84 @@ type ApplyToVacancyRequest struct {
 }
 =======
 import "time"
+=======
+import (
+	"time"
+)
+>>>>>>> c773955 (Made vacansies usecases and handlers)
 
-type Vacancy struct {
+// VacancyShort представляет сокращенную информацию о вакансии
+type VacancyShortResponse struct {
+	ID             int    `json:"id"`
+	Title          string `json:"title"`
+	EmployerID     int    `json:"employer_id"`
+	Specialization string `json:"specialization"`
+	WorkFormat     string `json:"work_format"`
+	Employment     string `json:"employment"`
+	WorkingHours   int    `json:"working_hours"`
+	SalaryFrom     int    `json:"salary_from"`
+	SalaryTo       int    `json:"salary_to"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+}
+
+type VacancyCreate struct {
+	Title                string   `json:"title"`
+	SpecializationID     int      `json:"specialization_id"`
+	WorkFormat           string   `json:"work_format"`
+	Employment           string   `json:"employment"`
+	Schedule             string   `json:"schedule"`
+	WorkingHours         int      `json:"working_hours"`
+	SalaryFrom           int      `json:"salary_from"`
+	SalaryTo             int      `json:"salary_to"`
+	TaxesIncluded        string   `json:"taxes_included"`
+	Experience           int      `json:"experience"`
+	City                 []string `json:"city"`
+	Skills               []string `json:"skills"`
+	Description          string   `json:"description"`
+	Tasks                string   `json:"tasks"`
+	Requirements         string   `json:"requirements"`
+	OptionalRequirements string   `json:"optional_requirements"`
+}
+
+type VacancyUpdate struct {
+	Title                string   `json:"title"`
+	SpecializationID     int      `json:"specialization_id"`
+	WorkFormat           string   `json:"work_format"`
+	Employment           string   `json:"employment"`
+	Schedule             string   `json:"schedule"`
+	WorkingHours         int      `json:"working_hours"`
+	SalaryFrom           int      `json:"salary_from"`
+	SalaryTo             int      `json:"salary_to"`
+	TaxesIncluded        string   `json:"taxes_included"`
+	Experience           int      `json:"experience"`
+	City                 []string `json:"city"`
+	Skills               []string `json:"skills"`
+	Description          string   `json:"description"`
+	Tasks                string   `json:"tasks"`
+	Requirements         string   `json:"requirements"`
+	OptionalRequirements string   `json:"optional_requirements"`
+}
+
+type VacancyResponse struct {
 	ID                   int       `json:"id"`
-	Title                string    `json:"title`
-	IsActive             bool      `json:"is_active`
 	EmployerID           int       `json:"employer_id"`
-	SpecializationID     int       `json:"specialization_id,omitempty"`
-	WorkFormat           string    `json:"work_format,omitempty"`
-	Employment           string    `json:"employment,omitempty"`
-	Schedule             string    `json:"schedule,omitempty"`
-	WorkingHours         string    `json:"working_hours,omitempty"`
-	SalaryFrom           int       `json:"salary_from,omitempty"`
-	SalaryTo             int       `json:"salary_to,omitempty"`
-	TaxesIncluded        bool      `json:"taxes_included,omitempty"`
-	Experience           string    `json:"experience,omitempty"`
+	Title                string    `json:"title"`
+	SpecializationID     string    `json:"specialization_id"`
+	WorkFormat           string    `json:"work_format"`
+	Employment           string    `json:"employment"`
+	Schedule             string    `json:"schedule"`
+	WorkingHours         int       `json:"working_hours"`
+	SalaryFrom           int       `json:"salary_from"`
+	SalaryTo             int       `json:"salary_to"`
+	TaxesIncluded        string    `json:"taxes_included"`
+	Experience           string    `json:"experience"`
+	City                 []string  `json:"city"`
+	Skills               []string  `json:"skills"`
 	Description          string    `json:"description"`
-	Tasks                string    `json:"tasks,omitempty"`
-	Requirements         string    `json:"requirements,omitempty"`
-	OptionalRequirements string    `json:"optional_requirements,omitempty"`
+	Tasks                string    `json:"tasks"`
+	Requirements         string    `json:"requirements"`
+	OptionalRequirements string    `json:"optional_requirements"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
 }
@@ -125,13 +185,15 @@ type Vacancy struct {
 >>>>>>> 4bccd34 (Add vacancy repositories)
 =======
 
-const (
-	UserTypeApplicant = "applicant"
-	UserTypeEmployer  = "employer"
-)
+type DeleteVacancy struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
 
-type UserFromSession struct {
-	ID       int
-	UserType string
+type VacancyResponses struct {
+	ID          int       `json:"id"`
+	VacancyID   int       `json:"vacancy_id"`
+	ApplicantID int       `json:applicant_id`
+	AppliedAt   time.Time `json:applied_at`
 }
 >>>>>>> 8cdc676 (Add vacancy usecases and handlers)

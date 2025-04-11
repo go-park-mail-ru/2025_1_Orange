@@ -1,9 +1,12 @@
 package postgres
 
 import (
+	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
+
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
+
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -17,7 +20,29 @@ type SkillRepository struct {
 	DB *sql.DB
 }
 
-func NewSkillRepository(db *sql.DB) (repository.SkillRepository, error) {
+func NewSkillRepository(cfg config.PostgresConfig) (repository.SkillRepository, error) {
+	db, err := sql.Open("postgres", cfg.DSN)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("не удалось установить соединение с PostgreSQL из SkillRepository")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось установить соединение PostgreSQL из SkillRepository: %w", err),
+		)
+	}
+
+	if err := db.Ping(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("не удалось выполнить ping PostgreSQL из SkillRepository")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось выполнить ping PostgreSQL из SkillRepository: %w", err),
+		)
+	}
 	return &SkillRepository{DB: db}, nil
 }
 

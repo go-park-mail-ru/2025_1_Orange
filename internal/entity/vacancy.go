@@ -29,7 +29,10 @@ type Vacancy struct {
 	Skills                  []Skill                   `json:"-"`
 	City                    []City                    `json:"-"`
 	SupplementaryConditions []SupplementaryConditions `json:"-"`
+<<<<<<< HEAD
 	Responded               bool                      `json:"responded"`
+=======
+>>>>>>> c773955 (Made vacansies usecases and handlers)
 }
 
 // VacancyShort представляет сокращенную информацию о вакансии
@@ -180,14 +183,4 @@ func (v *Vacancy) Validate() error {
 		)
 	}
 	return nil
-}
-
-const (
-	UserTypeApplicant = "applicant"
-	UserTypeEmployer  = "employer"
-)
-
-type UserFromSession struct {
-	ID       uint64
-	UserType string
 }

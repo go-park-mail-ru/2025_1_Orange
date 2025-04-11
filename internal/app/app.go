@@ -111,11 +111,17 @@ func Init(cfg *config.Config) *server.Server {
 	if err != nil {
 		log.Fatalf("Failed to create vacancy repository: %v", err)
 	}
+
+	sessionRepo, err := redis.NewSessionRepository(cfg.Redis)
+	if err != nil {
+		log.Fatalf("Failed to create session repository: %v", err)
+	}
+
 	// Use Cases Init
-	authService := service.NewAuthService(sessionRepo)
+	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo)
 	employerService := service.NewEmployerService(employerRepo)
-	vacancyService := service.NewVacanciesService(vacancyRepo)
+	vacancyService := service.NewVacanciesService(vacancyRepo, skillRepo, cityRepo, applicantRepo, specializationRepo)
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService)

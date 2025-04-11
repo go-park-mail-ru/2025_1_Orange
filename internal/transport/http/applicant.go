@@ -81,7 +81,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 // Также устанавливает CSRF-токен при успешной авторизации.
 // @Accept json
 // @Produce json
-// @Param loginData body dto.ApplicantLogin true "Данные для авторизации (email и пароль)"
+// @Param loginData body dto.Login true "Данные для авторизации (email и пароль)"
 // @Header 200 {string} Set-Cookie "Сессионные cookies"
 // @Header 200 {string} X-CSRF-Token "CSRF-токен"
 // @Success 200

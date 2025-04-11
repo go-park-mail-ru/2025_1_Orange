@@ -110,7 +110,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ApplicantLogin"
+                            "$ref": "#/definitions/dto.Login"
                         }
                     }
                 ],
@@ -515,7 +515,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.EmployerLogin"
+                            "$ref": "#/definitions/dto.Login"
                         }
                     }
                 ],
@@ -794,21 +794,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.ApplicantLogin": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.ApplicantProfileResponse": {
             "type": "object",
             "properties": {
@@ -825,6 +810,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "email": {
+                    "type": "string"
+                },
+                "facebook": {
                     "type": "string"
                 },
                 "first_name": {
@@ -848,7 +836,13 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "telegram": {
+                    "type": "string"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 }
             }
@@ -860,6 +854,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "city": {
+                    "type": "string"
+                },
+                "facebook": {
                     "type": "string"
                 },
                 "first_name": {
@@ -878,6 +875,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "telegram": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 }
             }
@@ -941,21 +944,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.EmployerLogin": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.EmployerProfileResponse": {
             "type": "object",
             "properties": {
@@ -971,6 +959,9 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "facebook": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -983,7 +974,13 @@ const docTemplate = `{
                 "slogan": {
                     "type": "string"
                 },
+                "telegram": {
+                    "type": "string"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 },
                 "website": {
@@ -1000,10 +997,19 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "facebook": {
+                    "type": "string"
+                },
                 "legal_address": {
                     "type": "string"
                 },
                 "slogan": {
+                    "type": "string"
+                },
+                "telegram": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 },
                 "website": {
@@ -1033,6 +1039,21 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 8
+                }
+            }
+        },
+        "dto.Login": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
                 }
             }
         },

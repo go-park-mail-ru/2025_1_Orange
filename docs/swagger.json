@@ -103,7 +103,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ApplicantLogin"
+                            "$ref": "#/definitions/dto.Login"
                         }
                     }
                 ],
@@ -508,7 +508,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.EmployerLogin"
+                            "$ref": "#/definitions/dto.Login"
                         }
                     }
                 ],
@@ -787,21 +787,6 @@
         }
     },
     "definitions": {
-        "dto.ApplicantLogin": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.ApplicantProfileResponse": {
             "type": "object",
             "properties": {
@@ -818,6 +803,9 @@
                     "type": "string"
                 },
                 "email": {
+                    "type": "string"
+                },
+                "facebook": {
                     "type": "string"
                 },
                 "first_name": {
@@ -841,7 +829,13 @@
                 "status": {
                     "type": "string"
                 },
+                "telegram": {
+                    "type": "string"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 }
             }
@@ -853,6 +847,9 @@
                     "type": "string"
                 },
                 "city": {
+                    "type": "string"
+                },
+                "facebook": {
                     "type": "string"
                 },
                 "first_name": {
@@ -871,6 +868,12 @@
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "telegram": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 }
             }
@@ -934,21 +937,6 @@
                 }
             }
         },
-        "dto.EmployerLogin": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.EmployerProfileResponse": {
             "type": "object",
             "properties": {
@@ -964,6 +952,9 @@
                 "email": {
                     "type": "string"
                 },
+                "facebook": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -976,7 +967,13 @@
                 "slogan": {
                     "type": "string"
                 },
+                "telegram": {
+                    "type": "string"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 },
                 "website": {
@@ -993,10 +990,19 @@
                 "description": {
                     "type": "string"
                 },
+                "facebook": {
+                    "type": "string"
+                },
                 "legal_address": {
                     "type": "string"
                 },
                 "slogan": {
+                    "type": "string"
+                },
+                "telegram": {
+                    "type": "string"
+                },
+                "vk": {
                     "type": "string"
                 },
                 "website": {
@@ -1026,6 +1032,21 @@
                 "password": {
                     "type": "string",
                     "minLength": 8
+                }
+            }
+        },
+        "dto.Login": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
                 }
             }
         },

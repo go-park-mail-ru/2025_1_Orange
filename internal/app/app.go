@@ -15,27 +15,16 @@ import (
 func Init(cfg *config.Config) *server.Server {
 	// Postgres Connection
 
-<<<<<<< HEAD
 	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
 	}
 
-=======
->>>>>>> e918c1a (Fix issues with conflicts)
 	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to specialization postgres: %v", err)
 	}
 
-<<<<<<< HEAD
-=======
-	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
-	}
-
->>>>>>> e918c1a (Fix issues with conflicts)
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to city postgres: %v", err)
@@ -63,7 +52,6 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to connect to session redis: %v", err)
 	}
 
-<<<<<<< HEAD
 	// Repositories Init
 
 	vacancyRepo, err := postgres.NewVacancyRepository(vacancyConn)
@@ -71,21 +59,11 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to create vacancy repository: %v", err)
 	}
 
-=======
->>>>>>> e918c1a (Fix issues with conflicts)
 	specializationRepo, err := postgres.NewSpecializationRepository(specializationConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create specialization repository: %v", err)
 	}
 
-<<<<<<< HEAD
-=======
-	vacanciesRepo, err := postgres.NewVacancyRepository(vacancyConn)
-	if err != nil {
-		l.Log.Errorf("Failed to create specialization repository: %v", err)
-	}
-
->>>>>>> e918c1a (Fix issues with conflicts)
 	cityRepo, err := postgres.NewCityRepository(cityConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create city repository: %v", err)
@@ -116,21 +94,13 @@ func Init(cfg *config.Config) *server.Server {
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
 	employerService := service.NewEmployerService(employerRepo, staticRepo)
-<<<<<<< HEAD
 	vacancyService := service.NewVacanciesService(vacancyRepo, cityRepo, applicantRepo, specializationRepo)
 
-=======
-	vacancyService := service.NewVacanciesService(vacanciesRepo, cityRepo, applicantRepo, specializationRepo)
->>>>>>> e918c1a (Fix issues with conflicts)
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
-<<<<<<< HEAD
-
-=======
->>>>>>> e918c1a (Fix issues with conflicts)
 	// Server Init
 	srv := server.NewServer(cfg)
 

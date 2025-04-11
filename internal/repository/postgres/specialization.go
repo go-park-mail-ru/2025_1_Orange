@@ -22,6 +22,10 @@ func NewSpecializationRepository(db *sql.DB) (repository.SpecializationRepositor
 }
 
 func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity.Specialization, error) {
+<<<<<<< HEAD
+=======
+
+>>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 	requestID := utils.GetRequestID(ctx)
 	query := `
 		SELECT id, name
@@ -42,9 +46,13 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 		)
 	} else if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> e918c1a (Fix issues with conflicts)
+=======
+
+>>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        id,
@@ -61,6 +69,7 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 }
 
 func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Specialization, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	query := `

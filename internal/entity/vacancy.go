@@ -181,13 +181,3 @@ func (v *Vacancy) Validate() error {
 	}
 	return nil
 }
-
-const (
-	UserTypeApplicant = "applicant"
-	UserTypeEmployer  = "employer"
-)
-
-type UserFromSession struct {
-	ID       uint64
-	UserType string
-}

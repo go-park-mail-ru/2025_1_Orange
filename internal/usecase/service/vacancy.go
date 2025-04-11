@@ -36,6 +36,7 @@ func NewVacanciesService(vacancyRepo repository.VacancyRepository,
 }
 
 func (s *VacanciesService) CreateVacancy(ctx context.Context, request *dto.VacancyCreate) (*dto.VacancyResponse, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	employerID, ok := ctx.Value("employerID").(int)
@@ -229,6 +230,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 }
 
 func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	employerID, ok := ctx.Value("employerID").(int)
@@ -365,6 +367,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 }
 
 func (vs *VacanciesService) DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error) {
+
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{

@@ -12,8 +12,11 @@ type Vacancy interface {
 	DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error)
 	GetAll(ctx context.Context) ([]dto.VacancyShortResponse, error)
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	//CreateResponse(ctx context.Context, vacancyID, applicantID int, resumeID *int) error
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+>>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 	ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error
 }

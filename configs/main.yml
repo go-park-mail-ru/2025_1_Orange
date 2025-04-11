@@ -8,7 +8,7 @@ http:
     - "http://localhost:5173"
 
 session:
-  cookieName: "session"
+  cookieName: "session_id"
   lifetime: "24h"
   httpOnly: true
   secure: true

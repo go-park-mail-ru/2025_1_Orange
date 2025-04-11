@@ -56,7 +56,7 @@ type RedisConfig struct {
 
 type Config struct {
 	HTTP     HTTPConfig     `yaml:"http"`
-	Session  SessionConfig  `yaml:"session"`
+	Session  SessionConfig  `yaml:"session_id"`
 	CSRF     CSRFConfig     `yaml:"csrf"`
 	Postgres PostgresConfig `yaml:"postgres"`
 	Redis    RedisConfig    `yaml:"redis"`

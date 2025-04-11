@@ -21,7 +21,7 @@ func generateToken(r *http.Request, sessionID string, cfg config.CSRFConfig) str
 }
 
 func SetCSRFToken(w http.ResponseWriter, r *http.Request, cfg config.CSRFConfig) {
-	sessionCookie, _ := r.Cookie("session")
+	sessionCookie, _ := r.Cookie("session_id")
 	var sessionID string
 	if sessionCookie != nil {
 		sessionID = sessionCookie.Value

@@ -15,12 +15,6 @@ const (
 	HashLength      = 32
 )
 
-type AuthBase struct {
-	Email        string `json:"email"`
-	PasswordHash []byte `json:"-"`
-	PasswordSalt []byte `json:"-"`
-}
-
 func ValidatePassword(password string) error {
 	switch {
 	case len(password) < 8:
@@ -91,17 +85,17 @@ func HashPassword(password string) (salt []byte, hash []byte, err error) {
 	return salt, hash, nil
 }
 
-func (a *AuthBase) CheckPassword(password string) bool {
+func CheckPassword(password string, passwordHash, passwordSalt []byte) bool {
 	return bytes.Equal(
 		argon2.IDKey(
 			[]byte(password),
-			a.PasswordSalt,
+			passwordSalt,
 			TimeCost,
 			MemoryCost,
 			ParallelThreads,
 			HashLength,
 		),
-		a.PasswordHash,
+		passwordHash,
 	)
 }
 

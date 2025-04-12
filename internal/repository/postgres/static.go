@@ -101,10 +101,11 @@ func (r *StaticRepository) GetStatic(ctx context.Context, id int) (string, error
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("файл с id=%d не найден: %w", id, err),
+				entity.ErrNotFound,
+				fmt.Errorf("файл с id=%d не найден", id),
 			)
 		}
+
 		return "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("ошибка при выполнении запроса GetStatic: %w", err),

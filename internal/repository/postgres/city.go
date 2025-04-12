@@ -54,44 +54,44 @@ func (r *CityRepository) GetCityByID(ctx context.Context, id int) (*entity.City,
 	return &city, nil
 }
 
-func (r *CityRepository) GetAllCities(ctx context.Context) ([]*entity.City, error) {
-	requestID := utils.GetRequestID(ctx)
-
-	l.Log.WithFields(logrus.Fields{
-		"requestID": requestID,
-	}).Info("выполнение sql-запроса получения всех городов GetAllCities")
-
-	query := `SELECT id, name FROM city ORDER BY name ASC`
-	rows, err := r.DB.QueryContext(ctx, query)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entity.NewError(
-				entity.ErrNotFound,
-				fmt.Errorf("список городов пустой"),
-			)
-		}
-	}
-	defer rows.Close()
-
-	var cities []*entity.City
-	for rows.Next() {
-		var city entity.City
-		if err := rows.Scan(&city.ID, &city.Name); err != nil {
-			l.Log.WithFields(logrus.Fields{
-				"requestID": requestID,
-				"error":     err,
-			}).Error("не удалось получить список городов")
-
-			return nil, entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("не удалось получить список городов"),
-			)
-		}
-		cities = append(cities, &city)
-	}
-	return cities, nil
-
-}
+//func (r *CityRepository) GetAllCities(ctx context.Context) ([]*entity.City, error) {
+//	requestID := utils.GetRequestID(ctx)
+//
+//	l.Log.WithFields(logrus.Fields{
+//		"requestID": requestID,
+//	}).Info("выполнение sql-запроса получения всех городов GetAllCities")
+//
+//	query := `SELECT id, name FROM city ORDER BY name ASC`
+//	rows, err := r.DB.QueryContext(ctx, query)
+//	if err != nil {
+//		if errors.Is(err, sql.ErrNoRows) {
+//			return nil, entity.NewError(
+//				entity.ErrNotFound,
+//				fmt.Errorf("список городов пустой"),
+//			)
+//		}
+//	}
+//	defer rows.Close()
+//
+//	var cities []*entity.City
+//	for rows.Next() {
+//		var city entity.City
+//		if err := rows.Scan(&city.ID, &city.Name); err != nil {
+//			l.Log.WithFields(logrus.Fields{
+//				"requestID": requestID,
+//				"error":     err,
+//			}).Error("не удалось получить список городов")
+//
+//			return nil, entity.NewError(
+//				entity.ErrInternal,
+//				fmt.Errorf("не удалось получить список городов"),
+//			)
+//		}
+//		cities = append(cities, &city)
+//	}
+//	return cities, nil
+//
+//}
 
 func (r *CityRepository) GetCityByName(ctx context.Context, name string) (*entity.City, error) {
 	requestID := utils.GetRequestID(ctx)

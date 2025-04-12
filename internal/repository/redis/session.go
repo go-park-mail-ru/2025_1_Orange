@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
@@ -9,12 +8,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"strconv"
-	"time"
-
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
 const (
@@ -27,38 +24,10 @@ type SessionRepository struct {
 	ctx              context.Context
 }
 
-func NewSessionRepository(cfg config.RedisConfig) (repository.SessionRepository, error) {
-	address := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-	conn, err := redis.Dial("tcp", address,
-		redis.DialPassword(cfg.Password),
-		redis.DialDatabase(cfg.DB),
-		redis.DialConnectTimeout(5*time.Second),
-	)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с Redis из SessionRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение с Redis: %w", err),
-		)
-	}
-
-	if _, err := conn.Do("PING"); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping Redis из SessionRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping Redis из SessionRepository: %w", err),
-		)
-	}
-
+func NewSessionRepository(conn redis.Conn, ttl int) (repository.SessionRepository, error) {
 	return &SessionRepository{
 		conn:             conn,
-		sessionAliveTime: cfg.TTL,
+		sessionAliveTime: ttl,
 		ctx:              context.Background(),
 	}, nil
 }

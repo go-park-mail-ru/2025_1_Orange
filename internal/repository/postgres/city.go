@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
@@ -17,29 +16,7 @@ type CityRepository struct {
 	DB *sql.DB
 }
 
-func NewCityRepository(cfg config.PostgresConfig) (repository.CityRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из CityRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из CityRepository: %w", err),
-		)
-	}
-
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из CityRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из CityRepository: %w", err),
-		)
-	}
+func NewCityRepository(db *sql.DB) (repository.CityRepository, error) {
 	return &CityRepository{DB: db}, nil
 }
 

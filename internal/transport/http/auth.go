@@ -1,8 +1,10 @@
 package http
 
 import (
+	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"encoding/json"
@@ -11,10 +13,11 @@ import (
 
 type AuthHandler struct {
 	auth usecase.Auth
+	cfg  config.CSRFConfig
 }
 
-func NewAuthHandler(auth usecase.Auth) AuthHandler {
-	return AuthHandler{auth: auth}
+func NewAuthHandler(auth usecase.Auth, cfg config.CSRFConfig) AuthHandler {
+	return AuthHandler{auth: auth, cfg: cfg}
 }
 
 func (h *AuthHandler) Configure(r *http.ServeMux) {
@@ -120,7 +123,10 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// очищаем старые cookie
 	utils.ClearTokenCookies(w)
+	// устанавливаем новый токен
+	middleware.SetCSRFToken(w, r, h.cfg)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -154,6 +160,9 @@ func (h *AuthHandler) LogoutAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// очищаем старые cookie
 	utils.ClearTokenCookies(w)
+	// устанавливаем новый токен
+	middleware.SetCSRFToken(w, r, h.cfg)
 	w.WriteHeader(http.StatusOK)
 }

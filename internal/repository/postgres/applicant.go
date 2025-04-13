@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
@@ -72,29 +71,7 @@ func toApplicantStatus(status sql.NullString) entity.ApplicantStatus {
 	return ""
 }
 
-func NewApplicantRepository(cfg config.PostgresConfig) (repository.ApplicantRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из ApplicantRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из ApplicantRepository: %w", err),
-		)
-	}
-
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из ApplicantRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из ApplicantRepository: %w", err),
-		)
-	}
+func NewApplicantRepository(db *sql.DB) (repository.ApplicantRepository, error) {
 	return &ApplicantRepository{DB: db}, nil
 }
 
@@ -321,7 +298,7 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 	query += fmt.Sprintf(" WHERE id = $%d", i)
 	args = append(args, userID)
 
-	_, err := r.DB.ExecContext(ctx, query, args...)
+	result, err := r.DB.ExecContext(ctx, query, args...)
 
 	if err != nil {
 		var pqErr *pq.Error
@@ -330,7 +307,7 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 			case entity.PSQLUniqueViolation: // Уникальное ограничение
 				return entity.NewError(
 					entity.ErrAlreadyExists,
-					fmt.Errorf("соискатель с таким email уже зарегистрирован"),
+					fmt.Errorf("ошибка уникальности"),
 				)
 			case entity.PSQLNotNullViolation: // NOT NULL ограничение
 				return entity.NewError(
@@ -347,6 +324,11 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
 				)
+			default:
+				return entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("неизвестная ошибка при обновлении соискателя err=%w", err),
+				)
 			}
 		}
 
@@ -359,6 +341,33 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 		return entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось обновить соискателя с id=%d", userID),
+		)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        userID,
+			"error":     err,
+		}).Error("не удалось получить обновленные строки при обновлении соискателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось получить обновленные строки при обновлении соискателя с id=%d", userID),
+		)
+	}
+
+	if rowsAffected == 0 {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        userID,
+			"error":     err,
+		}).Error("не удалось найти при обновлении соискателя")
+
+		return entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось найти при обновлении соискателя с id=%d", userID),
 		)
 	}
 

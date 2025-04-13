@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
@@ -59,30 +58,7 @@ func (e *ScanEmployer) GetEntity() *entity.Employer {
 	return employer
 }
 
-func NewEmployerRepository(cfg config.PostgresConfig) (repository.EmployerRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из EmployerRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из EmployerRepository: %w", err),
-		)
-	}
-
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из EmployerRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из EmployerRepository: %w", err),
-		)
-	}
-
+func NewEmployerRepository(db *sql.DB) (repository.EmployerRepository, error) {
 	return &EmployerRepository{DB: db}, nil
 }
 
@@ -310,7 +286,7 @@ func (r *EmployerRepository) UpdateEmployer(ctx context.Context, userID int, fie
 			case entity.PSQLUniqueViolation: // Уникальное ограничение
 				return entity.NewError(
 					entity.ErrAlreadyExists,
-					fmt.Errorf("работодатель с таким email уже зарегистрирован"),
+					fmt.Errorf("ошибка уникальности"),
 				)
 			case entity.PSQLNotNullViolation: // NOT NULL ограничение
 				return entity.NewError(
@@ -326,6 +302,11 @@ func (r *EmployerRepository) UpdateEmployer(ctx context.Context, userID int, fie
 				return entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
+				)
+			default:
+				return entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("неизвестная ошибка при обновлении работодателя err=%w", err),
 				)
 			}
 		}

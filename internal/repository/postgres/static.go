@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
@@ -19,29 +18,7 @@ type StaticRepository struct {
 	DB *sql.DB
 }
 
-func NewStaticRepository(cfg config.PostgresConfig) (repository.StaticRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из StaticRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из StaticRepository: %w", err),
-		)
-	}
-
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из StaticRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из StaticRepository: %w", err),
-		)
-	}
+func NewStaticRepository(db *sql.DB) (repository.StaticRepository, error) {
 	return &StaticRepository{DB: db}, nil
 }
 
@@ -124,10 +101,11 @@ func (r *StaticRepository) GetStatic(ctx context.Context, id int) (string, error
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("файл с id=%d не найден: %w", id, err),
+				entity.ErrNotFound,
+				fmt.Errorf("файл с id=%d не найден", id),
 			)
 		}
+
 		return "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("ошибка при выполнении запроса GetStatic: %w", err),

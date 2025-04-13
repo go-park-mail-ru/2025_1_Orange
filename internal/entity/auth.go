@@ -32,7 +32,7 @@ func ValidatePassword(password string) error {
 	case !regexp.MustCompile(`^[!@#$%^&*\w]+$`).MatchString(password):
 		return NewError(
 			ErrBadRequest,
-			fmt.Errorf("пароль должен состоять из латинских букв, цифр и специальных символов !@#$%^&*"),
+			fmt.Errorf("пароль должен состоять из латинских букв, цифр и специальных символов !@#$%%^&*"),
 		)
 
 	case !regexp.MustCompile(`[A-Z]`).MatchString(password):
@@ -56,7 +56,7 @@ func ValidatePassword(password string) error {
 	case !regexp.MustCompile(`[!@#$%^&*]`).MatchString(password):
 		return NewError(
 			ErrBadRequest,
-			fmt.Errorf("пароль должен содержать как минимум один из специальных символов !@#$%^&*"),
+			fmt.Errorf("пароль должен содержать как минимум один из специальных символов !@#$%%^&*"),
 		)
 
 	default:

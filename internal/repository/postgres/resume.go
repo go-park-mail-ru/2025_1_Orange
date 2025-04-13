@@ -19,8 +19,6 @@ type ResumeRepository struct {
 	DB *sql.DB
 }
 
-// Замечание 10 - Добавление коннектора
-// Изменен конструктор для использования готового соединения с БД
 func NewResumeRepository(db *sql.DB) (repository.ResumeRepository, error) {
 	return &ResumeRepository{DB: db}, nil
 }
@@ -1089,7 +1087,6 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 		"requestID": requestID,
 	}).Info("sql-запрос в БД на получение всех резюме GetAll")
 
-	// Исправление 8: Добавлен лимит для безопасной работы с большим количеством резюме
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, created_at, updated_at
@@ -1167,7 +1164,6 @@ func (r *ResumeRepository) FindSkillIDsByNames(ctx context.Context, skillNames [
 		return []int{}, nil
 	}
 
-	// Создаем параметры для запроса
 	params := make([]interface{}, len(skillNames))
 	placeholders := make([]string, len(skillNames))
 	for i, name := range skillNames {

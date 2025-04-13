@@ -6,7 +6,6 @@ import (
 	"unicode/utf8"
 )
 
-// EducationType represents the education level enum
 type EducationType string
 
 const (

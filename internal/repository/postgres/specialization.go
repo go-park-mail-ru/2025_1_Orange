@@ -17,8 +17,6 @@ type SpecializationRepository struct {
 	DB *sql.DB
 }
 
-// Замечание 10 - Добавление коннектора
-// Изменен конструктор для использования готового соединения с БД
 func NewSpecializationRepository(db *sql.DB) (repository.SpecializationRepository, error) {
 	return &SpecializationRepository{DB: db}, nil
 }
@@ -38,7 +36,6 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 		&specialization.Name,
 	)
 
-	// Исправление 7: Улучшена структура обработки ошибок для уменьшения вложенности
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, entity.NewError(
 			entity.ErrNotFound,

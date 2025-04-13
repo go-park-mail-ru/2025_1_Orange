@@ -24,7 +24,7 @@ func NewResumeService(
 	resumeRepo repository.ResumeRepository,
 	skillRepo repository.SkillRepository,
 	specializationRepo repository.SpecializationRepository,
-) usecase.ResumeUsecase { // Исправление 5: Возвращаем ResumeUsecase вместо Resume
+) usecase.ResumeUsecase {
 	return &ResumeService{
 		resumeRepository:         resumeRepo,
 		skillRepository:          skillRepo,
@@ -32,7 +32,6 @@ func NewResumeService(
 	}
 }
 
-// Исправление 6: Добавлен applicantID как параметр вместо использования контекста
 func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dto.CreateResumeRequest) (*dto.ResumeResponse, error) {
 	requestID := middleware.GetRequestID(ctx)
 
@@ -343,7 +342,6 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 	return response, nil
 }
 
-// Исправление 6: Добавлен applicantID как параметр вместо использования контекста
 func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error) {
 	requestID := middleware.GetRequestID(ctx)
 
@@ -629,7 +627,6 @@ func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, 
 		"requestID": requestID,
 	}).Info("Получение списка всех резюме")
 
-	// Исправление 8: Добавлен лимит для безопасной работы с большим количеством резюме
 	// Get all resumes with limit
 	resumes, err := s.resumeRepository.GetAll(ctx)
 	if err != nil {

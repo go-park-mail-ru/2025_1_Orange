@@ -17,8 +17,6 @@ type SkillRepository struct {
 	DB *sql.DB
 }
 
-// Замечание 10 - Добавление коннектора
-// Изменен конструктор для использования готового соединения с БД
 func NewSkillRepository(db *sql.DB) (repository.SkillRepository, error) {
 	return &SkillRepository{DB: db}, nil
 }
@@ -30,7 +28,6 @@ func (r *SkillRepository) GetByIDs(ctx context.Context, ids []int) ([]entity.Ski
 		return []entity.Skill{}, nil
 	}
 
-	// Создаем параметры для запроса
 	params := make([]interface{}, len(ids))
 	placeholders := make([]string, len(ids))
 	for i, id := range ids {

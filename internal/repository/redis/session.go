@@ -1,19 +1,17 @@
 package redis
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"strconv"
-	"time"
-
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
 const (
@@ -26,43 +24,23 @@ type SessionRepository struct {
 	ctx              context.Context
 }
 
-func NewSessionRepository(cfg config.RedisConfig) (repository.SessionRepository, error) {
-	address := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-	conn, err := redis.Dial("tcp", address,
-		redis.DialPassword(cfg.Password),
-		redis.DialDatabase(cfg.DB),
-		redis.DialConnectTimeout(5*time.Second),
-	)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с Redis из SessionRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение с Redis: %w", err),
-		)
-	}
-
-	if _, err := conn.Do("PING"); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping Redis из SessionRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping Redis из SessionRepository: %w", err),
-		)
-	}
-
+func NewSessionRepository(conn redis.Conn, ttl int) (repository.SessionRepository, error) {
 	return &SessionRepository{
 		conn:             conn,
-		sessionAliveTime: cfg.TTL,
+		sessionAliveTime: ttl,
 		ctx:              context.Background(),
 	}, nil
 }
 
-func (r *SessionRepository) CreateSession(userID int, role string) (string, error) {
+func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role string) (string, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"id":        userID,
+		"role":      role,
+	}).Info("создание сессии в Redis CreateSession")
+
 	sessionToken := uuid.NewString()
 
 	for {
@@ -107,7 +85,14 @@ func (r *SessionRepository) CreateSession(userID int, role string) (string, erro
 	return sessionToken, nil
 }
 
-func (r *SessionRepository) GetSession(sessionToken string) (int, string, error) {
+func (r *SessionRepository) GetSession(ctx context.Context, sessionToken string) (int, string, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":    requestID,
+		"sessionToken": sessionToken,
+	}).Info("получение сессии в Redis GetSession")
+
 	reply, err := redis.String(r.conn.Do("GET", sessionToken))
 	if err != nil {
 		if errors.Is(err, redis.ErrNil) {
@@ -135,7 +120,14 @@ func (r *SessionRepository) GetSession(sessionToken string) (int, string, error)
 	return userID, role, nil
 }
 
-func (r *SessionRepository) DeleteSession(sessionToken string) error {
+func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken string) error {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":    requestID,
+		"sessionToken": sessionToken,
+	}).Info("удаление сессии в Redis DeleteSession")
+
 	reply, err := redis.String(r.conn.Do("GET", sessionToken))
 	if err != nil {
 		if errors.Is(err, redis.ErrNil) {
@@ -177,7 +169,15 @@ func (r *SessionRepository) DeleteSession(sessionToken string) error {
 	return nil
 }
 
-func (r *SessionRepository) DeleteAllSessions(userID int, role string) error {
+func (r *SessionRepository) DeleteAllSessions(ctx context.Context, userID int, role string) error {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"id":        userID,
+		"role":      role,
+	}).Info("удаление всех активных сессий пользователя в Redis DeleteAllSessions")
+
 	userSessionsKey := userSessionsPrefix + strconv.Itoa(userID) + ":" + role
 
 	sessions, err := redis.Strings(r.conn.Do("SMEMBERS", userSessionsKey))
@@ -207,8 +207,4 @@ func (r *SessionRepository) DeleteAllSessions(userID int, role string) error {
 	}
 
 	return nil
-}
-
-func (r *SessionRepository) Close() error {
-	return r.conn.Close()
 }

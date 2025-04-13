@@ -1,0 +1,712 @@
+basePath: /api/v1
+definitions:
+  dto.ApplicantProfileResponse:
+    properties:
+      avatar_path:
+        type: string
+      birth_date:
+        type: string
+      city:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      facebook:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      quote:
+        type: string
+      sex:
+        type: string
+      status:
+        type: string
+      telegram:
+        type: string
+      updated_at:
+        type: string
+      vk:
+        type: string
+    type: object
+  dto.ApplicantProfileUpdate:
+    properties:
+      birth_date:
+        type: string
+      city:
+        type: string
+      facebook:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      quote:
+        type: string
+      sex:
+        type: string
+      status:
+        type: string
+      telegram:
+        type: string
+      vk:
+        type: string
+    type: object
+  dto.ApplicantRegister:
+    properties:
+      email:
+        type: string
+      first_name:
+        maxLength: 30
+        type: string
+      last_name:
+        maxLength: 30
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  dto.AuthResponse:
+    properties:
+      role:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  dto.EmailExistsRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.EmailExistsResponse:
+    properties:
+      exists:
+        type: boolean
+      role:
+        type: string
+    type: object
+  dto.EmployerProfileResponse:
+    properties:
+      company_name:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      facebook:
+        type: string
+      id:
+        type: integer
+      legal_address:
+        type: string
+      logo_path:
+        type: string
+      slogan:
+        type: string
+      telegram:
+        type: string
+      updated_at:
+        type: string
+      vk:
+        type: string
+      website:
+        type: string
+    type: object
+  dto.EmployerProfileUpdate:
+    properties:
+      company_name:
+        type: string
+      description:
+        type: string
+      facebook:
+        type: string
+      legal_address:
+        type: string
+      slogan:
+        type: string
+      telegram:
+        type: string
+      vk:
+        type: string
+      website:
+        type: string
+    type: object
+  dto.EmployerRegister:
+    properties:
+      company_name:
+        maxLength: 64
+        type: string
+      email:
+        type: string
+      legal_address:
+        maxLength: 255
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - company_name
+    - email
+    - password
+    type: object
+  dto.Login:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.UploadStaticResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      path:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  utils.APIError:
+    properties:
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: API веб-приложения ResuMatch для поиска работы и сотрудников.
+  title: ResuMatch API
+  version: 1.0.0
+paths:
+  /applicant/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает изображение аватара для профиля соискателя. Требует авторизации
+        и CSRF-токена.
+      parameters:
+      - description: Файл изображения (JPEG/PNG, макс. 5MB)
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о файле
+          schema:
+            $ref: '#/definitions/dto.UploadStaticResponse'
+        "400":
+          description: Неверный формат файла
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "413":
+          description: Файл слишком большой
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Ошибка загрузки файла
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Загрузить аватар
+      tags:
+      - Applicant
+  /applicant/login:
+    post:
+      consumes:
+      - application/json
+      description: Авторизация соискателя. При успешной авторизации отправляет куки
+        с сессией.
+      parameters:
+      - description: Данные для авторизации (email и пароль)
+        in: body
+        name: loginData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (неверные учетные данные)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      summary: Авторизация соискателя
+      tags:
+      - Applicant
+  /applicant/profile:
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные профиля соискателя, кроме аватара. Требует авторизации.
+      parameters:
+      - description: Данные для обновления профиля
+        in: body
+        name: updateData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ApplicantProfileUpdate'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Неверный формат данных
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Нет доступа
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "409":
+          description: Пользователь уже существует
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Обновить профиль соискателя
+      tags:
+      - Applicant
+  /applicant/profile/{id}:
+    get:
+      description: Возвращает профиль соискателя по ID. Требует авторизации. Доступен
+        только для владельца профиля.
+      parameters:
+      - description: ID соискателя
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Профиль соискателя
+          schema:
+            $ref: '#/definitions/dto.ApplicantProfileResponse'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Нет доступа к этому профилю
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Профиль не найден
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получить профиль соискателя
+      tags:
+      - Applicant
+  /applicant/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: registerData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ApplicantRegister'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "409":
+          description: Пользователь уже существует
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      summary: Регистрация соискателя
+      tags:
+      - Applicant
+  /auth/emailExists:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет, зарегистрирован ли email в системе
+      parameters:
+      - description: Email для проверки
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EmailExistsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EmailExistsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      summary: Проверка email
+      tags:
+      - Auth
+  /auth/isAuth:
+    get:
+      description: Проверяет авторизован пользователь или нет.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Проверка авторизации
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Завершает текущую сессию пользователя
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Выход из системы
+      tags:
+      - Auth
+  /auth/logoutAll:
+    post:
+      description: Завершает все активные сессии пользователя
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Выход со всех устройств
+      tags:
+      - Auth
+  /employer/login:
+    post:
+      consumes:
+      - application/json
+      description: Авторизация работодателя. При успешной авторизации отправляет куки
+        с сессией.
+      parameters:
+      - description: Данные для авторизации (email и пароль)
+        in: body
+        name: loginData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (неверные учетные данные)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      summary: Авторизация работодателя
+      tags:
+      - Employer
+  /employer/logo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает изображение логотипа для профиля работодателя. Требует
+        авторизации и CSRF-токена.
+      parameters:
+      - description: Файл изображения (JPEG/PNG, макс. 5MB)
+        in: formData
+        name: logo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о файле
+          schema:
+            $ref: '#/definitions/dto.UploadStaticResponse'
+        "400":
+          description: Неверный формат файла
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "413":
+          description: Файл слишком большой
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Ошибка загрузки файла
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Загрузить логотип
+      tags:
+      - Employer
+  /employer/profile:
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные профиля работодателя, кроме лого. Требует авторизации.
+      parameters:
+      - description: Данные для обновления профиля
+        in: body
+        name: updateData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EmployerProfileUpdate'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Неверный формат данных
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Нет доступа
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "409":
+          description: Пользователь уже существует
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Обновить профиль работодателя
+      tags:
+      - Employer
+  /employer/profile/{id}:
+    get:
+      description: Возвращает профиль работодателя по ID. Доступен всем.
+      parameters:
+      - description: ID работодателя
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Профиль работодателя
+          schema:
+            $ref: '#/definitions/dto.EmployerProfileResponse'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Профиль не найден
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      summary: Получить профиль работодателя
+      tags:
+      - Employer
+  /employer/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: registerData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EmployerRegister'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "409":
+          description: Пользователь уже существует
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      summary: Регистрация работодателя
+      tags:
+      - Employer
+securityDefinitions:
+  csrf_token:
+    in: header
+    name: X-CSRF-Token
+    type: apiKey
+  session_cookie:
+    in: cookie
+    name: session_id
+    type: apiKey
+swagger: "2.0"

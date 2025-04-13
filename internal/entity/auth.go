@@ -15,12 +15,6 @@ const (
 	HashLength      = 32
 )
 
-type AuthBase struct {
-	Email        string `json:"email"`
-	PasswordHash []byte `json:"-"`
-	PasswordSalt []byte `json:"-"`
-}
-
 func ValidatePassword(password string) error {
 	switch {
 	case len(password) < 8:
@@ -35,35 +29,35 @@ func ValidatePassword(password string) error {
 			fmt.Errorf("пароль должен содержать не более 32 символов"),
 		)
 
-	case !regexp.MustCompile(`^[!@#$%^&*\w]+$`).MatchString(password):
+	case !regexp.MustCompile(`^[!@#$%^&*a-zA-Z0-9_]+$`).MatchString(password):
 		return NewError(
 			ErrBadRequest,
-			fmt.Errorf("пароль должен состоять из латинских букв, цифр и специальных символов !@#$%^&*"),
+			fmt.Errorf("пароль должен состоять из латинских букв, цифр и специальных символов !@#$%%^&*"),
 		)
 
-	case !regexp.MustCompile(`[A-Z]`).MatchString(password):
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("пароль должен содержать как минимум одну заглавную букву"),
-		)
-
-	case !regexp.MustCompile(`[a-z]`).MatchString(password):
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("пароль должен содержать как минимум одну строчную букву"),
-		)
-
-	case !regexp.MustCompile(`\d`).MatchString(password):
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("пароль должен содержать как минимум одну цифру"),
-		)
-
-	case !regexp.MustCompile(`[!@#$%^&*]`).MatchString(password):
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("пароль должен содержать как минимум один из специальных символов !@#$%^&*"),
-		)
+	//case !regexp.MustCompile(`[A-Z]`).MatchString(password):
+	//	return NewError(
+	//		ErrBadRequest,
+	//		fmt.Errorf("пароль должен содержать как минимум одну заглавную букву"),
+	//	)
+	//
+	//case !regexp.MustCompile(`[a-z]`).MatchString(password):
+	//	return NewError(
+	//		ErrBadRequest,
+	//		fmt.Errorf("пароль должен содержать как минимум одну строчную букву"),
+	//	)
+	//
+	//case !regexp.MustCompile(`\d`).MatchString(password):
+	//	return NewError(
+	//		ErrBadRequest,
+	//		fmt.Errorf("пароль должен содержать как минимум одну цифру"),
+	//	)
+	//
+	//case !regexp.MustCompile(`[!@#$%^&*]`).MatchString(password):
+	//	return NewError(
+	//		ErrBadRequest,
+	//		fmt.Errorf("пароль должен содержать как минимум один из специальных символов !@#$%%^&*"),
+	//	)
 
 	default:
 		return nil
@@ -91,17 +85,17 @@ func HashPassword(password string) (salt []byte, hash []byte, err error) {
 	return salt, hash, nil
 }
 
-func (a *AuthBase) CheckPassword(password string) bool {
+func CheckPassword(password string, passwordHash, passwordSalt []byte) bool {
 	return bytes.Equal(
 		argon2.IDKey(
 			[]byte(password),
-			a.PasswordSalt,
+			passwordSalt,
 			TimeCost,
 			MemoryCost,
 			ParallelThreads,
 			HashLength,
 		),
-		a.PasswordHash,
+		passwordHash,
 	)
 }
 

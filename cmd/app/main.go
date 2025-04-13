@@ -11,6 +11,16 @@ import (
 	"syscall"
 )
 
+// @title ResuMatch API
+// @version 1.0.0
+// @description API веб-приложения ResuMatch для поиска работы и сотрудников.
+// @BasePath  /api/v1
+// @securityDefinitions.apikey csrf_token
+// @in header
+// @name X-CSRF-Token
+// @securityDefinitions.apikey session_cookie
+// @in cookie
+// @name session_id
 func main() {
 	// 1. Загрузка конфигурации
 	cfg, err := config.Load()

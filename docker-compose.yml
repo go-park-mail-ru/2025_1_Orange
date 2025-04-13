@@ -18,6 +18,8 @@ services:
       "
     networks:
       - resumatch-network
+    volumes:
+      - ./assets:/app/assets
 
   postgres:
     container_name: postgres

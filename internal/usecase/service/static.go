@@ -48,7 +48,7 @@ func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (*dto.Upl
 	}
 
 	fileName := uuid.New().String() + ext
-	filePath := "assets/img"
+	filePath := "assets"
 	static, err := s.staticRepository.UploadStatic(ctx, filePath, fileName, data)
 	if err != nil {
 		return nil, err

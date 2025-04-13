@@ -62,7 +62,6 @@ func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (*dto.Upl
 }
 
 func (s *StaticService) validateImageContent(data []byte, contentType string) error {
-	fmt.Println(contentType)
 	switch contentType {
 	case "image/jpeg", "image/png":
 		if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {

@@ -31,7 +31,9 @@ func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName 
 		"fileName":  fileName,
 	}).Info("выполнение sql-запроса сохранения статики UploadStatic")
 
-	dir := filepath.Dir(fmt.Sprintf("/app/%s", filePath))
+	fullPath := filepath.Join("/app", filePath, fileName)
+
+	dir := filepath.Dir(fullPath)
 	err := os.MkdirAll(dir, 0755)
 
 	if err != nil {
@@ -41,7 +43,7 @@ func (r *StaticRepository) UploadStatic(ctx context.Context, filePath, fileName 
 		)
 	}
 
-	dest, err := os.Create(filepath.Join(dir, fileName))
+	dest, err := os.Create(fullPath)
 	if err != nil {
 		return nil, entity.NewError(
 			entity.ErrInternal,

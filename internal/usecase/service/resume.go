@@ -24,7 +24,7 @@ func NewResumeService(
 	resumeRepo repository.ResumeRepository,
 	skillRepo repository.SkillRepository,
 	specializationRepo repository.SpecializationRepository,
-) usecase.Resume {
+) usecase.ResumeUsecase { // Исправление 5: Возвращаем ResumeUsecase вместо Resume
 	return &ResumeService{
 		resumeRepository:         resumeRepo,
 		skillRepository:          skillRepo,
@@ -32,18 +32,9 @@ func NewResumeService(
 	}
 }
 
-// Create method updated to handle string-based specializations and skills
-func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeRequest) (*dto.ResumeResponse, error) {
+// Исправление 6: Добавлен applicantID как параметр вместо использования контекста
+func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dto.CreateResumeRequest) (*dto.ResumeResponse, error) {
 	requestID := middleware.GetRequestID(ctx)
-
-	// Extract applicant ID from context
-	applicantID, ok := ctx.Value("applicantID").(int)
-	if !ok {
-		return nil, entity.NewError(
-			entity.ErrBadRequest,
-			fmt.Errorf("не удалось получить ID соискателя из контекста"),
-		)
-	}
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
@@ -249,7 +240,6 @@ func (s *ResumeService) Create(ctx context.Context, request *dto.CreateResumeReq
 	return response, nil
 }
 
-// GetByID method updated to return string-based specializations and skills
 func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeResponse, error) {
 	requestID := middleware.GetRequestID(ctx)
 
@@ -353,18 +343,9 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 	return response, nil
 }
 
-// Update method updated to handle string-based specializations and skills
-func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error) {
+// Исправление 6: Добавлен applicantID как параметр вместо использования контекста
+func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error) {
 	requestID := middleware.GetRequestID(ctx)
-
-	// Extract applicant ID from context
-	applicantID, ok := ctx.Value("applicantID").(int)
-	if !ok {
-		return nil, entity.NewError(
-			entity.ErrBadRequest,
-			fmt.Errorf("не удалось получить ID соискателя из контекста"),
-		)
-	}
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
@@ -593,7 +574,6 @@ func (s *ResumeService) Update(ctx context.Context, id int, request *dto.UpdateR
 	return response, nil
 }
 
-// Delete удаляет резюме
 func (s *ResumeService) Delete(ctx context.Context, id int, applicantID int) (*dto.DeleteResumeResponse, error) {
 	requestID := middleware.GetRequestID(ctx)
 
@@ -649,7 +629,8 @@ func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, 
 		"requestID": requestID,
 	}).Info("Получение списка всех резюме")
 
-	// Get all resumes
+	// Исправление 8: Добавлен лимит для безопасной работы с большим количеством резюме
+	// Get all resumes with limit
 	resumes, err := s.resumeRepository.GetAll(ctx)
 	if err != nil {
 		return nil, err

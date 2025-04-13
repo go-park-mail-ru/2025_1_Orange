@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
@@ -20,29 +19,9 @@ type ResumeRepository struct {
 	DB *sql.DB
 }
 
-func NewResumeRepository(cfg config.PostgresConfig) (repository.ResumeRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из ResumeRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из ResumeRepository: %w", err),
-		)
-	}
-
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из ResumeRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из ResumeRepository: %w", err),
-		)
-	}
+// Замечание 10 - Добавление коннектора
+// Изменен конструктор для использования готового соединения с БД
+func NewResumeRepository(db *sql.DB) (repository.ResumeRepository, error) {
 	return &ResumeRepository{DB: db}, nil
 }
 
@@ -1110,11 +1089,13 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 		"requestID": requestID,
 	}).Info("sql-запрос в БД на получение всех резюме GetAll")
 
+	// Исправление 8: Добавлен лимит для безопасной работы с большим количеством резюме
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, created_at, updated_at
 		FROM resume
 		ORDER BY updated_at DESC
+		LIMIT 100
 	`
 
 	rows, err := r.DB.QueryContext(ctx, query)

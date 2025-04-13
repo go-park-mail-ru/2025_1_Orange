@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
@@ -18,29 +17,9 @@ type SpecializationRepository struct {
 	DB *sql.DB
 }
 
-func NewSpecializationRepository(cfg config.PostgresConfig) (repository.SpecializationRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из SpecializationRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из SpecializationRepository: %w", err),
-		)
-	}
-
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из SpecializationRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из SpecializationRepository: %w", err),
-		)
-	}
+// Замечание 10 - Добавление коннектора
+// Изменен конструктор для использования готового соединения с БД
+func NewSpecializationRepository(db *sql.DB) (repository.SpecializationRepository, error) {
 	return &SpecializationRepository{DB: db}, nil
 }
 
@@ -59,14 +38,13 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 		&specialization.Name,
 	)
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entity.NewError(
-				entity.ErrNotFound,
-				fmt.Errorf("специализация с id=%d не найдена", id),
-			)
-		}
-
+	// Исправление 7: Улучшена структура обработки ошибок для уменьшения вложенности
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, entity.NewError(
+			entity.ErrNotFound,
+			fmt.Errorf("специализация с id=%d не найдена", id),
+		)
+	} else if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        id,

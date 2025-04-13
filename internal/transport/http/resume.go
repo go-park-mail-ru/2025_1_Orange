@@ -6,7 +6,7 @@ import (
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
-	"context"
+	"ResuMatch/pkg/sanitizer"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -14,11 +14,11 @@ import (
 
 type ResumeHandler struct {
 	auth   usecase.Auth
-	resume usecase.Resume
+	resume usecase.ResumeUsecase // Исправление 5: Переименовано из Resume в ResumeUsecase
 	cfg    config.CSRFConfig
 }
 
-func NewResumeHandler(auth usecase.Auth, resume usecase.Resume, cfg config.CSRFConfig) ResumeHandler {
+func NewResumeHandler(auth usecase.Auth, resume usecase.ResumeUsecase, cfg config.CSRFConfig) ResumeHandler {
 	return ResumeHandler{auth: auth, resume: resume, cfg: cfg}
 }
 
@@ -29,7 +29,6 @@ func (h *ResumeHandler) Configure(r *http.ServeMux) {
 	resumeMux.HandleFunc("GET /{id}", h.GetResume)
 	resumeMux.HandleFunc("PUT /{id}", h.UpdateResume)
 	resumeMux.HandleFunc("DELETE /{id}", h.DeleteResume)
-	// New handler for employers to view all resumes
 	resumeMux.HandleFunc("GET /all", h.GetAllResumes)
 
 	r.Handle("/resume/", http.StripPrefix("/resume", resumeMux))
@@ -41,6 +40,12 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию
 	cookie, err := r.Cookie("session")
 	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	// Исправление 1: Проверка на nil cookie перед обращением к его значению
+	if cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -64,11 +69,31 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Добавляем ID соискателя в контекст
-	ctx = context.WithValue(ctx, "applicantID", userID)
+	// Исправление 9: Защита от XSS с помощью bluemonday
+	// Санитизация всех полей, которые приходят с фронтенда
+	createResumeRequest.AboutMe = sanitizer.StrictPolicy.Sanitize(createResumeRequest.AboutMe)
+	createResumeRequest.Specialization = sanitizer.StrictPolicy.Sanitize(createResumeRequest.Specialization)
+	createResumeRequest.EducationalInstitution = sanitizer.StrictPolicy.Sanitize(createResumeRequest.EducationalInstitution)
 
-	// Создаем резюме
-	resume, err := h.resume.Create(ctx, &createResumeRequest)
+	// Санитизация массивов строк
+	for i, skill := range createResumeRequest.Skills {
+		createResumeRequest.Skills[i] = sanitizer.StrictPolicy.Sanitize(skill)
+	}
+
+	for i, spec := range createResumeRequest.AdditionalSpecializations {
+		createResumeRequest.AdditionalSpecializations[i] = sanitizer.StrictPolicy.Sanitize(spec)
+	}
+
+	// Санитизация опыта работы
+	for i, we := range createResumeRequest.WorkExperiences {
+		createResumeRequest.WorkExperiences[i].EmployerName = sanitizer.StrictPolicy.Sanitize(we.EmployerName)
+		createResumeRequest.WorkExperiences[i].Position = sanitizer.StrictPolicy.Sanitize(we.Position)
+		createResumeRequest.WorkExperiences[i].Duties = sanitizer.StrictPolicy.Sanitize(we.Duties)
+		createResumeRequest.WorkExperiences[i].Achievements = sanitizer.StrictPolicy.Sanitize(we.Achievements)
+	}
+
+	// Исправление 6: Передаем applicantID напрямую в usecase вместо использования контекста
+	resume, err := h.resume.Create(ctx, userID, &createResumeRequest)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -120,6 +145,12 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Исправление 2: Проверка на nil cookie перед обращением к его значению
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
 	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -147,11 +178,31 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Добавляем ID соискателя в контекст
-	ctx = context.WithValue(ctx, "applicantID", userID)
+	// Исправление 9: Защита от XSS с помощью bluemonday
+	// Санитизация всех полей, которые приходят с фронтенда
+	updateResumeRequest.AboutMe = sanitizer.StrictPolicy.Sanitize(updateResumeRequest.AboutMe)
+	updateResumeRequest.Specialization = sanitizer.StrictPolicy.Sanitize(updateResumeRequest.Specialization)
+	updateResumeRequest.EducationalInstitution = sanitizer.StrictPolicy.Sanitize(updateResumeRequest.EducationalInstitution)
 
-	// Обновляем резюме
-	resume, err := h.resume.Update(ctx, resumeID, &updateResumeRequest)
+	// Санитизация массивов строк
+	for i, skill := range updateResumeRequest.Skills {
+		updateResumeRequest.Skills[i] = sanitizer.StrictPolicy.Sanitize(skill)
+	}
+
+	for i, spec := range updateResumeRequest.AdditionalSpecializations {
+		updateResumeRequest.AdditionalSpecializations[i] = sanitizer.StrictPolicy.Sanitize(spec)
+	}
+
+	// Санитизация опыта работы
+	for i, we := range updateResumeRequest.WorkExperiences {
+		updateResumeRequest.WorkExperiences[i].EmployerName = sanitizer.StrictPolicy.Sanitize(we.EmployerName)
+		updateResumeRequest.WorkExperiences[i].Position = sanitizer.StrictPolicy.Sanitize(we.Position)
+		updateResumeRequest.WorkExperiences[i].Duties = sanitizer.StrictPolicy.Sanitize(we.Duties)
+		updateResumeRequest.WorkExperiences[i].Achievements = sanitizer.StrictPolicy.Sanitize(we.Achievements)
+	}
+
+	// Исправление 6: Передаем applicantID напрямую в usecase вместо использования контекста
+	resume, err := h.resume.Update(ctx, resumeID, userID, &updateResumeRequest)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -172,6 +223,12 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию
 	cookie, err := r.Cookie("session")
 	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	// Исправление 3: Проверка на nil cookie перед обращением к его значению
+	if cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -218,6 +275,12 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию
 	cookie, err := r.Cookie("session")
 	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	// Исправление 4: Проверка на nil cookie перед обращением к его значению
+	if cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}

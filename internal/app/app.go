@@ -7,12 +7,38 @@ import (
 	"ResuMatch/internal/server"
 	handler "ResuMatch/internal/transport/http"
 	"ResuMatch/internal/usecase/service"
+	"ResuMatch/pkg/connector"
 	"log"
 	"net/http"
 )
 
 func Init(cfg *config.Config) *server.Server {
+	// Замечание 10 - Добавление коннектора
+	// Создаем общее соединение с PostgreSQL для репозиториев резюме
+	pgConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		log.Fatalf("Failed to create PostgreSQL connection: %v", err)
+	}
+
 	// Repositories Init
+	// Замечание 10 - Добавление коннектора
+	// Используем общее соединение для репозиториев резюме
+	resumeRepo, err := postgres.NewResumeRepository(pgConn)
+	if err != nil {
+		log.Fatalf("Failed to create resume repository: %v", err)
+	}
+
+	skillRepo, err := postgres.NewSkillRepository(pgConn)
+	if err != nil {
+		log.Fatalf("Failed to create skill repository: %v", err)
+	}
+
+	specializationRepo, err := postgres.NewSpecializationRepository(pgConn)
+	if err != nil {
+		log.Fatalf("Failed to create specialization repository: %v", err)
+	}
+
+	// Оставляем старые репозитории без изменений
 	applicantRepo, err := postgres.NewApplicantRepository(cfg.Postgres)
 	if err != nil {
 		log.Fatalf("Failed to create applicant repository: %v", err)
@@ -21,21 +47,6 @@ func Init(cfg *config.Config) *server.Server {
 	employerRepo, err := postgres.NewEmployerRepository(cfg.Postgres)
 	if err != nil {
 		log.Fatalf("Failed to create employer repository: %v", err)
-	}
-
-	resumeRepo, err := postgres.NewResumeRepository(cfg.Postgres)
-	if err != nil {
-		log.Fatalf("Failed to create resume repository: %v", err)
-	}
-
-	skillRepo, err := postgres.NewSkillRepository(cfg.Postgres)
-	if err != nil {
-		log.Fatalf("Failed to create skill repository: %v", err)
-	}
-
-	specializationRepo, err := postgres.NewSpecializationRepository(cfg.Postgres)
-	if err != nil {
-		log.Fatalf("Failed to create specialization repository: %v", err)
 	}
 
 	sessionRepo, err := redis.NewSessionRepository(cfg.Redis)

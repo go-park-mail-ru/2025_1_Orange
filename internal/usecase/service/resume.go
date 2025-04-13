@@ -3,9 +3,9 @@ package service
 import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
-	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"fmt"
@@ -33,7 +33,7 @@ func NewResumeService(
 }
 
 func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dto.CreateResumeRequest) (*dto.ResumeResponse, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
@@ -240,7 +240,7 @@ func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dt
 }
 
 func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeResponse, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -343,7 +343,7 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 }
 
 func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
@@ -573,7 +573,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, req
 }
 
 func (s *ResumeService) Delete(ctx context.Context, id int, applicantID int) (*dto.DeleteResumeResponse, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
@@ -621,7 +621,7 @@ func (s *ResumeService) Delete(ctx context.Context, id int, applicantID int) (*d
 
 // GetAll returns a list of all resumes (for employers)
 func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,

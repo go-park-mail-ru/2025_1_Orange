@@ -2,8 +2,8 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -24,7 +24,7 @@ func NewResumeRepository(db *sql.DB) (repository.ResumeRepository, error) {
 }
 
 func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*entity.Resume, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -103,7 +103,7 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 }
 
 func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs []int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -205,7 +205,7 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 }
 
 func (r *ResumeRepository) AddWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -299,7 +299,7 @@ func (r *ResumeRepository) AddWorkExperience(ctx context.Context, workExperience
 }
 
 func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -349,7 +349,7 @@ func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume,
 }
 
 func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int) ([]entity.Skill, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -412,7 +412,7 @@ func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int
 }
 
 func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resumeID int) ([]entity.WorkExperience, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -494,7 +494,7 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 }
 
 func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int, specializationIDs []int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -596,7 +596,7 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 }
 
 func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, resumeID int) ([]entity.Specialization, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -659,7 +659,7 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 }
 
 func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*entity.Resume, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -760,7 +760,7 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 }
 
 func (r *ResumeRepository) Delete(ctx context.Context, id int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -816,7 +816,7 @@ func (r *ResumeRepository) Delete(ctx context.Context, id int) error {
 
 // DeleteSkills удаляет все навыки резюме
 func (r *ResumeRepository) DeleteSkills(ctx context.Context, resumeID int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -846,7 +846,7 @@ func (r *ResumeRepository) DeleteSkills(ctx context.Context, resumeID int) error
 
 // DeleteSpecializations удаляет все специализации резюме
 func (r *ResumeRepository) DeleteSpecializations(ctx context.Context, resumeID int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -876,7 +876,7 @@ func (r *ResumeRepository) DeleteSpecializations(ctx context.Context, resumeID i
 
 // DeleteWorkExperiences удаляет весь опыт работы резюме
 func (r *ResumeRepository) DeleteWorkExperiences(ctx context.Context, resumeID int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -906,7 +906,7 @@ func (r *ResumeRepository) DeleteWorkExperiences(ctx context.Context, resumeID i
 
 // UpdateWorkExperience обновляет запись об опыте работы
 func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1025,7 +1025,7 @@ func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperie
 
 // DeleteWorkExperience удаляет запись об опыте работы
 func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1081,7 +1081,7 @@ func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) err
 
 // GetAll получает список всех резюме
 func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1154,7 +1154,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 
 // FindSkillIDsByNames находит ID навыков по их названиям
 func (r *ResumeRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1225,7 +1225,7 @@ func (r *ResumeRepository) FindSkillIDsByNames(ctx context.Context, skillNames [
 
 // FindSpecializationIDByName находит ID специализации по её названию
 func (r *ResumeRepository) FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1264,7 +1264,7 @@ func (r *ResumeRepository) FindSpecializationIDByName(ctx context.Context, speci
 
 // FindSpecializationIDsByNames находит ID специализаций по их названиям
 func (r *ResumeRepository) FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,

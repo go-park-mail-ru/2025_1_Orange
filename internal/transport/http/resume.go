@@ -49,7 +49,7 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -147,7 +147,7 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -225,7 +225,7 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -276,7 +276,7 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	_, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

@@ -2,8 +2,8 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -22,7 +22,7 @@ func NewSkillRepository(db *sql.DB) (repository.SkillRepository, error) {
 }
 
 func (r *SkillRepository) GetByIDs(ctx context.Context, ids []int) ([]entity.Skill, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	if len(ids) == 0 {
 		return []entity.Skill{}, nil

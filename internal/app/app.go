@@ -14,6 +14,21 @@ import (
 
 func Init(cfg *config.Config) *server.Server {
 	// Postgres Connection
+  resumeConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		l.Log.Errorf("Failed to connect to resume postgres: %v", err)
+	}
+  
+  skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		l.Log.Errorf("Failed to connect to skill postgres: %v", err)
+	}
+  
+  specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		l.Log.Errorf("Failed to connect to specialization postgres: %v", err)
+	}
+  
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to city postgres: %v", err)
@@ -41,6 +56,21 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Repositories Init
+  resumeRepo, err := postgres.NewResumeRepository(resumeConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create resume repository: %v", err)
+	}
+
+	skillRepo, err := postgres.NewSkillRepository(skillConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create skill repository: %v", err)
+	}
+
+	specializationRepo, err := postgres.NewSpecializationRepository(specializationConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create specialization repository: %v", err)
+	}
+
 	cityRepo, err := postgres.NewCityRepository(cityConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create city repository: %v", err)
@@ -71,10 +101,12 @@ func Init(cfg *config.Config) *server.Server {
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
 	employerService := service.NewEmployerService(employerRepo, staticRepo)
+  resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
+  resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 
 	// Server Init
 	srv := server.NewServer(cfg)
@@ -84,6 +116,7 @@ func Init(cfg *config.Config) *server.Server {
 		authHandler.Configure(r)
 		applicantHandler.Configure(r)
 		employmentHandler.Configure(r)
+		resumeHandler.Configure(r)
 	})
 
 	return srv

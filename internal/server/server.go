@@ -1,9 +1,11 @@
 package server
 
 import (
+	_ "ResuMatch/docs"
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/middleware"
 	"context"
+	swagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"time"
 )
@@ -31,9 +33,11 @@ func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	mainRouter := http.NewServeMux()
 	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", subrouter))
 
+	mainRouter.HandleFunc("/swagger/", swagger.WrapHandler)
 	routeConfig(subrouter)
 
 	handler := middleware.CreateMiddlewareChain(
+		middleware.RecoveryMiddleware(),
 		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
 		middleware.CSRFMiddleware(s.config.CSRF),
 		middleware.RequestIDMiddleware(),

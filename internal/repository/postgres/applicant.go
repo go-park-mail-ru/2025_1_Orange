@@ -1,10 +1,9 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -13,40 +12,76 @@ import (
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 type ApplicantRepository struct {
 	DB *sql.DB
 }
 
-func NewApplicantRepository(cfg config.PostgresConfig) (repository.ApplicantRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из ApplicantRepository")
+type ScanApplicant struct {
+	ID           int
+	FirstName    string
+	LastName     string
+	MiddleName   sql.NullString
+	Email        string
+	CityID       sql.NullInt64
+	BirthDate    sql.NullTime
+	Sex          sql.NullString
+	Status       sql.NullString
+	Quote        sql.NullString
+	Vk           sql.NullString
+	Telegram     sql.NullString
+	Facebook     sql.NullString
+	AvatarID     sql.NullInt64
+	PasswordHash []byte
+	PasswordSalt []byte
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
+}
 
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из ApplicantRepository: %w", err),
-		)
+func (a *ScanApplicant) GetEntity() *entity.Applicant {
+	applicant := &entity.Applicant{
+		ID:           a.ID,
+		FirstName:    a.FirstName,
+		LastName:     a.LastName,
+		MiddleName:   a.MiddleName.String,
+		BirthDate:    a.BirthDate.Time,
+		Email:        a.Email,
+		CityID:       int(a.CityID.Int64),
+		Sex:          a.Sex.String,
+		Status:       toApplicantStatus(a.Status),
+		Quote:        a.Quote.String,
+		Vk:           a.Vk.String,
+		Telegram:     a.Telegram.String,
+		Facebook:     a.Facebook.String,
+		AvatarID:     int(a.AvatarID.Int64),
+		PasswordHash: a.PasswordHash,
+		PasswordSalt: a.PasswordSalt,
+		CreatedAt:    a.CreatedAt.Time,
+		UpdatedAt:    a.UpdatedAt.Time,
 	}
+	return applicant
+}
 
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из ApplicantRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из ApplicantRepository: %w", err),
-		)
+func toApplicantStatus(status sql.NullString) entity.ApplicantStatus {
+	if status.Valid {
+		return entity.ApplicantStatus(status.String)
 	}
+	return ""
+}
+
+func NewApplicantRepository(db *sql.DB) (repository.ApplicantRepository, error) {
 	return &ApplicantRepository{DB: db}, nil
 }
 
-func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Applicant) (*entity.Applicant, error) {
-	requestID := middleware.GetRequestID(ctx)
+func (r *ApplicantRepository) CreateApplicant(
+	ctx context.Context, email, firstName, lastName string, passwordHash, passwordSalt []byte) (*entity.Applicant, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса создания соискателя CreateApplicant")
 
 	query := `
         INSERT INTO applicant (email, password_hashed, password_salt, first_name, last_name)
@@ -56,11 +91,11 @@ func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Appl
 
 	var createdApplicant entity.Applicant
 	err := r.DB.QueryRowContext(ctx, query,
-		applicant.Email,
-		applicant.PasswordHash,
-		applicant.PasswordSalt,
-		applicant.FirstName,
-		applicant.LastName,
+		email,
+		passwordHash,
+		passwordSalt,
+		firstName,
+		lastName,
 	).Scan(
 		&createdApplicant.ID,
 		&createdApplicant.Email,
@@ -94,6 +129,11 @@ func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Appl
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
 				)
+			default:
+				return nil, entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("неизвестная ошибка при создании соискателя err=%w", err),
+				)
 			}
 		}
 
@@ -107,28 +147,48 @@ func (r *ApplicantRepository) Create(ctx context.Context, applicant *entity.Appl
 			fmt.Errorf("ошибка при создании соискателя: %w", err),
 		)
 	}
-
 	return &createdApplicant, nil
 }
 
-func (r *ApplicantRepository) GetByID(ctx context.Context, id int) (*entity.Applicant, error) {
-	requestID := middleware.GetRequestID(ctx)
+func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*entity.Applicant, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"id":        id,
+	}).Info("выполнение sql-запроса получения соискателя по ID GetApplicantByID")
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, first_name, last_name
-		FROM applicant
-		WHERE id = $1
+		SELECT id, first_name, last_name, middle_name, city_id, 
+		       birth_date, sex, email, status, quote, vk,
+		       telegram, facebook, avatar_id,
+		       password_hashed, password_salt, created_at, updated_at
+		FROM applicant WHERE id = $1
 	`
 
-	var applicant entity.Applicant
+	scanApplicant := ScanApplicant{}
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
-		&applicant.ID,
-		&applicant.Email,
-		&applicant.PasswordHash,
-		&applicant.PasswordSalt,
-		&applicant.FirstName,
-		&applicant.LastName,
+		&scanApplicant.ID,
+		&scanApplicant.FirstName,
+		&scanApplicant.LastName,
+		&scanApplicant.MiddleName,
+		&scanApplicant.CityID,
+		&scanApplicant.BirthDate,
+		&scanApplicant.Sex,
+		&scanApplicant.Email,
+		&scanApplicant.Status,
+		&scanApplicant.Quote,
+		&scanApplicant.Vk,
+		&scanApplicant.Telegram,
+		&scanApplicant.Facebook,
+		&scanApplicant.AvatarID,
+		&scanApplicant.PasswordHash,
+		&scanApplicant.PasswordSalt,
+		&scanApplicant.CreatedAt,
+		&scanApplicant.UpdatedAt,
 	)
+
+	applicant := scanApplicant.GetEntity()
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -150,27 +210,48 @@ func (r *ApplicantRepository) GetByID(ctx context.Context, id int) (*entity.Appl
 		)
 	}
 
-	return &applicant, nil
+	return applicant, nil
 }
 
-func (r *ApplicantRepository) GetByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
-	requestID := middleware.GetRequestID(ctx)
+func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email string) (*entity.Applicant, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"email":     email,
+	}).Info("выполнение sql-запроса получения соискателя по почте GetApplicantByEmail")
 
 	query := `
-		SELECT id, email, password_hashed, password_salt, first_name, last_name
-		FROM applicant
-		WHERE email = $1
+		SELECT id, first_name, last_name, middle_name, city_id, 
+		       birth_date, sex, email, status, quote, vk,
+		       telegram, facebook, avatar_id,
+		       password_hashed, password_salt, created_at, updated_at
+		FROM applicant WHERE email = $1
 	`
 
-	var applicant entity.Applicant
+	scanApplicant := ScanApplicant{}
 	err := r.DB.QueryRowContext(ctx, query, email).Scan(
-		&applicant.ID,
-		&applicant.Email,
-		&applicant.PasswordHash,
-		&applicant.PasswordSalt,
-		&applicant.FirstName,
-		&applicant.LastName,
+		&scanApplicant.ID,
+		&scanApplicant.FirstName,
+		&scanApplicant.LastName,
+		&scanApplicant.MiddleName,
+		&scanApplicant.CityID,
+		&scanApplicant.BirthDate,
+		&scanApplicant.Sex,
+		&scanApplicant.Email,
+		&scanApplicant.Status,
+		&scanApplicant.Quote,
+		&scanApplicant.Vk,
+		&scanApplicant.Telegram,
+		&scanApplicant.Facebook,
+		&scanApplicant.AvatarID,
+		&scanApplicant.PasswordHash,
+		&scanApplicant.PasswordSalt,
+		&scanApplicant.CreatedAt,
+		&scanApplicant.UpdatedAt,
 	)
+
+	applicant := scanApplicant.GetEntity()
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -192,31 +273,32 @@ func (r *ApplicantRepository) GetByEmail(ctx context.Context, email string) (*en
 		)
 	}
 
-	return &applicant, nil
+	return applicant, nil
 }
 
-func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Applicant) error {
-	requestID := middleware.GetRequestID(ctx)
+func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, fields map[string]interface{}) error {
+	requestID := utils.GetRequestID(ctx)
 
-	query := `
-		UPDATE applicant
-		SET 
-			email = $1,
-			password_hashed = $2,
-			password_salt = $3,
-			first_name = $4,
-			last_name = $5
-		WHERE id = $6
-	`
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса обновления информации соискателя UpdateApplicant")
 
-	result, err := r.DB.ExecContext(ctx, query,
-		applicant.Email,
-		applicant.PasswordHash,
-		applicant.PasswordSalt,
-		applicant.FirstName,
-		applicant.LastName,
-		applicant.ID,
-	)
+	query := "UPDATE applicant SET "
+	setParts := make([]string, 0, len(fields))
+	args := make([]interface{}, 0, len(fields)+1)
+	i := 1
+
+	for field, value := range fields {
+		setParts = append(setParts, fmt.Sprintf("%s = $%d", field, i))
+		args = append(args, value)
+		i++
+	}
+
+	query += strings.Join(setParts, ", ")
+	query += fmt.Sprintf(" WHERE id = $%d", i)
+	args = append(args, userID)
+
+	result, err := r.DB.ExecContext(ctx, query, args...)
 
 	if err != nil {
 		var pqErr *pq.Error
@@ -225,7 +307,7 @@ func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Appl
 			case entity.PSQLUniqueViolation: // Уникальное ограничение
 				return entity.NewError(
 					entity.ErrAlreadyExists,
-					fmt.Errorf("соискатель с таким email уже зарегистрирован"),
+					fmt.Errorf("ошибка уникальности"),
 				)
 			case entity.PSQLNotNullViolation: // NOT NULL ограничение
 				return entity.NewError(
@@ -242,18 +324,23 @@ func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Appl
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),
 				)
+			default:
+				return entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("неизвестная ошибка при обновлении соискателя err=%w", err),
+				)
 			}
 		}
 
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        applicant.ID,
+			"id":        userID,
 			"error":     err,
 		}).Error("не удалось обновить соискателя")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось обновить соискателя с id=%d", applicant.ID),
+			fmt.Errorf("не удалось обновить соискателя с id=%d", userID),
 		)
 	}
 
@@ -261,26 +348,26 @@ func (r *ApplicantRepository) Update(ctx context.Context, applicant *entity.Appl
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        applicant.ID,
+			"id":        userID,
 			"error":     err,
 		}).Error("не удалось получить обновленные строки при обновлении соискателя")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось получить обновленные строки при обновлении соискателя с id=%d", applicant.ID),
+			fmt.Errorf("не удалось получить обновленные строки при обновлении соискателя с id=%d", userID),
 		)
 	}
 
 	if rowsAffected == 0 {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        applicant.ID,
+			"id":        userID,
 			"error":     err,
 		}).Error("не удалось найти при обновлении соискателя")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось найти при обновлении соискателя с id=%d", applicant.ID),
+			fmt.Errorf("не удалось найти при обновлении соискателя с id=%d", userID),
 		)
 	}
 

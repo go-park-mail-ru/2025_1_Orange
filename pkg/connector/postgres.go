@@ -6,7 +6,6 @@ import (
 	l "ResuMatch/pkg/logger"
 	"database/sql"
 	"fmt"
-
 	"github.com/sirupsen/logrus"
 )
 

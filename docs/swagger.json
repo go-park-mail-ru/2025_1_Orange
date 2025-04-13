@@ -109,7 +109,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AuthResponse"
+                        }
                     },
                     "400": {
                         "description": "Неверный формат запроса",
@@ -298,7 +301,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AuthResponse"
+                        }
                     },
                     "400": {
                         "description": "Неверный формат запроса",
@@ -514,7 +520,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AuthResponse"
+                        }
                     },
                     "400": {
                         "description": "Неверный формат запроса",
@@ -762,7 +771,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AuthResponse"
+                        }
                     },
                     "400": {
                         "description": "Неверный формат запроса",

@@ -44,7 +44,7 @@ func (h *ApplicantHandler) Configure(r *http.ServeMux) {
 // @Param registerData body dto.ApplicantRegister true "Данные для регистрации"
 // @Header 200 {string} Set-Cookie "Сессионные cookies"
 // @Header 200 {string} X-CSRF-Token "CSRF-токен"
-// @Success 200
+// @Success 200 {object} dto.AuthResponse
 // @Failure 400 {object} utils.APIError "Неверный формат запроса"
 // @Failure 409 {object} utils.APIError "Пользователь уже существует"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
@@ -71,6 +71,12 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	middleware.SetCSRFToken(w, r, h.cfg)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: applicantID, Role: "applicant"}); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
 }
 
 // Login godoc
@@ -84,7 +90,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Param loginData body dto.Login true "Данные для авторизации (email и пароль)"
 // @Header 200 {string} Set-Cookie "Сессионные cookies"
 // @Header 200 {string} X-CSRF-Token "CSRF-токен"
-// @Success 200
+// @Success 200 {object} dto.AuthResponse
 // @Failure 400 {object} utils.APIError "Неверный формат запроса"
 // @Failure 403 {object} utils.APIError "Доступ запрещен (неверные учетные данные)"
 // @Failure 404 {object} utils.APIError "Пользователь не найден"
@@ -110,7 +116,14 @@ func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
+
 	middleware.SetCSRFToken(w, r, h.cfg)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: applicantID, Role: "applicant"}); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
 }
 
 // GetProfile godoc

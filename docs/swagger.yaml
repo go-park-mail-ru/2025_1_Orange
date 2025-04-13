@@ -263,6 +263,8 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
         "400":
           description: Неверный формат запроса
           schema:
@@ -383,6 +385,8 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
         "400":
           description: Неверный формат запроса
           schema:
@@ -517,6 +521,8 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
         "400":
           description: Неверный формат запроса
           schema:
@@ -675,6 +681,8 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
         "400":
           description: Неверный формат запроса
           schema:

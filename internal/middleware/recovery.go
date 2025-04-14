@@ -5,14 +5,9 @@ import (
 	globalUtils "ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"fmt"
-<<<<<<< HEAD
-	"github.com/sirupsen/logrus"
-	"net/http"
-=======
 	"net/http"
 
 	"github.com/sirupsen/logrus"
->>>>>>> a6396a4 (Fix mistakes)
 )
 
 func RecoveryMiddleware() func(http.Handler) http.Handler {

@@ -9,16 +9,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-<<<<<<< HEAD
-	"github.com/sirupsen/logrus"
-	"os"
-	"path/filepath"
-=======
 	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
->>>>>>> a6396a4 (Fix mistakes)
 )
 
 type StaticRepository struct {

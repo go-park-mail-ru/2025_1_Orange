@@ -5,16 +5,10 @@ import (
 	"ResuMatch/internal/entity"
 	l "ResuMatch/pkg/logger"
 	"fmt"
-<<<<<<< HEAD
-	"github.com/gomodule/redigo/redis"
-	"github.com/sirupsen/logrus"
-	"time"
-=======
 	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/sirupsen/logrus"
->>>>>>> a6396a4 (Fix mistakes)
 )
 
 func NewRedisConnection(cfg config.RedisConfig) (redis.Conn, error) {

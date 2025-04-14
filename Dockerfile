@@ -2,13 +2,19 @@
 FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
+
+# Установка зависимостей проекта
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+# Установка мигратора БД
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
 COPY . .
 
-# Надо установить зависимости из go.mod, загрузить либу для миграций,
-# затем собрать бинарник (т.к. это экономит память)
-RUN go mod download && \
-    go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest && \
-    CGO_ENABLED=0 GOOS=linux go build -o ./.bin ./cmd/app/main.go  # Бинарник в ./.bin
+# Собираем бинарник
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./.bin ./cmd/app/main.go
 
 # Запуск (используем минимальный по весу образ Linux)
 FROM alpine:3.18

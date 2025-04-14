@@ -196,7 +196,7 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 		if err != nil {
 			return err
 		}
-		updateFields["city_id"] = city.Name
+		updateFields["city_id"] = city.ID
 	}
 
 	if len(updateFields) == 0 {

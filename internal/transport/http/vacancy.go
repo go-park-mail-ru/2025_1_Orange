@@ -35,6 +35,9 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("DELETE /vacancy/{id}", h.DeleteVacancy)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d7704b3 (Fix mistakes)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
 <<<<<<< HEAD
 =======
@@ -45,7 +48,13 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 >>>>>>> e918c1a (Fix issues with conflicts)
 =======
 
+<<<<<<< HEAD
 >>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
+=======
+=======
+	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.CreateResponse)
+>>>>>>> a6396a4 (Fix mistakes)
+>>>>>>> d7704b3 (Fix mistakes)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -245,6 +254,9 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d7704b3 (Fix mistakes)
 =======
 func (h *VacancyHandler) CreateResponse(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -291,8 +303,11 @@ func (h *VacancyHandler) CreateResponse(w http.ResponseWriter, r *http.Request) 
 }
 
 >>>>>>> a6396a4 (Fix mistakes)
+<<<<<<< HEAD
 =======
 >>>>>>> e918c1a (Fix issues with conflicts)
+=======
+>>>>>>> d7704b3 (Fix mistakes)
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -315,6 +330,7 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 	var req ApplyToVacancyRequest
@@ -324,6 +340,13 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 =======
 	var req dto.ApplyToVacancyRequest
 >>>>>>> e918c1a (Fix issues with conflicts)
+=======
+	var req dto.ApplyToVacancyRequest
+=======
+
+	var req dto.VacancyResponse
+>>>>>>> a6396a4 (Fix mistakes)
+>>>>>>> d7704b3 (Fix mistakes)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
@@ -336,5 +359,8 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusCreated)
+<<<<<<< HEAD
 
+=======
+>>>>>>> a6396a4 (Fix mistakes)
 }

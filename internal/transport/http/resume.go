@@ -38,7 +38,7 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -136,7 +136,7 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -214,7 +214,7 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -265,7 +265,7 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return

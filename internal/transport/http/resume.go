@@ -38,7 +38,7 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -136,7 +136,7 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -214,7 +214,7 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -265,7 +265,7 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверяем авторизацию
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -276,23 +276,28 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
-	// Проверяем, что пользователь - работодатель
-	if role != "employer" {
-		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
-		return
-	}
+	var resumes []dto.ResumeShortResponse
 
-	// Получаем список всех резюме
-	resumes, err := h.resume.GetAll(ctx)
-	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
+	if role == "applicant" {
+		// Получаем список всех резюме соискателя
+		resumes, err = h.resume.GetAllResumesByApplicantID(ctx, userID)
+		if err != nil {
+			utils.WriteAPIError(w, utils.ToAPIError(err))
+			return
+		}
+	} else {
+		// Получаем список всех резюме
+		resumes, err = h.resume.GetAll(ctx)
+		if err != nil {
+			utils.WriteAPIError(w, utils.ToAPIError(err))
+			return
+		}
 	}
 
 	// Отправляем ответ

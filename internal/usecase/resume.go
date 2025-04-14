@@ -11,4 +11,5 @@ type ResumeUsecase interface {
 	Update(ctx context.Context, id int, applicantID int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error)
 	Delete(ctx context.Context, id int, applicantID int) (*dto.DeleteResumeResponse, error)
 	GetAll(ctx context.Context) ([]dto.ResumeShortResponse, error)
+	GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]dto.ResumeShortResponse, error)
 }

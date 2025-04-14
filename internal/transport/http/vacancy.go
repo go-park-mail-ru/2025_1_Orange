@@ -40,7 +40,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -107,7 +107,7 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверка сессии
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -159,7 +159,7 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Проверка сессии
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -200,7 +200,7 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
@@ -238,7 +238,7 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return

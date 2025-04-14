@@ -22,6 +22,7 @@ type ResumeRepository interface {
 	UpdateWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error)
 	DeleteWorkExperience(ctx context.Context, id int) error
 	GetAll(ctx context.Context) ([]entity.Resume, error)
+	GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]entity.Resume, error)
 	FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error)
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error)

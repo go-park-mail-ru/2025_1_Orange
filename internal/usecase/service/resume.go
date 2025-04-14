@@ -697,3 +697,83 @@ func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, 
 
 	return response, nil
 }
+
+// GetAll returns a list of all resumes (for applicants)
+func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]dto.ResumeShortResponse, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"applicantID": applicantID,
+	}).Info("Получение списка всех резюме соискателя")
+
+	// Get all resumes with limit
+	resumes, err := s.resumeRepository.GetAllResumesByApplicantID(ctx, applicantID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build response
+	response := make([]dto.ResumeShortResponse, 0, len(resumes))
+	for _, resume := range resumes {
+		// Get specialization name
+		var specializationName string
+		if resume.SpecializationID != 0 {
+			specialization, err := s.specializationRepository.GetByID(ctx, resume.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":        requestID,
+					"resumeID":         resume.ID,
+					"specializationID": resume.SpecializationID,
+					"error":            err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		// Get the most recent work experience
+		workExperiences, err := s.resumeRepository.GetWorkExperienceByResumeID(ctx, resume.ID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"resumeID":  resume.ID,
+				"error":     err,
+			}).Error("ошибка при получении опыта работы")
+			continue
+		}
+
+		// Create short resume response
+		shortResume := dto.ResumeShortResponse{
+			ID:             resume.ID,
+			ApplicantID:    resume.ApplicantID,
+			Specialization: specializationName,
+			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
+		}
+
+		// Add the most recent work experience if available
+		if len(workExperiences) > 0 {
+			we := workExperiences[0] // The first one is the most recent due to ORDER BY in the query
+			workExp := dto.WorkExperienceShort{
+				ID:           we.ID,
+				EmployerName: we.EmployerName,
+				Position:     we.Position,
+				Duties:       we.Duties,
+				Achievements: we.Achievements,
+				StartDate:    we.StartDate.Format("2006-01-02"),
+				UntilNow:     we.UntilNow,
+			}
+
+			if !we.UntilNow && !we.EndDate.IsZero() {
+				workExp.EndDate = we.EndDate.Format("2006-01-02")
+			}
+
+			shortResume.WorkExperience = workExp
+		}
+
+		response = append(response, shortResume)
+	}
+
+	return response, nil
+}

@@ -1153,6 +1153,81 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 	return resumes, nil
 }
 
+// GetAllResumesByApplicantID получает список всех резюме одного соискателя
+func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]entity.Resume, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"applicantID": applicantID,
+	}).Info("sql-запрос в БД на получение всех резюме соискателя GetAllResumesByApplicantID")
+
+	query := `
+		SELECT id, applicant_id, about_me, specialization_id, education, 
+			   educational_institution, graduation_year, created_at, updated_at
+		FROM resume
+		WHERE applicant_id = $1
+		ORDER BY updated_at DESC
+		LIMIT 100
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query, applicantID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при получении списка резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении списка резюме: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var resumes []entity.Resume
+	for rows.Next() {
+		var resume entity.Resume
+		err := rows.Scan(
+			&resume.ID,
+			&resume.ApplicantID,
+			&resume.AboutMe,
+			&resume.SpecializationID,
+			&resume.Education,
+			&resume.EducationalInstitution,
+			&resume.GraduationYear,
+			&resume.CreatedAt,
+			&resume.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании резюме")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании резюме: %w", err),
+			)
+		}
+		resumes = append(resumes, resume)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по резюме: %w", err),
+		)
+	}
+
+	return resumes, nil
+}
+
 // // FindSkillIDsByNames находит ID навыков по их названиям
 // func (r *ResumeRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
 // 	requestID := utils.GetRequestID(ctx)

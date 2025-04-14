@@ -14,7 +14,6 @@ import (
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 type ApplicantRepository struct {

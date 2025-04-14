@@ -3,30 +3,8 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
-=======
->>>>>>> d7704b3 (Fix mistakes)
-
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d7704b3 (Fix mistakes)
-=======
-	"ResuMatch/internal/repository"
-	"ResuMatch/internal/utils"
->>>>>>> a6396a4 (Fix mistakes)
-<<<<<<< HEAD
-=======
->>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
-=======
->>>>>>> d7704b3 (Fix mistakes)
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"

@@ -33,33 +33,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("GET /vacancy/{id}", h.GetVacancy)
 	vacancyMux.HandleFunc("PUT /vacancy/{id}", h.UpdateVacancy)
 	vacancyMux.HandleFunc("DELETE /vacancy/{id}", h.DeleteVacancy)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d7704b3 (Fix mistakes)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
-<<<<<<< HEAD
-=======
-	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.CreateResponse)
->>>>>>> a6396a4 (Fix mistakes)
-=======
-	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
->>>>>>> e918c1a (Fix issues with conflicts)
-=======
-
-<<<<<<< HEAD
->>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
-=======
-=======
-	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.CreateResponse)
->>>>>>> a6396a4 (Fix mistakes)
->>>>>>> d7704b3 (Fix mistakes)
-=======
-	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
-
->>>>>>> bf6489c (Fix mistakes)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -256,66 +230,6 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		return
 	}
 }
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d7704b3 (Fix mistakes)
-=======
-func (h *VacancyHandler) CreateResponse(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
-		return
-	}
-
-	vacancyID, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
-		return
-	}
-
-	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
-
-	if userType != "applicant" {
-		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
-		return
-	}
-
-	var request struct {
-		ResumeID *int `json:"resume_id,omitempty"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
-		return
-	}
-
-	// Создаем отклик через сервис
-	err = h.vacancy.CreateResponse(ctx, vacancyID, currentUserID, request.ResumeID)
-	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-}
-
->>>>>>> a6396a4 (Fix mistakes)
-<<<<<<< HEAD
-=======
->>>>>>> e918c1a (Fix issues with conflicts)
-=======
->>>>>>> d7704b3 (Fix mistakes)
-=======
->>>>>>> bf6489c (Fix mistakes)
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -337,28 +251,8 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+	var req dto.ApplyToVacancyRequest
 
-<<<<<<< HEAD
-	var req ApplyToVacancyRequest
-=======
-	var req dto.VacancyResponse
->>>>>>> a6396a4 (Fix mistakes)
-=======
-	var req dto.ApplyToVacancyRequest
->>>>>>> e918c1a (Fix issues with conflicts)
-=======
-	var req dto.ApplyToVacancyRequest
-=======
-
-	var req dto.VacancyResponse
->>>>>>> a6396a4 (Fix mistakes)
->>>>>>> d7704b3 (Fix mistakes)
-=======
-	var req dto.ApplyToVacancyRequest
->>>>>>> bf6489c (Fix mistakes)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return

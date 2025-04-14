@@ -9,35 +9,20 @@ import (
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
-	"log"
 	"net/http"
 )
 
 func Init(cfg *config.Config) *server.Server {
 	// Postgres Connection
-	resumeConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to resume postgres: %v", err)
-	}
 
 	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
-	}
-
-	skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to skill postgres: %v", err)
 	}
 
 	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to specialization postgres: %v", err)
-	}
-
-	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
 	}
 
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
@@ -74,17 +59,7 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to create vacancy repository: %v", err)
 	}
 
-	skillRepo, err := postgres.NewSkillRepository(skillConn)
-	if err != nil {
-		l.Log.Errorf("Failed to create skill repository: %v", err)
-	}
-
 	specializationRepo, err := postgres.NewSpecializationRepository(specializationConn)
-	if err != nil {
-		l.Log.Errorf("Failed to create specialization repository: %v", err)
-	}
-
-	vacanciesRepo, err := postgres.NewVacancyRepository(vacancyConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create specialization repository: %v", err)
 	}
@@ -114,26 +89,17 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to create session repository: %v", err)
 	}
 
-	vacancyRepo, err := postgres.NewVacancyRepository(cfg.Postgres)
-	if err != nil {
-		log.Fatalf("Failed to create vacancy repository: %v", err)
-	}
-
-	sessionRepo, err := redis.NewSessionRepository(cfg.Redis)
-	if err != nil {
-		log.Fatalf("Failed to create session repository: %v", err)
-	}
-
 	// Use Cases Init
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
-	applicantService := service.NewApplicantService(applicantRepo)
-	employerService := service.NewEmployerService(employerRepo)
-	vacancyService := service.NewVacanciesService(vacancyRepo, skillRepo, cityRepo, applicantRepo, specializationRepo)
+	staticService := service.NewStaticService(staticRepo)
+	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
+	employerService := service.NewEmployerService(employerRepo, staticRepo)
+	vacancyService := service.NewVacanciesService(vacancyRepo, cityRepo, applicantRepo, specializationRepo)
 
 	// Transport Init
-	authHandler := handler.NewAuthHandler(authService)
-	applicantHandler := handler.NewApplicantHandler(authService, applicantService, cfg.CSRF)
-	employmentHandler := handler.NewEmployerHandler(authService, employerService, cfg.CSRF)
+	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
+	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
+	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 
 	// Server Init

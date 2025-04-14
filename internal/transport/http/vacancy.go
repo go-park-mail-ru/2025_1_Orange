@@ -8,6 +8,7 @@ import (
 	"ResuMatch/internal/usecase"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 )
@@ -50,7 +51,12 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	UserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -67,9 +73,7 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, "employerID", currentUserID)
-
-	vacancy, err := h.vacancy.CreateVacancy(ctx, &vacancyCreate)
+	vacancy, err := h.vacancy.CreateVacancy(ctx, UserID, &vacancyCreate)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -113,6 +117,11 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	// Проверка сессии
 	cookie, err := r.Cookie("session")
 	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	if cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -210,19 +219,27 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	_, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
+	// _, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	// if err != nil {
+	// 	utils.WriteAPIError(w, utils.ToAPIError(err))
+	// 	return
+	// }
 
-	if role != "applicant" {
-		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+	// if role != "applicant" {
+	// 	utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+	// 	return
+	// }
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
 
 	vacancies, err := h.vacancy.GetAll(ctx)
 	if err != nil {
+		if errors.Is(err, entity.ErrNotFound) {
+			utils.WriteError(w, http.StatusOK, nil)
+			return
+		}
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}

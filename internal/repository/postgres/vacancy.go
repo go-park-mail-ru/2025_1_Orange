@@ -47,12 +47,15 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
             description,
             tasks,
             requirements,
-            optional_requirements
-			created_at
-			updated_at
+            optional_requirements,
+			created_at,
+			updated_at,
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
-        RETURNING id
+        RETURNING id, employer_id, title, is_active, specialization_id, work_format,
+            employment, schedule, working_hours, salary_from, salary_to,
+            taxes_included, experience, description, tasks,
+            requirements, optional_requirements, created_at, updated_at
     `
 	var createdVacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query,

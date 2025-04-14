@@ -6,7 +6,7 @@ import (
 )
 
 type Vacancy interface {
-	CreateVacancy(ctx context.Context, createReq *dto.VacancyCreate) (*dto.VacancyResponse, error)
+	CreateVacancy(ctx context.Context, emplyerID int, createReq *dto.VacancyCreate) (*dto.VacancyResponse, error)
 	GetVacancy(ctx context.Context, id int) (*dto.VacancyResponse, error)
 	UpdateVacancy(ctx context.Context, id int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error)
 	DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error)

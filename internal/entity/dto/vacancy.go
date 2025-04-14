@@ -58,26 +58,26 @@ type VacancyUpdate struct {
 }
 
 type VacancyResponse struct {
-	ID                   int       `json:"id"`
-	EmployerID           int       `json:"employer_id"`
-	Title                string    `json:"title"`
-	SpecializationID     string    `json:"specialization_id"`
-	WorkFormat           string    `json:"work_format"`
-	Employment           string    `json:"employment"`
-	Schedule             string    `json:"schedule"`
-	WorkingHours         int       `json:"working_hours"`
-	SalaryFrom           int       `json:"salary_from"`
-	SalaryTo             int       `json:"salary_to"`
-	TaxesIncluded        string    `json:"taxes_included"`
-	Experience           string    `json:"experience"`
-	City                 []string  `json:"city"`
-	Skills               []string  `json:"skills"`
-	Description          string    `json:"description"`
-	Tasks                string    `json:"tasks"`
-	Requirements         string    `json:"requirements"`
-	OptionalRequirements string    `json:"optional_requirements"`
-	CreatedAt            time.Time `json:"created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
+	ID                   int      `json:"id"`
+	EmployerID           int      `json:"employer_id"`
+	Title                string   `json:"title"`
+	SpecializationID     string   `json:"specialization_id"`
+	WorkFormat           string   `json:"work_format"`
+	Employment           string   `json:"employment"`
+	Schedule             string   `json:"schedule"`
+	WorkingHours         int      `json:"working_hours"`
+	SalaryFrom           int      `json:"salary_from"`
+	SalaryTo             int      `json:"salary_to"`
+	TaxesIncluded        string   `json:"taxes_included"`
+	Experience           string   `json:"experience"`
+	City                 []string `json:"city"`
+	Skills               []string `json:"skills"`
+	Description          string   `json:"description"`
+	Tasks                string   `json:"tasks"`
+	Requirements         string   `json:"requirements"`
+	OptionalRequirements string   `json:"optional_requirements"`
+	CreatedAt            string   `json:"created_at"`
+	UpdatedAt            string   `json:"updated_at"`
 }
 
 type VacancyResponsed struct {

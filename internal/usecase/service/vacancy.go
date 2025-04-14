@@ -4,10 +4,6 @@ import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository"
-<<<<<<< HEAD
-
-=======
->>>>>>> 2100c7a (Add migrations for vacancies)
 	"ResuMatch/internal/usecase"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -146,8 +142,8 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, request *dto.Vacan
 		Tasks:                createdVacancy.Tasks,
 		Requirements:         createdVacancy.Requirements,
 		OptionalRequirements: createdVacancy.OptionalRequirements,
-		CreatedAt:            createdVacancy.CreatedAt,
-		UpdatedAt:            createdVacancy.UpdatedAt,
+		CreatedAt:            createdVacancy.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:            createdVacancy.UpdatedAt.Format(time.RFC3339),
 	}
 
 	response.Skills = make([]string, 0, len(skills))
@@ -214,8 +210,8 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		Tasks:                vacancy.Tasks,
 		Requirements:         vacancy.Requirements,
 		OptionalRequirements: vacancy.OptionalRequirements,
-		CreatedAt:            vacancy.CreatedAt,
-		UpdatedAt:            vacancy.UpdatedAt,
+		CreatedAt:            vacancy.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:            vacancy.UpdatedAt.Format(time.RFC3339),
 		Skills:               make([]string, 0, len(skills)),
 		City:                 make([]string, 0, len(cities)),
 	}
@@ -351,8 +347,8 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		Tasks:                updatedVacancy.Tasks,
 		Requirements:         updatedVacancy.Requirements,
 		OptionalRequirements: updatedVacancy.OptionalRequirements,
-		CreatedAt:            updatedVacancy.CreatedAt,
-		UpdatedAt:            updatedVacancy.UpdatedAt,
+		CreatedAt:            updatedVacancy.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:            updatedVacancy.UpdatedAt.Format(time.RFC3339),
 		Skills:               make([]string, 0, len(skills)),
 		City:                 make([]string, 0, len(cities)),
 	}

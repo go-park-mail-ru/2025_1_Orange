@@ -251,8 +251,13 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
+<<<<<<< HEAD
 	var req dto.ApplyToVacancyRequest
 
+=======
+
+	var req dto.VacancyResponse
+>>>>>>> a6396a4 (Fix mistakes)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return

@@ -4,10 +4,6 @@ import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository"
-<<<<<<< HEAD
-
-=======
->>>>>>> 1fafd65d23faeeab0083b34184a3cbc07c26bdd2
 	"ResuMatch/internal/usecase"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -457,10 +453,6 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 
 	return response, nil
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> 1fafd65d23faeeab0083b34184a3cbc07c26bdd2
 func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	if _, err := s.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
 		return err

@@ -450,9 +450,7 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 	}
 
 	return response, nil
-
 }
-
 func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	if _, err := s.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
 		return err

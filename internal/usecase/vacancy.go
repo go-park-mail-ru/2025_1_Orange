@@ -14,6 +14,7 @@ type Vacancy interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	//CreateResponse(ctx context.Context, vacancyID, applicantID int, resumeID *int) error
 >>>>>>> a6396a4 (Fix mistakes)
@@ -24,5 +25,7 @@ type Vacancy interface {
 	//CreateResponse(ctx context.Context, vacancyID, applicantID int, resumeID *int) error
 >>>>>>> a6396a4 (Fix mistakes)
 >>>>>>> d7704b3 (Fix mistakes)
+=======
+>>>>>>> bf6489c (Fix mistakes)
 	ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error
 }

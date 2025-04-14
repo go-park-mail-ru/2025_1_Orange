@@ -35,9 +35,15 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to connect to specialization postgres: %v", err)
 	}
 
+	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
+	}
+
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to city postgres: %v", err)
+
 	}
 
 	staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
@@ -74,6 +80,11 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	specializationRepo, err := postgres.NewSpecializationRepository(specializationConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create specialization repository: %v", err)
+	}
+
+	vacanciesRepo, err := postgres.NewVacancyRepository(vacancyConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create specialization repository: %v", err)
 	}

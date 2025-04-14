@@ -40,9 +40,12 @@ func (f *CoolFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// но это гарантирует порядок следеования id
 	if requestID, ok := entry.Data["requestID"].(string); ok {
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 2e508df (Added logger.)
 =======
 >>>>>>> 2100c7a (Add migrations for vacancies)
+=======
+>>>>>>> 2100c7a561956d1c7aba82955674aaffa4c2399e
 		b.WriteString("[RID=")
 		b.WriteString(requestID)
 		b.WriteString("] ")

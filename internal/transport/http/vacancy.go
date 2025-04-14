@@ -338,6 +338,7 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 <<<<<<< HEAD
 <<<<<<< HEAD
 	var req dto.ApplyToVacancyRequest
+<<<<<<< HEAD
 
 =======
 	var req dto.ApplyToVacancyRequest
@@ -358,6 +359,8 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 =======
 	var req dto.ApplyToVacancyRequest
 >>>>>>> 2100c7a (Add migrations for vacancies)
+=======
+>>>>>>> 2100c7a561956d1c7aba82955674aaffa4c2399e
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return

@@ -41,7 +41,10 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 			fmt.Errorf("специализация с id=%d не найдена", id),
 		)
 	} else if err != nil {
+<<<<<<< HEAD
 
+=======
+>>>>>>> e918c1a (Fix issues with conflicts)
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        id,

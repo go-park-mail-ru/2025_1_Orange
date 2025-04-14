@@ -230,6 +230,10 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		return
 	}
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> e918c1a (Fix issues with conflicts)
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -252,12 +256,16 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	var req dto.ApplyToVacancyRequest
 
 =======
 
 	var req dto.VacancyResponse
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+	var req dto.ApplyToVacancyRequest
+>>>>>>> e918c1a (Fix issues with conflicts)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return

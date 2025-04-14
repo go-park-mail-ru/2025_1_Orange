@@ -94,5 +94,5 @@ type DeleteVacancy struct {
 }
 
 type ApplyToVacancyRequest struct {
-	ResumeID int `json:"resume_id"`
+	ResumeID int `json:"resume_id,omitempty"`
 }

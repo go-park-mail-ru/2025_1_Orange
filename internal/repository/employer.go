@@ -6,8 +6,8 @@ import (
 )
 
 type EmployerRepository interface {
-	Create(ctx context.Context, employer *entity.Employer) (*entity.Employer, error)
-	GetByID(ctx context.Context, id int) (*entity.Employer, error)
-	GetByEmail(ctx context.Context, email string) (*entity.Employer, error)
-	Update(ctx context.Context, employer *entity.Employer) error
+	CreateEmployer(ctx context.Context, email, companyName, legalAddress string, passwordHash, passwordSalt []byte) (*entity.Employer, error)
+	GetEmployerByID(ctx context.Context, id int) (*entity.Employer, error)
+	GetEmployerByEmail(ctx context.Context, email string) (*entity.Employer, error)
+	UpdateEmployer(ctx context.Context, userID int, fields map[string]interface{}) error
 }

@@ -33,6 +33,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("GET /vacancy/{id}", h.GetVacancy)
 	vacancyMux.HandleFunc("PUT /vacancy/{id}", h.UpdateVacancy)
 	vacancyMux.HandleFunc("DELETE /vacancy/{id}", h.DeleteVacancy)
+	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.CreateResponse)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -45,7 +46,7 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUserID, userType, err := h.auth.GetUserIDBySession(cookie.Value)
+	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -112,7 +113,7 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUserID, userType, err := h.auth.GetUserIDBySession(cookie.Value)
+	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -162,7 +163,7 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUserID, userType, err := h.auth.GetUserIDBySession(cookie.Value)
+	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -203,7 +204,7 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	_, role, err := h.auth.GetUserIDBySession(cookie.Value)
+	_, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -226,4 +227,85 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
+}
+
+func (h *VacancyHandler) CreateResponse(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	vacancyID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if userType != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	var request struct {
+		ResumeID *int `json:"resume_id,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Создаем отклик через сервис
+	err = h.vacancy.CreateResponse(ctx, vacancyID, currentUserID, request.ResumeID)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+	// Получаем ID вакансии из URL
+	vacancyID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Получаем ID текущего пользователя из контекста аутентификации
+	applicantID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	var req dto.VacancyResponse
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID, req.ResumeID)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }

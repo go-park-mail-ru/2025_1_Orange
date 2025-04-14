@@ -1,9 +1,9 @@
 package postgres
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
+	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -19,34 +19,12 @@ type VacancyRepository struct {
 	DB *sql.DB
 }
 
-func NewVacancyRepository(cfg config.PostgresConfig) (*VacancyRepository, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось установить соединение с PostgreSQL из VacancyRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось установить соединение PostgreSQL из VacancyRepository: %w", err),
-		)
-	}
-
-	if err := db.Ping(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("не удалось выполнить ping PostgreSQL из VacancyRepository")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("не удалось выполнить ping PostgreSQL из VacancyRepository: %w", err),
-		)
-	}
+func NewVacancyRepository(db *sql.DB) (repository.VacancyRepository, error) {
 	return &VacancyRepository{DB: db}, nil
 }
 
 func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
         INSERT INTO vacancy (
@@ -159,7 +137,7 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 }
 
 func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillIDs []int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -265,7 +243,7 @@ func (r *VacancyRepository) AddApplicant(ctx context.Context, vacancyID, applica
 }
 
 func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs []int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -367,7 +345,7 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 }
 
 func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacancy, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
         SELECT 
@@ -444,7 +422,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 }
 
 func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
         UPDATE vacancy
@@ -556,7 +534,7 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 }
 
 func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
         SELECT 
@@ -652,7 +630,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 }
 
 func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
         DELETE FROM vacancy
@@ -702,7 +680,7 @@ func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 }
 
 func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -765,7 +743,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 }
 
 func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID int) ([]entity.City, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -828,7 +806,7 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 }
 
 func (r *VacancyRepository) GetVacancyResponsesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyResponses, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -899,7 +877,7 @@ func (r *VacancyRepository) GetVacancyResponsesByVacancyID(ctx context.Context, 
 }
 
 func (r *VacancyRepository) GetVacancyLikesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyLike, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -963,7 +941,7 @@ func (r *VacancyRepository) GetVacancyLikesByVacancyID(ctx context.Context, vaca
 }
 
 func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -992,7 +970,7 @@ func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) err
 }
 
 func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1021,7 +999,7 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 }
 
 func (r *VacancyRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1092,7 +1070,7 @@ func (r *VacancyRepository) FindSkillIDsByNames(ctx context.Context, skillNames 
 }
 
 func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []string) ([]int, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1161,111 +1139,32 @@ func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []
 	return cityIDs, nil
 }
 
-// func (r *VacancyRepository) GetVacanciesByEmpID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
-// 	requestID := middleware.GetRequestID(ctx)
+func (r *VacancyRepository) ResponseExists(ctx context.Context, vacancyID, applicantID int) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM vacancy_response WHERE vacancy_id = $1 AND applicant_id = $2)`
+	var exists bool
+	err := r.DB.QueryRowContext(ctx, query, vacancyID, applicantID).Scan(&exists)
+	return exists, err
+}
 
-// 	query := `
-//         SELECT
-//             SELECT
-//             id,
-//             title,
-//             is_active,
-//             employer_id,
-//             specialization_id,
-//             work_format,
-//             employment,
-//             schedule,
-//             working_hours,
-//             salary_from,
-//             salary_to,
-//             taxes_included,
-//             experience,
-//             description,
-//             tasks,
-//             requirements,
-//             optional_requirements,
-//         FROM vacancy
-//         WHERE v.employer_id = $1
-//     `
+func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
+	query := `
+        INSERT INTO vacancy_response (
+            vacancy_id, 
+            applicant_id,
+            resume_id, 
+            applied_at
+        ) VALUES ($1, $2, $3, NOW())
+    `
 
-// 	rows, err := r.DB.QueryContext(ctx, query, employerID)
-// 	if err != nil {
-// 		l.Log.WithFields(logrus.Fields{
-// 			"requestID":  requestID,
-// 			"employerID": employerID,
-// 			"error":      err,
-// 		}).Error("не удалось получить вакансии работодателя")
+	var err error
+	if resumeID != -1 {
+		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
+	} else {
+		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, nil)
+	}
 
-// 		return nil, entity.NewError(
-// 			entity.ErrInternal,
-// 			fmt.Errorf("не удалось получить вакансии работодателя: %w", err),
-// 		)
-// 	}
-// 	defer rows.Close()
-
-// 	var vacancies []*entity.Vacancy
-// 	for rows.Next() {
-// 		var vacancy entity.Vacancy
-// 		err := rows.Scan(
-// 			&vacancy.ID,
-// 			&vacancy.Title,
-// 			&vacancy.IsActive,
-// 			&vacancy.EmployerID,
-// 			&vacancy.SpecializationID,
-// 			&vacancy.WorkFormat,
-// 			&vacancy.Employment,
-// 			&vacancy.Schedule,
-// 			&vacancy.WorkingHours,
-// 			&vacancy.SalaryFrom,
-// 			&vacancy.SalaryTo,
-// 			&vacancy.TaxesIncluded,
-// 			&vacancy.Experience,
-// 			&vacancy.Description,
-// 			&vacancy.Tasks,
-// 			&vacancy.Requirements,
-// 			&vacancy.OptionalRequirements,
-// 			&vacancy.CreatedAt,
-// 			&vacancy.UpdatedAt,
-// 		)
-// 		if err != nil {
-// 			l.Log.WithFields(logrus.Fields{
-// 				"requestID":  requestID,
-// 				"employerID": employerID,
-// 				"error":      err,
-// 			}).Error("ошибка сканирования вакансии")
-
-// 			return nil, entity.NewError(
-// 				entity.ErrInternal,
-// 				fmt.Errorf("ошибка обработки данных вакансии: %w", err),
-// 			)
-// 		}
-// 		vacancies = append(vacancies, &vacancy)
-// 	}
-
-// 	if err := rows.Err(); err != nil {
-// 		l.Log.WithFields(logrus.Fields{
-// 			"requestID":  requestID,
-// 			"employerID": employerID,
-// 			"error":      err,
-// 		}).Error("ошибка при обработке результатов запроса")
-
-// 		return nil, entity.NewError(
-// 			entity.ErrInternal,
-// 			fmt.Errorf("ошибка при обработке результатов запроса вакансий: %w", err),
-// 		)
-// 	}
-
-// 	if len(vacancies) == 0 {
-// 		l.Log.WithFields(logrus.Fields{
-// 			"requestID":  requestID,
-// 			"employerID": employerID,
-// 		}).Debug("вакансии работодателя не найдены")
-
-// 		return nil, entity.NewError(
-// 			entity.ErrNotFound,
-// 			fmt.Errorf("вакансии работодателя не найдены"),
-// 		)
-// 	}
-
-// 	return vacancies, nil
-// }
+	if err != nil {
+		return fmt.Errorf("Ошибка в создании отклика на вакансию: %w", err)
+	}
+	return nil
+}

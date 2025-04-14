@@ -29,6 +29,7 @@ type Vacancy struct {
 	Skills                  []Skill                   `json:"-"`
 	City                    []City                    `json:"-"`
 	SupplementaryConditions []SupplementaryConditions `json:"-"`
+	Responded               bool                      `json:"responded"`
 }
 
 // VacancyShort представляет сокращенную информацию о вакансии

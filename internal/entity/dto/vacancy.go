@@ -80,14 +80,15 @@ type VacancyResponse struct {
 	UpdatedAt            time.Time `json:"updated_at"`
 }
 
+type VacancyResponsed struct {
+	ID          int       `json:"id"`
+	VacancyID   int       `json:"vacancy_id"`
+	ApplicantID int       `json:"applicant_id"`
+	ResumeID    []int     `json:"resume_id,omitempty"`
+	AppliedAt   time.Time `json:"applied_at"`
+}
+
 type DeleteVacancy struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-}
-
-type VacancyResponses struct {
-	ID          int       `json:"id"`
-	VacancyID   int       `json:"vacancy_id"`
-	ApplicantID int       `json:applicant_id`
-	AppliedAt   time.Time `json:applied_at`
 }

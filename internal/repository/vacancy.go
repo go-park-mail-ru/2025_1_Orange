@@ -16,10 +16,10 @@ type VacancyRepository interface {
 	Delete(ctx context.Context, vacancyID int) error
 	GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error)
 	GetCityByVacancyID(ctx context.Context, vacancyID int) ([]entity.City, error)
-	// GetVacancyResponsesByVacancyID(ctx context.Context, vacancyID int) ([]entity.Applicant, error)
-	// GetVacancyLikesByVacancyID(ctx context.Context, vacancyID int) ([]entity.Applicant, error)
 	DeleteSkills(ctx context.Context, vacancyID int) error
 	DeleteCity(ctx context.Context, vacancyID int) error
 	FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error)
 	FindCityIDsByNames(ctx context.Context, cityNames []string) ([]int, error)
+	ResponseExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
+	CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error
 }

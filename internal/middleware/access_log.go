@@ -1,10 +1,12 @@
 package middleware
 
 import (
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type customResponseWriter struct {
@@ -28,7 +30,7 @@ func AccessLogMiddleware() func(http.Handler) http.Handler {
 			cw := &customResponseWriter{ResponseWriter: w}
 			next.ServeHTTP(cw, r)
 
-			requestID := GetRequestID(r.Context())
+			requestID := utils.GetRequestID(r.Context())
 
 			l.Log.WithFields(logrus.Fields{
 				"method":    r.Method,

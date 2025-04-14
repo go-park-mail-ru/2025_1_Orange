@@ -6,7 +6,7 @@ import (
 )
 
 type CityRepository interface {
-	GetByID(context.Context, int) (*entity.City, error)
-	GetAll(context.Context) ([]*entity.City, error)
-	GetByName(context.Context, string) (*entity.City, error)
+	GetCityByID(context.Context, int) (*entity.City, error)
+	// GetAllCities(context.Context) ([]*entity.City, error)
+	GetCityByName(context.Context, string) (*entity.City, error)
 }

@@ -3,8 +3,8 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/repository"
+	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"
@@ -45,7 +45,7 @@ func NewSpecializationRepository(cfg config.PostgresConfig) (repository.Speciali
 }
 
 func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity.Specialization, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		SELECT id, name
@@ -83,7 +83,7 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 }
 
 func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Specialization, error) {
-	requestID := middleware.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
 
 	query := `
 		SELECT id, name

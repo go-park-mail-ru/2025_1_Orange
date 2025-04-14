@@ -12,28 +12,29 @@ type APIError struct {
 	Message string `json:"message"`
 }
 
+var errorToStatus = map[error]int{
+	entity.ErrNotFound:      http.StatusNotFound,
+	entity.ErrBadRequest:    http.StatusBadRequest,
+	entity.ErrUnauthorized:  http.StatusUnauthorized,
+	entity.ErrForbidden:     http.StatusForbidden,
+	entity.ErrAlreadyExists: http.StatusConflict,
+	entity.ErrInternal:      http.StatusInternalServerError,
+}
+
 func ToAPIError(err error) APIError {
 	var apiError APIError
 	var customError entity.Error
 	if errors.As(err, &customError) {
-		apiError.Message = customError.AppErr().Error()
-		svcError := customError.SvcErr()
-		switch {
-		case errors.Is(svcError, entity.ErrNotFound):
-			apiError.Status = http.StatusNotFound
-		case errors.Is(svcError, entity.ErrBadRequest):
-			apiError.Status = http.StatusBadRequest
-		case errors.Is(svcError, entity.ErrUnauthorized):
-			apiError.Status = http.StatusUnauthorized
-		case errors.Is(svcError, entity.ErrForbidden):
-			apiError.Status = http.StatusForbidden
-		case errors.Is(svcError, entity.ErrAlreadyExists):
-			apiError.Status = http.StatusConflict
-		case errors.Is(svcError, entity.ErrInternal):
-			apiError.Status = http.StatusInternalServerError
-		default:
+		apiError.Message = customError.InternalErr().Error()
+		svcError := customError.ClientErr()
+		if status, found := errorToStatus[svcError]; found {
+			apiError.Status = status
+		} else {
 			apiError.Status = http.StatusInternalServerError
 		}
+	} else {
+		apiError.Message = "internal server error"
+		apiError.Status = http.StatusInternalServerError
 	}
 	return apiError
 }

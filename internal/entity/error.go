@@ -21,25 +21,25 @@ const (
 )
 
 type Error struct {
-	svcErr error
-	appErr error
+	clientErr   error
+	internalErr error
 }
 
-func NewError(svcErr, appErr error) error {
+func NewError(clientErr, internalErr error) error {
 	return Error{
-		svcErr: appErr,
-		appErr: svcErr,
+		clientErr:   clientErr,
+		internalErr: internalErr,
 	}
 }
 
 func (e Error) Error() string {
-	return errors.Join(e.svcErr, e.appErr).Error()
+	return errors.Join(e.clientErr, e.internalErr).Error()
 }
 
-func (e Error) AppErr() error {
-	return e.appErr
+func (e Error) InternalErr() error {
+	return e.internalErr
 }
 
-func (e Error) SvcErr() error {
-	return e.svcErr
+func (e Error) ClientErr() error {
+	return e.clientErr
 }

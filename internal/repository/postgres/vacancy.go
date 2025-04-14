@@ -560,8 +560,10 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
             description,
             tasks,
             requirements,
-            optional_requirements,
+            optional_requirements
         FROM vacancy
+		ORDER BY updated_at DESC
+		LIMIT 100
 		`
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -824,7 +826,7 @@ func (r *VacancyRepository) GetVacancyResponsesByVacancyID(ctx context.Context, 
 			r.id,
 			r.vacancy_id,
 			r.applicant_id,
-			r.applied_at,
+			r.applied_at
 		FROM vacancy_response
         WHERE vacancy_id = $1
         ORDER BY applied_at DESC

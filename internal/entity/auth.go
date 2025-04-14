@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"fmt"
-	"golang.org/x/crypto/argon2"
 	"regexp"
+
+	"golang.org/x/crypto/argon2"
 )
 
 const (

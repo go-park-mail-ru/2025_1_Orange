@@ -8,10 +8,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (

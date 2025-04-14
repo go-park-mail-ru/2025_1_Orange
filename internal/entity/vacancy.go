@@ -30,9 +30,13 @@ type Vacancy struct {
 	City                    []City                    `json:"-"`
 	SupplementaryConditions []SupplementaryConditions `json:"-"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Responded               bool                      `json:"responded"`
 =======
 >>>>>>> c773955 (Made vacansies usecases and handlers)
+=======
+	Responded               bool                      `json:"responded"`
+>>>>>>> a6396a4 (Fix mistakes)
 }
 
 // VacancyShort представляет сокращенную информацию о вакансии

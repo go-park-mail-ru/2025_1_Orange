@@ -6,6 +6,10 @@ import (
 	l "ResuMatch/pkg/logger"
 	"database/sql"
 	"fmt"
+<<<<<<< HEAD
+=======
+
+>>>>>>> a6396a4 (Fix mistakes)
 	"github.com/sirupsen/logrus"
 )
 

@@ -3,9 +3,10 @@ package middleware
 import (
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type customResponseWriter struct {

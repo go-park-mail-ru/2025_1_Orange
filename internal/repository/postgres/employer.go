@@ -9,6 +9,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"

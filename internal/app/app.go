@@ -96,7 +96,6 @@ func Init(cfg *config.Config) *server.Server {
 	employerService := service.NewEmployerService(employerRepo, staticRepo)
 	vacancyService := service.NewVacanciesService(vacancyRepo, cityRepo, applicantRepo, specializationRepo)
 
-	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)

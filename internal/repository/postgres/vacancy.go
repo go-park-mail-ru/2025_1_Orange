@@ -683,7 +683,6 @@ func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 }
 
 func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error) {
-
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -810,7 +809,6 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 }
 
 func (r *VacancyRepository) GetVacancyResponsesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyResponses, error) {
-
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -882,7 +880,6 @@ func (r *VacancyRepository) GetVacancyResponsesByVacancyID(ctx context.Context, 
 }
 
 func (r *VacancyRepository) GetVacancyLikesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyLike, error) {
-
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -947,7 +944,6 @@ func (r *VacancyRepository) GetVacancyLikesByVacancyID(ctx context.Context, vaca
 }
 
 func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) error {
-
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -977,7 +973,6 @@ func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) err
 }
 
 func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error {
-
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -1007,7 +1002,6 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 }
 
 func (r *VacancyRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
-
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{

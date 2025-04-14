@@ -24,6 +24,11 @@ func NewSpecializationRepository(db *sql.DB) (repository.SpecializationRepositor
 func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity.Specialization, error) {
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
+=======
+	requestID := utils.GetRequestID(ctx)
+>>>>>>> a6396a4 (Fix mistakes)
+>>>>>>> d7704b3 (Fix mistakes)
 
 >>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 	requestID := utils.GetRequestID(ctx)
@@ -69,7 +74,10 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 }
 
 func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Specialization, error) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> a6396a4 (Fix mistakes)
 	requestID := utils.GetRequestID(ctx)
 
 	query := `

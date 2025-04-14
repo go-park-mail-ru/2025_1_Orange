@@ -37,14 +37,16 @@ type VacanciesService struct {
 }
 
 func NewVacanciesService(vacancyRepo repository.VacancyRepository,
+<<<<<<< HEAD
 	//skillRepo repository.SkillRepository,
+=======
+>>>>>>> e918c1a (Fix issues with conflicts)
 	cityRepo repository.CityRepository,
 	applicantRepo repository.ApplicantRepository,
 	specializationRepo repository.SpecializationRepository,
 ) usecase.Vacancy {
 	return &VacanciesService{
-		vacanciesRepository: vacancyRepo,
-		//skillRepository:          skillRepo,
+		vacanciesRepository:      vacancyRepo,
 		cityRepository:           cityRepo,
 		applicantRepository:      applicantRepo,
 		specializationRepository: specializationRepo,

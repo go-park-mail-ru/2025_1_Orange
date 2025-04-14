@@ -34,10 +34,14 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("PUT /vacancy/{id}", h.UpdateVacancy)
 	vacancyMux.HandleFunc("DELETE /vacancy/{id}", h.DeleteVacancy)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
 =======
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.CreateResponse)
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
+>>>>>>> e918c1a (Fix issues with conflicts)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -234,6 +238,7 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 func (h *VacancyHandler) CreateResponse(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -280,6 +285,8 @@ func (h *VacancyHandler) CreateResponse(w http.ResponseWriter, r *http.Request) 
 }
 
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+>>>>>>> e918c1a (Fix issues with conflicts)
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -301,12 +308,16 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 	var req ApplyToVacancyRequest
 =======
 	var req dto.VacancyResponse
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+	var req dto.ApplyToVacancyRequest
+>>>>>>> e918c1a (Fix issues with conflicts)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return

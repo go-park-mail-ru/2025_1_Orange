@@ -19,9 +19,16 @@ import (
 func Init(cfg *config.Config) *server.Server {
 	// Postgres Connection
 <<<<<<< HEAD
+<<<<<<< HEAD
 	resumeConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to resume postgres: %v", err)
+=======
+
+	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		l.Log.Errorf("Failed to connect to specialization postgres: %v", err)
+>>>>>>> e918c1a (Fix issues with conflicts)
 	}
 
 	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
@@ -29,6 +36,7 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
 	}
 
+<<<<<<< HEAD
 	skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to skill postgres: %v", err)
@@ -41,6 +49,8 @@ func Init(cfg *config.Config) *server.Server {
 
 =======
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+>>>>>>> e918c1a (Fix issues with conflicts)
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to city postgres: %v", err)
@@ -62,6 +72,7 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
@@ -69,12 +80,15 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 >>>>>>> a6396a4 (Fix mistakes)
+=======
+>>>>>>> e918c1a (Fix issues with conflicts)
 	// Redis Connection
 	sessionConn, err := connector.NewRedisConnection(cfg.Redis)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to session redis: %v", err)
 	}
 
+<<<<<<< HEAD
 	// Repositories Init
 <<<<<<< HEAD
 	resumeRepo, err := postgres.NewResumeRepository(resumeConn)
@@ -92,11 +106,14 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to create skill repository: %v", err)
 	}
 
+=======
+>>>>>>> e918c1a (Fix issues with conflicts)
 	specializationRepo, err := postgres.NewSpecializationRepository(specializationConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create specialization repository: %v", err)
 	}
 
+<<<<<<< HEAD
 	cityRepo, err := postgres.NewCityRepository(cityConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create city repository: %v", err)
@@ -121,6 +138,13 @@ func Init(cfg *config.Config) *server.Server {
 	if err != nil {
 		l.Log.Errorf("Failed to create session repository: %v", err)
 =======
+=======
+	vacanciesRepo, err := postgres.NewVacancyRepository(vacancyConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create specialization repository: %v", err)
+	}
+
+>>>>>>> e918c1a (Fix issues with conflicts)
 	cityRepo, err := postgres.NewCityRepository(cityConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create city repository: %v", err)
@@ -141,12 +165,15 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to create employer repository: %v", err)
 	}
 
+<<<<<<< HEAD
 	vacancyRepo, err := postgres.NewVacancyRepository(vacancyConn)
 	if err != nil {
 		l.Log.Errorf("Failed to create vacancy repository: %v", err)
 >>>>>>> a6396a4 (Fix mistakes)
 	}
 
+=======
+>>>>>>> e918c1a (Fix issues with conflicts)
 	sessionRepo, err := redis.NewSessionRepository(sessionConn, cfg.Redis.TTL)
 	if err != nil {
 		l.Log.Errorf("Failed to create session repository: %v", err)
@@ -157,12 +184,12 @@ func Init(cfg *config.Config) *server.Server {
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
 	employerService := service.NewEmployerService(employerRepo, staticRepo)
-	vacancyService := service.NewVacancyService(employerRepo, staticRepo)
+	vacancyService := service.NewVacanciesService(vacanciesRepo, cityRepo, applicantRepo, specializationRepo)
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
-
+	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 	// Server Init
 	srv := server.NewServer(cfg)
 
@@ -171,6 +198,7 @@ func Init(cfg *config.Config) *server.Server {
 		authHandler.Configure(r)
 		applicantHandler.Configure(r)
 		employmentHandler.Configure(r)
+		vacancyHandler.Configure(r)
 	})
 
 	return srv

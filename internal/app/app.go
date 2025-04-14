@@ -90,10 +90,6 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-<<<<<<< HEAD
-=======
-	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
->>>>>>> 73e0bd5 (Fix app)
 	staticService := service.NewStaticService(staticRepo)
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)

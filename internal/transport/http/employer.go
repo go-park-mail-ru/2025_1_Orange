@@ -31,8 +31,6 @@ func (h *EmployerHandler) Configure(r *http.ServeMux) {
 	employerMux.HandleFunc("POST /register", h.Register)
 	employerMux.HandleFunc("POST /login", h.Login)
 	employerMux.HandleFunc("GET /profile/{id}", h.GetProfile)
-	employerMux.HandleFunc("PUT /profile", h.UpdateProfile)
-	employerMux.HandleFunc("POST /logo", h.UploadLogo)
 
 	r.Handle("/employer/", http.StripPrefix("/employer", employerMux))
 }
@@ -141,11 +139,29 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Router /employer/profile/{id} [get]
 func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	// проверяем сессию
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
 
+	currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	//requestedID := r.URL.Query().Get("id")
 	requestedID := r.PathValue("id")
 	employerID, err := strconv.Atoi(requestedID)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	if employerID != currentUserID {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
 

@@ -94,5 +94,9 @@ type DeleteVacancy struct {
 }
 
 type ApplyToVacancyRequest struct {
+<<<<<<< HEAD
 	ResumeID int `json:"resume_id"`
+=======
+	ResumeID int `json:"resume_id,omitempty"`
+>>>>>>> 1fafd65d23faeeab0083b34184a3cbc07c26bdd2
 }

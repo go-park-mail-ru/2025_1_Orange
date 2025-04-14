@@ -30,6 +30,7 @@ import (
 type VacanciesService struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	vacanciesRepository repository.VacancyRepository
 <<<<<<< HEAD
 	//skillRepository          repository.SkillRepository
@@ -43,6 +44,9 @@ type VacanciesService struct {
 	//skillRepository          repository.SkillRepository
 >>>>>>> a6396a4 (Fix mistakes)
 >>>>>>> d7704b3 (Fix mistakes)
+=======
+	vacanciesRepository      repository.VacancyRepository
+>>>>>>> bf6489c (Fix mistakes)
 	cityRepository           repository.CityRepository
 	applicantRepository      repository.ApplicantRepository
 	specializationRepository repository.SpecializationRepository
@@ -51,26 +55,20 @@ type VacanciesService struct {
 func NewVacanciesService(vacancyRepo repository.VacancyRepository,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//skillRepo repository.SkillRepository,
 =======
 >>>>>>> e918c1a (Fix issues with conflicts)
 =======
 >>>>>>> d7704b3 (Fix mistakes)
-	cityRepo repository.CityRepository,
 =======
-	//skillRepo repository.SkillRepository,
-	//cityRepo repository.CityRepository,
->>>>>>> a6396a4 (Fix mistakes)
+>>>>>>> bf6489c (Fix mistakes)
+	cityRepo repository.CityRepository,
 	applicantRepo repository.ApplicantRepository,
 	specializationRepo repository.SpecializationRepository,
 ) usecase.Vacancy {
 	return &VacanciesService{
-<<<<<<< HEAD
 		vacanciesRepository:      vacancyRepo,
-=======
-		vacanciesRepository: vacancyRepo,
-		//skillRepository:          skillRepo,
->>>>>>> a6396a4 (Fix mistakes)
 		cityRepository:           cityRepo,
 		applicantRepository:      applicantRepo,
 		specializationRepository: specializationRepo,
@@ -78,10 +76,7 @@ func NewVacanciesService(vacancyRepo repository.VacancyRepository,
 }
 
 func (s *VacanciesService) CreateVacancy(ctx context.Context, request *dto.VacancyCreate) (*dto.VacancyResponse, error) {
-<<<<<<< HEAD
 
-=======
->>>>>>> a6396a4 (Fix mistakes)
 	requestID := utils.GetRequestID(ctx)
 
 	employerID, ok := ctx.Value("employerID").(int)
@@ -275,10 +270,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 }
 
 func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error) {
-<<<<<<< HEAD
 
-=======
->>>>>>> a6396a4 (Fix mistakes)
 	requestID := utils.GetRequestID(ctx)
 
 	employerID, ok := ctx.Value("employerID").(int)
@@ -415,10 +407,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 }
 
 func (vs *VacanciesService) DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error) {
-<<<<<<< HEAD
 
-=======
->>>>>>> a6396a4 (Fix mistakes)
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -504,6 +493,7 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 	}
 
 	return response, nil
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 // func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
@@ -1056,8 +1046,9 @@ func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applic
 >>>>>>> 71cf6a4 (Made vacansies usecases and handlers)
 =======
 =======
+=======
+>>>>>>> bf6489c (Fix mistakes)
 }
-
 func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	if _, err := s.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
 		return err
@@ -1074,5 +1065,8 @@ func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applic
 
 	return s.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)
 }
+<<<<<<< HEAD
 >>>>>>> a6396a4 (Fix mistakes)
 >>>>>>> d7704b3 (Fix mistakes)
+=======
+>>>>>>> bf6489c (Fix mistakes)

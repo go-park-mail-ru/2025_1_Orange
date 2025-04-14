@@ -34,7 +34,10 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("PUT /vacancy/{id}", h.UpdateVacancy)
 	vacancyMux.HandleFunc("DELETE /vacancy/{id}", h.DeleteVacancy)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2100c7a (Add migrations for vacancies)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -232,6 +235,7 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 	}
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 <<<<<<< HEAD
@@ -288,6 +292,8 @@ func (h *VacancyHandler) CreateResponse(w http.ResponseWriter, r *http.Request) 
 >>>>>>> d7704b3 (Fix mistakes)
 =======
 >>>>>>> bf6489c (Fix mistakes)
+=======
+>>>>>>> 2100c7a (Add migrations for vacancies)
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -313,6 +319,7 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	var req dto.ApplyToVacancyRequest
 
 =======
@@ -331,6 +338,9 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 =======
 	var req dto.ApplyToVacancyRequest
 >>>>>>> bf6489c (Fix mistakes)
+=======
+	var req dto.ApplyToVacancyRequest
+>>>>>>> 2100c7a (Add migrations for vacancies)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return

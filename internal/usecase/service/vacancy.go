@@ -4,7 +4,10 @@ import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository"
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2100c7a (Add migrations for vacancies)
 	"ResuMatch/internal/usecase"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"

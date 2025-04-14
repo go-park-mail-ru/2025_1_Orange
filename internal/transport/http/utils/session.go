@@ -45,7 +45,7 @@ func SetSession(w http.ResponseWriter, value string, expires time.Time) {
 		Name:     "session_id",
 		Value:    value,
 		Path:     "/",
-		Secure:   true,
+		Secure:   false,
 		HttpOnly: true,
 		Expires:  expires,
 		SameSite: http.SameSiteStrictMode,

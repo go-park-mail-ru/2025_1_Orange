@@ -11,14 +11,14 @@ session:
   cookieName: "session_id"
   lifetime: "24h"
   httpOnly: true
-  secure: true
+  secure: false
   sameSite: "Strict"
 
 csrf:
   cookieName: "csrf_token"
   lifetime: "1h"
   httpOnly: false
-  secure: true
+  secure: false
   sameSite: "Strict"
 
 postgres:

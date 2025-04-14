@@ -3,15 +3,10 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-<<<<<<< HEAD
 
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 
-=======
-	"ResuMatch/internal/repository"
-	"ResuMatch/internal/utils"
->>>>>>> a6396a4 (Fix mistakes)
 	l "ResuMatch/pkg/logger"
 	"context"
 	"database/sql"

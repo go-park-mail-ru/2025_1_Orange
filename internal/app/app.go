@@ -15,7 +15,6 @@ import (
 func Init(cfg *config.Config) *server.Server {
 	// Postgres Connection
 
-<<<<<<< HEAD
 	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
@@ -67,57 +66,6 @@ func Init(cfg *config.Config) *server.Server {
 
 	cityRepo, err := postgres.NewCityRepository(cityConn)
 	if err != nil {
-=======
-	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to specialization postgres: %v", err)
-	}
-
-	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
-	}
-
-	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to city postgres: %v", err)
-
-	}
-
-	staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to static postgres: %v", err)
-	}
-
-	applicantConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to applicant postgres: %v", err)
-	}
-
-	employerConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to employer postgres: %v", err)
-	}
-
-	// Redis Connection
-	sessionConn, err := connector.NewRedisConnection(cfg.Redis)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to session redis: %v", err)
-	}
-
-	specializationRepo, err := postgres.NewSpecializationRepository(specializationConn)
-	if err != nil {
-		l.Log.Errorf("Failed to create specialization repository: %v", err)
-	}
-
-	vacanciesRepo, err := postgres.NewVacancyRepository(vacancyConn)
-	if err != nil {
-		l.Log.Errorf("Failed to create specialization repository: %v", err)
-	}
-
-	cityRepo, err := postgres.NewCityRepository(cityConn)
-	if err != nil {
->>>>>>> 1fafd65d23faeeab0083b34184a3cbc07c26bdd2
 		l.Log.Errorf("Failed to create city repository: %v", err)
 	}
 
@@ -142,29 +90,17 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-<<<<<<< HEAD
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	staticService := service.NewStaticService(staticRepo)
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
 	employerService := service.NewEmployerService(employerRepo, staticRepo)
 	vacancyService := service.NewVacanciesService(vacancyRepo, cityRepo, applicantRepo, specializationRepo)
-=======
-	staticService := service.NewStaticService(staticRepo)
-	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
-	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
-	employerService := service.NewEmployerService(employerRepo, staticRepo)
-	vacancyService := service.NewVacanciesService(vacanciesRepo, cityRepo, applicantRepo, specializationRepo)
->>>>>>> 1fafd65d23faeeab0083b34184a3cbc07c26bdd2
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
-<<<<<<< HEAD
-
-=======
->>>>>>> 1fafd65d23faeeab0083b34184a3cbc07c26bdd2
 	// Server Init
 	srv := server.NewServer(cfg)
 

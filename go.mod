@@ -15,6 +15,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.4
+	go.uber.org/mock v0.5.1
 	golang.org/x/crypto v0.37.0
 	gopkg.in/yaml.v2 v2.4.0
 )

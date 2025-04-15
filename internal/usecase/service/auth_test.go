@@ -335,20 +335,20 @@ func TestAuthService_EmailExists(t *testing.T) {
 				appRepo.EXPECT().
 					GetApplicantByEmail(gomock.Any(), "nonexistent@example.com").
 					Return(nil, entity.NewError(
-						entity.ErrNotFound, // Убедитесь, что это ErrNotFound
+						entity.ErrNotFound,
 						fmt.Errorf("соискатель с email=nonexistent@example.com не найден"),
 					))
 
 				empRepo.EXPECT().
 					GetEmployerByEmail(gomock.Any(), "nonexistent@example.com").
 					Return(nil, entity.NewError(
-						entity.ErrNotFound, // Убедитесь, что это ErrNotFound
+						entity.ErrNotFound,
 						fmt.Errorf("работодатель с email=nonexistent@example.com не найден"),
 					))
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
-				entity.ErrNotFound, // Убедитесь, что ожидаемая ошибка соответствует
+				entity.ErrNotFound,
 				fmt.Errorf("работодатель с email=nonexistent@example.com не найден"),
 			),
 		},

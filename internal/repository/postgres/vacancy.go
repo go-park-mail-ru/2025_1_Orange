@@ -1163,7 +1163,11 @@ func (r *VacancyRepository) ResponseExists(ctx context.Context, vacancyID, appli
 }
 
 func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID int) error {
-	//requestID := utils.GetRequestID(ctx)
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на создание отклика на вакансию CreateResponse")
 
 	var resumeID int
 	err := r.DB.QueryRowContext(ctx,

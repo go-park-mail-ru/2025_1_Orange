@@ -1,8 +1,8 @@
 CREATE TYPE work_format_type AS ENUM ('office', 'remote', 'hybrid', 'traveling');
 CREATE TYPE employment_type AS ENUM ('full_time', 'part_time', 'contract', 'internship', 'freelance', 'watch');
-CREATE TYPE schedule_type AS ENUM ('5/2', '2/2', '6/1', '3/3', 'on_weekend', 'by_agreement')
+CREATE TYPE schedule_type AS ENUM ('5/2', '2/2', '6/1', '3/3', 'on_weekend', 'by_agreement');
 CREATE TYPE taxes_included_type AS ENUM ('gross', 'net');
-СREATE TYPE experience_type AS ENUM ('no_matter', 'no_experience', '1_3_years' , '3_6_years', '6_plus_years')
+СREATE TYPE experience_type AS ENUM ('no_matter', 'no_experience', '1_3_years' , '3_6_years', '6_plus_years');
 
 -- Таблица вакансий
 CREATE TABLE vacancy (

@@ -18,7 +18,7 @@ type Vacancy struct {
 	WorkingHours            int                       `json:"working_hours"`
 	SalaryFrom              int                       `json:"salary_from"`
 	SalaryTo                int                       `json:"salary_to"`
-	TaxesIncluded           string                    `json:"taxes_included"`
+	TaxesIncluded           bool                      `json:"taxes_included"`
 	Experience              int                       `json:"experience"`
 	Description             string                    `json:"description"`
 	Tasks                   string                    `json:"tasks"`

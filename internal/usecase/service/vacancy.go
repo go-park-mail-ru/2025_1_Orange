@@ -80,7 +80,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 	}
 
 	if len(request.Skills) > 0 {
-		skillIDs, err := s.vacanciesRepository.FindSkillIDsByNames(ctx, request.Skills)
+		skillIDs, err := s.vacanciesRepository.FindSkillIDByNames(ctx, request.Skills)
 		if err != nil {
 			return nil, err
 		}
@@ -258,7 +258,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		return nil, err
 	}
 	if len(request.Skills) > 0 {
-		skillIDs, err := vs.vacanciesRepository.FindSkillIDsByNames(ctx, request.Skills)
+		skillIDs, err := vs.vacanciesRepository.FindSkillIDByNames(ctx, request.Skills)
 		if err != nil {
 			return nil, err
 		}

@@ -92,19 +92,6 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 		}
 	}
 
-	if len(request.City) > 0 {
-		cityIDs, err := s.vacanciesRepository.FindCityIDsByNames(ctx, request.City)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(cityIDs) > 0 {
-			if err := s.vacanciesRepository.AddCity(ctx, createdVacancy.ID, cityIDs); err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	skills, err := s.vacanciesRepository.GetSkillsByVacancyID(ctx, createdVacancy.ID)
 	if err != nil {
 		return nil, err
@@ -285,17 +272,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 	if err := vs.vacanciesRepository.DeleteCity(ctx, id); err != nil {
 		return nil, err
 	}
-	if len(request.City) > 0 {
-		cityIDs, err := vs.vacanciesRepository.FindCityIDsByNames(ctx, request.City)
-		if err != nil {
-			return nil, err
-		}
-		if len(cityIDs) > 0 {
-			if err := vs.vacanciesRepository.AddCity(ctx, id, cityIDs); err != nil {
-				return nil, err
-			}
-		}
-	}
+
 	var specializationName string
 	if updatedVacancy.SpecializationID != 0 {
 		specialization, err := vs.specializationRepository.GetByID(ctx, updatedVacancy.SpecializationID)

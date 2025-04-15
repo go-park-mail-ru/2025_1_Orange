@@ -27,7 +27,7 @@ type Vacancy struct {
 	CreatedAt               time.Time                 `json:"created_at"`
 	UpdatedAt               time.Time                 `json:"updated_at"`
 	Skills                  []Skill                   `json:"-"`
-	City                    string                    `json:"-"`
+	City                    string                    `json:"city"`
 	SupplementaryConditions []SupplementaryConditions `json:"-"`
 	Responded               bool                      `json:"responded"`
 }

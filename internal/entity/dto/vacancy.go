@@ -30,7 +30,7 @@ type VacancyCreate struct {
 	SalaryTo             int      `json:"salary_to"`
 	TaxesIncluded        string   `json:"taxes_included"`
 	Experience           int      `json:"experience"`
-	City                 []string `json:"city"`
+	City                 string   `json:"city"`
 	Skills               []string `json:"skills"`
 	Description          string   `json:"description"`
 	Tasks                string   `json:"tasks"`
@@ -49,7 +49,7 @@ type VacancyUpdate struct {
 	SalaryTo             int      `json:"salary_to"`
 	TaxesIncluded        string   `json:"taxes_included"`
 	Experience           int      `json:"experience"`
-	City                 []string `json:"city"`
+	City                 string   `json:"city"`
 	Skills               []string `json:"skills"`
 	Description          string   `json:"description"`
 	Tasks                string   `json:"tasks"`

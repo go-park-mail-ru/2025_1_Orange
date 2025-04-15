@@ -46,6 +46,11 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
 	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -113,6 +118,11 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
 	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -151,8 +161,6 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
-	return
-
 }
 
 func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
@@ -161,6 +169,11 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 	// Проверка сессии
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	if cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -243,6 +256,12 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
+
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
 	// Получаем ID вакансии из URL
 	vacancyID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {

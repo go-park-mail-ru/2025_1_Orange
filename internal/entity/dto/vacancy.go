@@ -70,7 +70,7 @@ type VacancyResponse struct {
 	SalaryTo             int      `json:"salary_to"`
 	TaxesIncluded        string   `json:"taxes_included"`
 	Experience           string   `json:"experience"`
-	City                 []string `json:"city"`
+	City                 string   `json:"city"`
 	Skills               []string `json:"skills"`
 	Description          string   `json:"description"`
 	Tasks                string   `json:"tasks"`

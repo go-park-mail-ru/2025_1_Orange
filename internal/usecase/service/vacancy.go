@@ -92,6 +92,28 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 			}
 		}
 	}
+<<<<<<< HEAD
+=======
+
+	if len(request.City) > 0 {
+		cityIDs, err := s.vacanciesRepository.FindCityIDsByNames(ctx, request.City)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(cityIDs) > 0 {
+			if err := s.vacanciesRepository.AddCity(ctx, createdVacancy.ID, cityIDs); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	skills, err := s.vacanciesRepository.GetSkillsByVacancyID(ctx, createdVacancy.ID)
+	if err != nil {
+		return nil, err
+	}
+
+>>>>>>> 2e0c8d4 (Change city field to string)
 	var specializationName string
 	if createdVacancy.SpecializationID != 0 {
 		specialization, err := s.specializationRepository.GetByID(ctx, createdVacancy.SpecializationID)

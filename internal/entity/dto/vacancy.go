@@ -17,6 +17,7 @@ type VacancyShortResponse struct {
 	SalaryTo       int    `json:"salary_to"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
+	City           string `json:"city"`
 }
 
 type VacancyCreate struct {
@@ -29,7 +30,7 @@ type VacancyCreate struct {
 	SalaryFrom           int      `json:"salary_from"`
 	SalaryTo             int      `json:"salary_to"`
 	TaxesIncluded        bool     `json:"taxes_included"`
-	Experience           int      `json:"experience"`
+	Experience           string   `json:"experience"`
 	City                 string   `json:"city"`
 	Skills               []string `json:"skills"`
 	Description          string   `json:"description"`
@@ -48,7 +49,7 @@ type VacancyUpdate struct {
 	SalaryFrom           int      `json:"salary_from"`
 	SalaryTo             int      `json:"salary_to"`
 	TaxesIncluded        bool     `json:"taxes_included"`
-	Experience           int      `json:"experience"`
+	Experience           string   `json:"experience"`
 	City                 string   `json:"city"`
 	Skills               []string `json:"skills"`
 	Description          string   `json:"description"`

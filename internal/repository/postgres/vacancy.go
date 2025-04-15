@@ -47,8 +47,8 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
             tasks,
             requirements,
             optional_requirements,
-      created_at,
-      updated_at,
+      		created_at,
+      		updated_at
 	)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
         RETURNING id, employer_id, title, is_active, specialization_id, work_format,
@@ -429,32 +429,37 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 
 func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на обновление вакансии Update")
+
 	query := `
         UPDATE vacancy
         SET 
             title = $1,
             is_active = $2,
-            employer_id = $3,
-            specialization_id = $4,
-            work_format = $5,
-            employment = $6,
-            schedule = $7,
-            working_hours = $8,
-            salary_from = $9,
-            salary_to = $10,
-            taxes_included = $11,
-            experience = $12,
-            description = $13,
-            tasks = $14,
-            requirements = $15,
-            optional_requirements = $16,
+            specialization_id = $3,
+            work_format = $4,
+            employment = $5,
+            schedule = $6,
+            working_hours = $7,
+            salary_from = $8,
+            salary_to = $9,
+            taxes_included = $10,
+            experience = $11,
+            description = $12,
+            tasks = $13,
+            requirements = $14,
+            optional_requirements = $15,
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = $17
+        WHERE id = $16 AND employer_id = $17
+		RETURNING id, employer_id, title, is_active, specialization_id, work_format,
+		 employment, shedule, working_hours, salary_from, salary_to, taxes_included,
+		 experience, description, tasks, requirements, optional_requirements, updated_at
     `
 	var updatedVacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query,
-		vacancy.ID,
-		vacancy.EmployerID,
 		vacancy.Title,
 		vacancy.IsActive,
 		vacancy.SpecializationID,
@@ -759,7 +764,7 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 	query := `
 		SELECT c.id, c.name
 		FROM city c
-		JOIN vacancy_city vc ON c.id = vc.skill_id
+		JOIN vacancy_city vc ON c.id = vc.city_id
 		WHERE vc.vacancy_id = $1
 	`
 
@@ -1005,8 +1010,12 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 	return nil
 }
 
-func (r *VacancyRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
+func (r *VacancyRepository) FindSkillIDByNames(ctx context.Context, skillNames []string) ([]int, error) {
 	requestID := utils.GetRequestID(ctx)
+
+	if len(skillNames) == 0 {
+		return []int{}, nil
+	}
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1181,7 +1190,7 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
 	if resumeID != -1 {
 		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
 	} else {
-		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, nil)
+		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, sql.NullInt32{Valid: false})
 	}
 
 	if err != nil {
@@ -1196,6 +1205,13 @@ func (r *VacancyRepository) FindSpecializationIDByName(ctx context.Context, spec
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
 	}).Info("sql-запрос в БД на поиск ID специализации по названию FindSpecializationIDByName")
+
+	if specializationName == "" {
+		return 0, entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("название специализации не может быть пустым"),
+		)
+	}
 
 	query := `
 		SELECT id

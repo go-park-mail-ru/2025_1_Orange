@@ -765,6 +765,8 @@ func TestApplicantService_UpdateAvatar(t *testing.T) {
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
+				var serviceErr entity.Error
+				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
 			} else {
 				require.NoError(t, err)

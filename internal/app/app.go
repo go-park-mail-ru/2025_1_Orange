@@ -20,20 +20,35 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
+<<<<<<< HEAD
+=======
+	if err != nil {
+		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
+	}
+
+	skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
+>>>>>>> 442b3e9 (Add vacancy routing and fix issues with get vacancies)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с vacancy postgres: %v", err)
 	}
 
+<<<<<<< HEAD
 	skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
+=======
+	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
+>>>>>>> 442b3e9 (Add vacancy routing and fix issues with get vacancies)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с skill postgres: %v", err)
 	}
 
+<<<<<<< HEAD
 	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с specialization postgres: %v", err)
 	}
 
+=======
+>>>>>>> 442b3e9 (Add vacancy routing and fix issues with get vacancies)
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с city postgres: %v", err)
@@ -63,6 +78,11 @@ func Init(cfg *config.Config) *server.Server {
 	vacancyRepo, err := postgres.NewVacancyRepository(vacancyConn)
 	if err != nil {
 		l.Log.Errorf("Ошибка создания репозитория вакансии: %v", err)
+	}
+
+	vacancyRepo, err := postgres.NewVacancyRepository(vacancyConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create vacancy repository: %v", err)
 	}
 
 	skillRepo, err := postgres.NewSkillRepository(skillConn)

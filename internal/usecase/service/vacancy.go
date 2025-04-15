@@ -68,6 +68,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 		Tasks:                request.Tasks,
 		Requirements:         request.Requirements,
 		OptionalRequirements: request.OptionalRequirements,
+		City:                 request.City,
 	}
 
 	if err := vacancy.Validate(); err != nil {
@@ -243,6 +244,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		Tasks:                request.Tasks,
 		Requirements:         request.Requirements,
 		OptionalRequirements: request.OptionalRequirements,
+		City:                 request.City,
 	}
 
 	if err := vacancy.Validate(); err != nil {
@@ -396,6 +398,7 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 			SalaryTo:       vacancy.SalaryTo,
 			CreatedAt:      vacancy.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
+			City:           vacancy.City,
 		}
 
 		response = append(response, shortVacancy)

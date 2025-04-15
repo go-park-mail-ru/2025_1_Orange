@@ -1153,7 +1153,22 @@ func (r *VacancyRepository) ResponseExists(ctx context.Context, vacancyID, appli
 	return exists, err
 }
 
-func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
+func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID int) error {
+	//requestID := utils.GetRequestID(ctx)
+
+	var resumeID int
+	err := r.DB.QueryRowContext(ctx,
+		`SELECT id FROM resume WHERE applicant_id = $1 ORDER BY created_at DESC LIMIT 1`,
+		applicantID,
+	).Scan(&resumeID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("no resumes found for applicant")
+		}
+		return fmt.Errorf("failed to get last resume: %w", err)
+	}
+
 	query := `
         INSERT INTO vacancy_response (
             vacancy_id, 
@@ -1163,7 +1178,6 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
         ) VALUES ($1, $2, $3, NOW())
     `
 
-	var err error
 	if resumeID != -1 {
 		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
 	} else {

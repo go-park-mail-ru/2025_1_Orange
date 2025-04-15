@@ -45,7 +45,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 	var specializationID int
 	var err error
 	if request.Specialization != "" {
-		specializationID, err = s.resumeRepository.FindSpecializationIDByName(ctx, request.Specialization)
+		specializationID, err = s.vacanciesRepository.FindSpecializationIDByName(ctx, request.Specialization)
 		if err != nil {
 			return nil, err
 		}
@@ -451,7 +451,7 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 
 	return response, nil
 }
-func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
+func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error {
 	if _, err := s.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
 		return err
 	}
@@ -465,5 +465,5 @@ func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applic
 			fmt.Errorf("you have already applied to this vacancy"))
 	}
 
-	return s.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)
+	return s.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
 }

@@ -21,6 +21,6 @@ type VacancyRepository interface {
 	FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error)
 	FindCityIDsByNames(ctx context.Context, cityNames []string) ([]int, error)
 	ResponseExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
-	CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error
+	CreateResponse(ctx context.Context, vacancyID, applicantID int) error
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 }

@@ -110,11 +110,6 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 		return nil, err
 	}
 
-	cities, err := s.vacanciesRepository.GetCityByVacancyID(ctx, createdVacancy.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	var specializationName string
 	if createdVacancy.SpecializationID != 0 {
 		specialization, err := s.specializationRepository.GetByID(ctx, createdVacancy.SpecializationID)
@@ -139,6 +134,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 		SalaryTo:             createdVacancy.SalaryTo,
 		TaxesIncluded:        createdVacancy.TaxesIncluded,
 		Experience:           experienceStr,
+		City:                 createdVacancy.City,
 		Description:          createdVacancy.Description,
 		Tasks:                createdVacancy.Tasks,
 		Requirements:         createdVacancy.Requirements,
@@ -150,11 +146,6 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 	response.Skills = make([]string, 0, len(skills))
 	for _, skill := range skills {
 		response.Skills = append(response.Skills, skill.Name)
-	}
-
-	response.City = make([]string, 0, len(cities))
-	for _, city := range cities {
-		response.City = append(response.City, city.Name)
 	}
 
 	return response, nil
@@ -187,11 +178,6 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		return nil, err
 	}
 
-	cities, err := vs.vacanciesRepository.GetCityByVacancyID(ctx, vacancy.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	experienceStr := fmt.Sprintf("%d+ лет", vacancy.Experience)
 
 	response := &dto.VacancyResponse{
@@ -214,15 +200,11 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		CreatedAt:            vacancy.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:            vacancy.UpdatedAt.Format(time.RFC3339),
 		Skills:               make([]string, 0, len(skills)),
-		City:                 make([]string, 0, len(cities)),
+		City:                 vacancy.City,
 	}
 
 	for _, skill := range skills {
 		response.Skills = append(response.Skills, skill.Name)
-	}
-
-	for _, city := range cities {
-		response.City = append(response.City, city.Name)
 	}
 
 	return response, nil
@@ -326,10 +308,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 	if err != nil {
 		return nil, err
 	}
-	cities, err := vs.vacanciesRepository.GetCityByVacancyID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
+
 	experienceStr := fmt.Sprintf("%d+ лет", updatedVacancy.Experience)
 	response := &dto.VacancyResponse{
 		ID:                   updatedVacancy.ID,
@@ -351,15 +330,11 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		CreatedAt:            updatedVacancy.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:            updatedVacancy.UpdatedAt.Format(time.RFC3339),
 		Skills:               make([]string, 0, len(skills)),
-		City:                 make([]string, 0, len(cities)),
+		City:                 updatedVacancy.City,
 	}
 
 	for _, skill := range skills {
 		response.Skills = append(response.Skills, skill.Name)
-	}
-
-	for _, city := range cities {
-		response.City = append(response.City, city.Name)
 	}
 	return response, nil
 }

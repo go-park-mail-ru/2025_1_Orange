@@ -29,7 +29,7 @@ COPY --from=builder /go/bin/migrate .
 COPY --from=builder /app/docs ./docs
 
 # Директория для аватарок
-RUN mkdir -p /app/assets/img/applicant
+RUN mkdir -p /app/assets
 
 # tzdata - указываем, какой часовой пояс использовать
 # libc6-compat - для migrate

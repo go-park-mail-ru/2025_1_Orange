@@ -149,7 +149,7 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUserID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	_, _, err = h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -162,10 +162,10 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if applicantID != currentUserID || role != "applicant" {
-		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
-		return
-	}
+	//if applicantID != currentUserID || role != "applicant" {
+	//	utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+	//	return
+	//}
 
 	applicant, err := h.applicant.GetUser(ctx, applicantID)
 	if err != nil {

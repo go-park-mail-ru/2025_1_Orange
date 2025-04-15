@@ -256,14 +256,8 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
-	var req dto.ApplyToVacancyRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
-		return
-	}
-
-	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID, req.ResumeID)
+	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

@@ -100,27 +100,17 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
-			case "23505": // Уникальное ограничение
-				return nil, entity.NewError(
-					entity.ErrAlreadyExists,
-					fmt.Errorf("вакансия с такими параметрами уже существует"),
-				)
-			case "23503": // Ошибка внешнего ключа
-				return nil, entity.NewError(
-					entity.ErrBadRequest,
-					fmt.Errorf("работодатель или специализация с указанным ID не существует"),
-				)
-			case "23502": // NOT NULL ограничение
+			case entity.PSQLNotNullViolation:
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("обязательное поле отсутствует"),
 				)
-			case "22P02": // Ошибка типа данных
+			case entity.PSQLDatatypeViolation:
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильный формат данных"),
 				)
-			case "23514": // Ошибка constraint
+			case entity.PSQLCheckViolation:
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("неправильные данные"),

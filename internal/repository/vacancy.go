@@ -9,7 +9,7 @@ type VacancyRepository interface {
 	Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)
 	AddSkills(ctx context.Context, vacancyID int, skillIDs []int) error
 	AddCity(ctx context.Context, vacancyID int, cityIDs []int) error
-	GetByID(ctx context.Context, id int) (*entity.VacancyResponse, error)
+	GetByID(ctx context.Context, id int) (*entity.Vacancy, error)
 	Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)
 	GetAll(ctx context.Context, limit int, offset int) ([]*entity.Vacancy, error)
 	Delete(ctx context.Context, vacancyID int) error
@@ -23,7 +23,6 @@ type VacancyRepository interface {
 	CreateResponse(ctx context.Context, vacancyID, applicantID int) error
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error)
-<<<<<<< HEAD
 	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int, limit int, offset int) ([]*entity.Vacancy, error)
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]*entity.Vacancy, error)
@@ -35,6 +34,4 @@ type VacancyRepository interface {
 	DeleteLike(ctx context.Context, vacancyID, applicantID int) error
 	GetlikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]*entity.Vacancy, error)
 	LikeExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
-=======
->>>>>>> 15fe549 (Add create skill if not found)
 }

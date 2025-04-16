@@ -121,6 +121,7 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
+<<<<<<< HEAD
 	applicantStaticService := service.NewStaticService(applicantStaticRepo)
 	employerStaticService := service.NewStaticService(employerStaticRepo)
 
@@ -135,6 +136,14 @@ func Init(cfg *config.Config) *server.Server {
 	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService)
+=======
+	staticService := service.NewStaticService(staticRepo)
+	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
+	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
+	employerService := service.NewEmployerService(employerRepo, staticRepo)
+	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
+	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo)
+>>>>>>> b8e1fb1 (Fix vacancy)
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)

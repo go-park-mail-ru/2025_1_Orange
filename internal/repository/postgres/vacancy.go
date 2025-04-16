@@ -441,14 +441,13 @@ func (r *VacancyRepository) CreateSkillIfNotExists(ctx context.Context, skillNam
 	return id, nil
 }
 
-func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacancy, error) {
+func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.VacancyResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
         SELECT 
             id,
             title,
-            is_active,
             employer_id,
             specialization_id,
             work_format,
@@ -470,13 +469,12 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
         WHERE id = $1
     `
 
-	var vacancy entity.Vacancy
+	var vacancy entity.VacancyResponse
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
 		&vacancy.ID,
 		&vacancy.Title,
-		&vacancy.IsActive,
 		&vacancy.EmployerID,
-		&vacancy.SpecializationID,
+		&vacancy.Specialization,
 		&vacancy.WorkFormat,
 		&vacancy.Employment,
 		&vacancy.Schedule,

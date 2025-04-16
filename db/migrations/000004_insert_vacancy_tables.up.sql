@@ -25,6 +25,7 @@ CREATE TABLE vacancy (
     optional_requirements TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
     CONSTRAINT salary_check CHECK (salary_to >= salary_from)
 );
 

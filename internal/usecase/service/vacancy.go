@@ -130,7 +130,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 
 	response.Skills = make([]string, 0, len(skills))
 	for _, skill := range skills {
-		response.Skills = append(response.Skills, skill.Name)
+		response.Skills = append(response.Skills, skill)
 	}
 
 	return response, nil
@@ -184,12 +184,12 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		OptionalRequirements: vacancy.OptionalRequirements,
 		CreatedAt:            vacancy.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:            vacancy.UpdatedAt.Format(time.RFC3339),
-		Skills:               make([]string, 0, len(skills)),
+		Skills:               skills,
 		City:                 vacancy.City,
 	}
 
 	for _, skill := range skills {
-		response.Skills = append(response.Skills, skill.Name)
+		response.Skills = append(response.Skills, skill)
 	}
 
 	return response, nil
@@ -310,7 +310,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 	}
 
 	for _, skill := range skills {
-		response.Skills = append(response.Skills, skill.Name)
+		response.Skills = append(response.Skills, skill)
 	}
 	return response, nil
 }

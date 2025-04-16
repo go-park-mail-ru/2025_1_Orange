@@ -1,7 +1,7 @@
 CREATE TYPE work_format_type AS ENUM ('office', 'remote', 'hybrid', 'traveling');
 CREATE TYPE employment_type AS ENUM ('full_time', 'part_time', 'contract', 'internship', 'freelance', 'watch');
 CREATE TYPE schedule_type AS ENUM ('5/2', '2/2', '6/1', '3/3', 'on_weekend', 'by_agreement');
-СREATE TYPE experience_type AS ENUM ('no_matter', 'no_experience', '1_3_years' , '3_6_years', '6_plus_years');
+CREATE TYPE experience_type AS ENUM ('no_matter', 'no_experience', '1_3_years' , '3_6_years', '6_plus_years');
 
 -- Таблица вакансий
 CREATE TABLE vacancy (
@@ -12,12 +12,12 @@ CREATE TABLE vacancy (
     specialization_id INTEGER NOT NULL REFERENCES specialization(id),
     work_format work_format_type NOT NULL,
     employment employment_type NOT NULL,
-    schedule VARCHAR(64),
+    schedule schedule_type,
     working_hours INTEGER CHECK (working_hours > 0 AND working_hours <= 168), -- часов в неделю
     salary_from INTEGER CHECK (salary_from >= 0),
     salary_to INTEGER CHECK (salary_to >= 0),
     taxes_included BOOLEAN DEFAULT TRUE,
-    experience experience_type NOT NULL,
+    experience experience_type,
     description TEXT,
     city TEXT,
     tasks TEXT,
@@ -25,7 +25,6 @@ CREATE TABLE vacancy (
     optional_requirements TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
     CONSTRAINT salary_check CHECK (salary_to >= salary_from)
 );
 

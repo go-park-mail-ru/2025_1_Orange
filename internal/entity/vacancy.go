@@ -255,14 +255,6 @@ func (v *Vacancy) Validate() error {
 		)
 	}
 
-	// Проверка специализации
-	if v.SpecializationID <= 0 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("необходимо указать существующую специализацию"),
-		)
-	}
-
 	// Проверка работодателя
 	if v.EmployerID <= 0 {
 		return NewError(

@@ -23,6 +23,7 @@ type VacancyRepository interface {
 	CreateResponse(ctx context.Context, vacancyID, applicantID int) error
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error)
+<<<<<<< HEAD
 	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int, limit int, offset int) ([]*entity.Vacancy, error)
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]*entity.Vacancy, error)
@@ -34,4 +35,6 @@ type VacancyRepository interface {
 	DeleteLike(ctx context.Context, vacancyID, applicantID int) error
 	GetlikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]*entity.Vacancy, error)
 	LikeExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
+=======
+>>>>>>> 15fe549 (Add create skill if not found)
 }

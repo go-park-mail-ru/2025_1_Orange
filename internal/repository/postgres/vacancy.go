@@ -452,7 +452,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
             id,
             title,
             employer_id,
-            specialization_id,
+            specialization,
             work_format,
             employment,
             schedule,
@@ -466,6 +466,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
             requirements,
             optional_requirements,
 			city,
+			skills,
 			created_at,
 			updated_at
         FROM vacancy
@@ -491,6 +492,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 		&vacancy.Requirements,
 		&vacancy.OptionalRequirements,
 		&vacancy.City,
+		&vacancy.Skills,
 		&vacancy.CreatedAt,
 		&vacancy.UpdatedAt,
 	)

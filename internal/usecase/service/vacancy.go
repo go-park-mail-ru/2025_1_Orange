@@ -16,19 +16,16 @@ import (
 
 type VacanciesService struct {
 	vacanciesRepository      repository.VacancyRepository
-	cityRepository           repository.CityRepository
 	applicantRepository      repository.ApplicantRepository
 	specializationRepository repository.SpecializationRepository
 }
 
 func NewVacanciesService(vacancyRepo repository.VacancyRepository,
-	cityRepo repository.CityRepository,
 	applicantRepo repository.ApplicantRepository,
 	specializationRepo repository.SpecializationRepository,
 ) usecase.Vacancy {
 	return &VacanciesService{
 		vacanciesRepository:      vacancyRepo,
-		cityRepository:           cityRepo,
 		applicantRepository:      applicantRepo,
 		specializationRepository: specializationRepo,
 	}

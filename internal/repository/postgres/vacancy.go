@@ -46,11 +46,9 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
             description,
             tasks,
             requirements,
-            optional_requirements,
-      		created_at,
-      		updated_at
+            optional_requirements
 	)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING id, employer_id, title, is_active, specialization_id, work_format,
             employment, schedule, working_hours, salary_from, salary_to,
             taxes_included, experience, description, tasks,
@@ -60,7 +58,6 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 	err := r.DB.QueryRowContext(ctx, query,
 		vacancy.EmployerID,
 		vacancy.Title,
-		vacancy.IsActive,
 		vacancy.SpecializationID,
 		vacancy.WorkFormat,
 		vacancy.Employment,
@@ -361,7 +358,9 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
             description,
             tasks,
             requirements,
-            optional_requirements
+            optional_requirements,
+			created_at,
+			updated_at
         FROM vacancy
         WHERE id = $1
     `
@@ -369,9 +368,9 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 	var vacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
 		&vacancy.ID,
-		&vacancy.EmployerID,
 		&vacancy.Title,
 		&vacancy.IsActive,
+		&vacancy.EmployerID,
 		&vacancy.SpecializationID,
 		&vacancy.WorkFormat,
 		&vacancy.Employment,
@@ -554,7 +553,9 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
             description,
             tasks,
             requirements,
-            optional_requirements
+            optional_requirements,
+			created_at,
+			updated_at
         FROM vacancy
 		ORDER BY updated_at DESC
 		LIMIT 100
@@ -578,9 +579,9 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 		var vacancy entity.Vacancy
 		err := rows.Scan(
 			&vacancy.ID,
-			&vacancy.EmployerID,
 			&vacancy.Title,
 			&vacancy.IsActive,
+			&vacancy.EmployerID,
 			&vacancy.SpecializationID,
 			&vacancy.WorkFormat,
 			&vacancy.Employment,
@@ -594,6 +595,8 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 			&vacancy.Tasks,
 			&vacancy.Requirements,
 			&vacancy.OptionalRequirements,
+			&vacancy.CreatedAt,
+			&vacancy.UpdatedAt,
 		)
 		if err != nil {
 			l.Log.WithFields(logrus.Fields{
@@ -633,6 +636,10 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 
 func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на удаление вакансии Delete")
 
 	query := `
         DELETE FROM vacancy

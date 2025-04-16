@@ -47,6 +47,7 @@ type VacancyShort struct {
 	TaxesIncluded  bool      `json:"taxes_included"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+	Responded      bool      `json:"responded"`
 }
 
 // VacancyCreate представляет данные для создания вакансии

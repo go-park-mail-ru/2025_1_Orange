@@ -41,7 +41,7 @@ type VacancyCreate struct {
 
 type VacancyUpdate struct {
 	Title                string   `json:"title"`
-	SpecializationID     int      `json:"specialization_id"`
+	Specialization       string   `json:"specialization"`
 	WorkFormat           string   `json:"work_format"`
 	Employment           string   `json:"employment"`
 	Schedule             string   `json:"schedule"`
@@ -62,7 +62,7 @@ type VacancyResponse struct {
 	ID                   int      `json:"id"`
 	EmployerID           int      `json:"employer_id"`
 	Title                string   `json:"title"`
-	SpecializationID     string   `json:"specialization_id"`
+	Specialization       string   `json:"specialization"`
 	WorkFormat           string   `json:"work_format"`
 	Employment           string   `json:"employment"`
 	Schedule             string   `json:"schedule"`

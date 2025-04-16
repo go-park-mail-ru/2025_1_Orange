@@ -1032,12 +1032,8 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 	return nil
 }
 
-func (r *VacancyRepository) FindSkillIDByNames(ctx context.Context, skillNames []string) ([]int, error) {
+func (r *VacancyRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
 	requestID := utils.GetRequestID(ctx)
-
-	if len(skillNames) == 0 {
-		return []int{}, nil
-	}
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,

@@ -17,7 +17,7 @@ type VacancyRepository interface {
 	GetCityByVacancyID(ctx context.Context, vacancyID int) ([]entity.City, error)
 	DeleteSkills(ctx context.Context, vacancyID int) error
 	DeleteCity(ctx context.Context, vacancyID int) error
-	FindSkillIDByNames(ctx context.Context, skillNames []string) ([]int, error)
+	FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error)
 	FindCityIDsByNames(ctx context.Context, cityNames []string) ([]int, error)
 	ResponseExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
 	CreateResponse(ctx context.Context, vacancyID, applicantID int) error

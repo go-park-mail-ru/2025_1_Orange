@@ -13,7 +13,7 @@ type VacancyRepository interface {
 	Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)
 	GetAll(ctx context.Context, limit int, offset int) ([]*entity.Vacancy, error)
 	Delete(ctx context.Context, vacancyID int) error
-	GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error)
+	GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]string, error)
 	GetCityByVacancyID(ctx context.Context, vacancyID int) ([]entity.City, error)
 	DeleteSkills(ctx context.Context, vacancyID int) error
 	DeleteCity(ctx context.Context, vacancyID int) error

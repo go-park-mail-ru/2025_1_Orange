@@ -465,6 +465,42 @@ func (r *VacancyRepository) CreateSkillIfNotExists(ctx context.Context, skillNam
 	return id, nil
 }
 
+func (r *VacancyRepository) GetSpecializationByID(ctx context.Context, id int) (*entity.Specialization, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	query := `
+		SELECT id, name
+		FROM specialization
+		WHERE id = $1
+	`
+
+	var specialization entity.Specialization
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(
+		&specialization.ID,
+		&specialization.Name,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, entity.NewError(
+			entity.ErrNotFound,
+			fmt.Errorf("специализация с id=%d не найдена", id),
+		)
+	} else if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"id":        id,
+			"error":     err,
+		}).Error("не удалось найти специализацию по id")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("не удалось получить специализацию по id=%d", id),
+		)
+	}
+
+	return &specialization, nil
+}
+
 func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.VacancyResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
@@ -473,7 +509,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
             id,
             title,
             employer_id,
-            specialization,
+            specialization_id,
             work_format,
             employment,
             schedule,
@@ -487,7 +523,6 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
             requirements,
             optional_requirements,
 			city,
-			skills,
 			created_at,
 			updated_at
         FROM vacancy
@@ -513,7 +548,6 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 		&vacancy.Requirements,
 		&vacancy.OptionalRequirements,
 		&vacancy.City,
-		&vacancy.Skills,
 		&vacancy.CreatedAt,
 		&vacancy.UpdatedAt,
 	)
@@ -834,7 +868,7 @@ func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 	return nil
 }
 
-func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error) {
+func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]string, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -871,7 +905,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 		}
 	}(rows)
 
-	var skills []entity.Skill
+	var skills []string
 	for rows.Next() {
 		var skill entity.Skill
 		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
@@ -886,7 +920,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 				fmt.Errorf("ошибка при сканировании навыка: %w", err),
 			)
 		}
-		skills = append(skills, skill)
+		skills = append(skills, skill.Name)
 	}
 
 	if err := rows.Err(); err != nil {

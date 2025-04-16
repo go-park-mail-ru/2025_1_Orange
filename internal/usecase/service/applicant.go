@@ -202,7 +202,7 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 	if len(updateFields) == 0 {
 		return entity.NewError(
 			entity.ErrBadRequest,
-			fmt.Errorf("no fields to update"),
+			fmt.Errorf("отсутствуют поля для обновления"),
 		)
 	}
 

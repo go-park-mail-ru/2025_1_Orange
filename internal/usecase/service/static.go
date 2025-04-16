@@ -22,7 +22,6 @@ type StaticService struct {
 var allowedTypes = map[string]string{
 	"image/jpeg": ".jpg",
 	"image/png":  ".png",
-	// "image/webp": ".webp",
 }
 
 func NewStaticService(staticRepository repository.StaticRepository) usecase.Static {

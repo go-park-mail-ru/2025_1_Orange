@@ -337,6 +337,108 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 	return nil
 }
 
+func (r *VacancyRepository) CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"skillName": skillName,
+	}).Info("sql-запрос в БД на создание навыка, если он не существует CreateSkillIfNotExists")
+
+	// Сначала проверяем, существует ли навык
+	var id int
+	query := `
+        SELECT id
+        FROM skill
+        WHERE name = $1
+    `
+	err := r.DB.QueryRowContext(ctx, query, skillName).Scan(&id)
+	if err == nil {
+		// Навык уже существует, возвращаем его ID
+		return id, nil
+	}
+
+	if !errors.Is(err, sql.ErrNoRows) {
+		// Произошла ошибка, отличная от "запись не найдена"
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"skillName": skillName,
+			"error":     err,
+		}).Error("ошибка при проверке существования навыка")
+
+		return 0, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при проверке существования навыка: %w", err),
+		)
+	}
+	// Навык не существует, создаем его
+	query = `
+        INSERT INTO skill (name)
+        VALUES ($1)
+        RETURNING id
+    `
+	err = r.DB.QueryRowContext(ctx, query, skillName).Scan(&id)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			switch pqErr.Code {
+			case entity.PSQLUniqueViolation:
+				// Возможно, навык был создан другим запросом между нашими проверками
+				// Попробуем получить его ID еще раз
+				query = `
+                    SELECT id
+                    FROM skill
+                    WHERE name = $1
+                `
+				err = r.DB.QueryRowContext(ctx, query, skillName).Scan(&id)
+				if err != nil {
+					l.Log.WithFields(logrus.Fields{
+						"requestID": requestID,
+						"skillName": skillName,
+						"error":     err,
+					}).Error("ошибка при получении ID навыка после конфликта")
+
+					return 0, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении ID навыка после конфликта: %w", err),
+					)
+				}
+				return id, nil
+			default:
+				l.Log.WithFields(logrus.Fields{
+					"requestID": requestID,
+					"skillName": skillName,
+					"error":     err,
+				}).Error("ошибка при создании навыка")
+
+				return 0, entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("ошибка при создании навыка: %w", err),
+				)
+			}
+		}
+
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"skillName": skillName,
+			"error":     err,
+		}).Error("ошибка при создании навыка")
+
+		return 0, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при создании навыка: %w", err),
+		)
+	}
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"skillName": skillName,
+		"skillID":   id,
+	}).Info("навык успешно создан")
+
+	return id, nil
+}
+
 func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
@@ -1007,12 +1109,8 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 	return nil
 }
 
-func (r *VacancyRepository) FindSkillIDByNames(ctx context.Context, skillNames []string) ([]int, error) {
+func (r *VacancyRepository) FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error) {
 	requestID := utils.GetRequestID(ctx)
-
-	if len(skillNames) == 0 {
-		return []int{}, nil
-	}
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
@@ -1022,61 +1120,15 @@ func (r *VacancyRepository) FindSkillIDByNames(ctx context.Context, skillNames [
 		return []int{}, nil
 	}
 
-	// Создаем параметры для запроса
-	params := make([]interface{}, len(skillNames))
-	placeholders := make([]string, len(skillNames))
-	for i, name := range skillNames {
-		params[i] = name
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-	}
-
-	query := fmt.Sprintf(`
-		SELECT id
-		FROM skill
-		WHERE name IN (%s)
-	`, strings.Join(placeholders, ", "))
-
-	rows, err := r.DB.QueryContext(ctx, query, params...)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"error":     err,
-		}).Error("ошибка при поиске ID навыков по названиям")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("ошибка при поиске ID навыков по названиям: %w", err),
-		)
-	}
-	defer rows.Close()
-
 	var skillIDs []int
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			l.Log.WithFields(logrus.Fields{
-				"requestID": requestID,
-				"error":     err,
-			}).Error("ошибка при сканировании ID навыка")
 
-			return nil, entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при сканировании ID навыка: %w", err),
-			)
+	// Для каждого навыка проверяем его существование и создаем при необходимости
+	for _, name := range skillNames {
+		id, err := r.CreateSkillIfNotExists(ctx, name)
+		if err != nil {
+			return nil, err
 		}
 		skillIDs = append(skillIDs, id)
-	}
-
-	if err := rows.Err(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"error":     err,
-		}).Error("ошибка при итерации по ID навыков")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("ошибка при итерации по ID навыков: %w", err),
-		)
 	}
 
 	return skillIDs, nil

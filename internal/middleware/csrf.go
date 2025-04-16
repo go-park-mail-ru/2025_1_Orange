@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -45,12 +46,16 @@ func SetCSRFToken(w http.ResponseWriter, r *http.Request, cfg config.CSRFConfig)
 func CSRFMiddleware(cfg config.CSRFConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Проверяем, является ли это запрос статики
+			isStatic := strings.HasPrefix(r.URL.Path, "/api/v1/static/")
+
 			// Исключаем безопасные методы
 			if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
-				SetCSRFToken(w, r, cfg)
+				if !isStatic {
+					SetCSRFToken(w, r, cfg)
+				}
 
 				next.ServeHTTP(w, r)
-
 				return
 			}
 

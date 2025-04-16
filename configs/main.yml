@@ -17,7 +17,7 @@ session:
 csrf:
   cookieName: "csrf_token"
   lifetime: "1h"
-  httpOnly: false
+  httpOnly: true
   secure: false
   sameSite: "Strict"
 

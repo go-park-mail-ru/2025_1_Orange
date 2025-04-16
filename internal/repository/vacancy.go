@@ -24,4 +24,5 @@ type VacancyRepository interface {
 	CreateResponse(ctx context.Context, vacancyID, applicantID int) error
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error)
+	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
 }

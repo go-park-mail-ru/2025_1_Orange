@@ -78,16 +78,16 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 	}
 
 	if len(request.Skills) > 0 {
-		skillIDs, err := s.vacanciesRepository.FindSkillIDsByNames(ctx, request.Skills)
+		_, err := s.vacanciesRepository.FindSkillIDsByNames(ctx, request.Skills)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(skillIDs) > 0 {
-			if err := s.vacanciesRepository.AddSkills(ctx, createdVacancy.ID, skillIDs); err != nil {
-				return nil, err
-			}
-		}
+		// if len(skillIDs) > 0 {
+		// 	if err := s.vacanciesRepository.AddSkills(ctx, createdVacancy.ID, skillIDs); err != nil {
+		// 		return nil, err
+		// 	}
+		// }
 	}
 
 	skills, err := s.vacanciesRepository.GetSkillsByVacancyID(ctx, createdVacancy.ID)
@@ -110,7 +110,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 		ID:                   createdVacancy.ID,
 		EmployerID:           createdVacancy.EmployerID,
 		Title:                createdVacancy.Title,
-		SpecializationID:     specializationName,
+		Specialization:       specializationName,
 		WorkFormat:           createdVacancy.WorkFormat,
 		Employment:           createdVacancy.Employment,
 		Schedule:             createdVacancy.Schedule,
@@ -169,7 +169,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		ID:                   vacancy.ID,
 		EmployerID:           vacancy.EmployerID,
 		Title:                vacancy.Title,
-		SpecializationID:     vacancy.Specialization,
+		Specialization:       vacancy.Specialization,
 		WorkFormat:           vacancy.WorkFormat,
 		Employment:           vacancy.Employment,
 		Schedule:             vacancy.Schedule,
@@ -224,11 +224,19 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		)
 	}
 
+	var specializationID int
+	if request.Specialization != "" {
+		specializationID, err = vs.vacanciesRepository.FindSpecializationIDByName(ctx, request.Specialization)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	vacancy := &entity.Vacancy{
 		ID:                   id,
 		EmployerID:           employerID,
 		Title:                request.Title,
-		SpecializationID:     request.SpecializationID,
+		SpecializationID:     specializationID,
 		WorkFormat:           request.WorkFormat,
 		Employment:           request.Employment,
 		Schedule:             request.Schedule,
@@ -268,10 +276,6 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		}
 	}
 
-	if err := vs.vacanciesRepository.DeleteCity(ctx, id); err != nil {
-		return nil, err
-	}
-
 	var specializationName string
 	if updatedVacancy.SpecializationID != 0 {
 		specialization, err := vs.specializationRepository.GetByID(ctx, updatedVacancy.SpecializationID)
@@ -290,7 +294,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		ID:                   updatedVacancy.ID,
 		EmployerID:           updatedVacancy.EmployerID,
 		Title:                updatedVacancy.Title,
-		SpecializationID:     specializationName,
+		Specialization:       specializationName,
 		WorkFormat:           updatedVacancy.WorkFormat,
 		Employment:           updatedVacancy.Employment,
 		Schedule:             updatedVacancy.Schedule,

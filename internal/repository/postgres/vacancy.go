@@ -71,6 +71,7 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 		vacancy.Tasks,
 		vacancy.Requirements,
 		vacancy.OptionalRequirements,
+		vacancy.City,
 	).Scan(
 		&createdVacancy.ID,
 		&createdVacancy.EmployerID,
@@ -91,6 +92,7 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 		&createdVacancy.OptionalRequirements,
 		&createdVacancy.CreatedAt,
 		&createdVacancy.UpdatedAt,
+		&createdVacancy.City,
 	)
 
 	if err != nil {
@@ -461,6 +463,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
             tasks,
             requirements,
             optional_requirements,
+			city,
 			created_at,
 			updated_at
         FROM vacancy
@@ -486,6 +489,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 		&vacancy.Tasks,
 		&vacancy.Requirements,
 		&vacancy.OptionalRequirements,
+		&vacancy.City,
 		&vacancy.CreatedAt,
 		&vacancy.UpdatedAt,
 	)
@@ -543,11 +547,12 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
             tasks = $13,
             requirements = $14,
             optional_requirements = $15,
+			city = $16,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $16 AND employer_id = $17
 		RETURNING id, employer_id, title, is_active, specialization_id, work_format,
 		 employment, shedule, working_hours, salary_from, salary_to, taxes_included,
-		 experience, description, tasks, requirements, optional_requirements, updated_at
+		 experience, description, tasks, requirements, optional_requirements, city, updated_at
     `
 	var updatedVacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query,
@@ -566,6 +571,7 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 		vacancy.Tasks,
 		vacancy.Requirements,
 		vacancy.OptionalRequirements,
+		vacancy.City,
 	).Scan(
 		&updatedVacancy.ID,
 		&updatedVacancy.EmployerID,
@@ -584,6 +590,7 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 		&updatedVacancy.Tasks,
 		&updatedVacancy.Requirements,
 		&updatedVacancy.OptionalRequirements,
+		&updatedVacancy.City,
 		&updatedVacancy.CreatedAt,
 		&updatedVacancy.UpdatedAt,
 	)

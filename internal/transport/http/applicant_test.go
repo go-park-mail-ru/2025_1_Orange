@@ -21,7 +21,7 @@ import (
 func TestApplicantHandler_Register(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	testCases := []struct {
 		name             string
 		requestBody      *dto.ApplicantRegister
 		mockSetup        func(applicant *mock.MockApplicant, auth *mock.MockAuth)
@@ -140,9 +140,9 @@ func TestApplicantHandler_Register(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -151,7 +151,7 @@ func TestApplicantHandler_Register(t *testing.T) {
 			mockApplicant := mock.NewMockApplicant(ctrl)
 			mockAuth := mock.NewMockAuth(ctrl)
 
-			tt.mockSetup(mockApplicant, mockAuth)
+			tc.mockSetup(mockApplicant, mockAuth)
 
 			cfg := config.CSRFConfig{
 				CookieName: "csrf_token",
@@ -164,8 +164,8 @@ func TestApplicantHandler_Register(t *testing.T) {
 			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
 
 			var reqBody []byte
-			if tt.requestBody != nil {
-				reqBody, _ = json.Marshal(tt.requestBody)
+			if tc.requestBody != nil {
+				reqBody, _ = json.Marshal(tc.requestBody)
 			} else {
 				reqBody = []byte("{invalid}")
 			}
@@ -177,18 +177,18 @@ func TestApplicantHandler_Register(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			require.Equal(t, tt.expectedStatus, res.StatusCode)
+			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
 			if res.StatusCode == http.StatusOK {
 				var success dto.AuthResponse
 				err := json.NewDecoder(res.Body).Decode(&success)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, success)
+				require.Equal(t, tc.expectedResponse, success)
 			} else {
 				var apiErr utils.APIError
 				err := json.NewDecoder(res.Body).Decode(&apiErr)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, apiErr)
+				require.Equal(t, tc.expectedResponse, apiErr)
 			}
 		})
 	}
@@ -197,7 +197,7 @@ func TestApplicantHandler_Register(t *testing.T) {
 func TestApplicantHandler_Login(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	testCases := []struct {
 		name             string
 		requestBody      *dto.Login
 		mockSetup        func(applicant *mock.MockApplicant, auth *mock.MockAuth)
@@ -282,9 +282,9 @@ func TestApplicantHandler_Login(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -293,7 +293,7 @@ func TestApplicantHandler_Login(t *testing.T) {
 			mockApplicant := mock.NewMockApplicant(ctrl)
 			mockAuth := mock.NewMockAuth(ctrl)
 
-			tt.mockSetup(mockApplicant, mockAuth)
+			tc.mockSetup(mockApplicant, mockAuth)
 
 			cfg := config.CSRFConfig{
 				CookieName: "csrf_token",
@@ -306,8 +306,8 @@ func TestApplicantHandler_Login(t *testing.T) {
 			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
 
 			var reqBody []byte
-			if tt.requestBody != nil {
-				reqBody, _ = json.Marshal(tt.requestBody)
+			if tc.requestBody != nil {
+				reqBody, _ = json.Marshal(tc.requestBody)
 			} else {
 				reqBody = []byte("{invalid}")
 			}
@@ -320,18 +320,18 @@ func TestApplicantHandler_Login(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			require.Equal(t, tt.expectedStatus, res.StatusCode)
+			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
 			if res.StatusCode == http.StatusOK {
 				var success dto.AuthResponse
 				err := json.NewDecoder(res.Body).Decode(&success)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, success)
+				require.Equal(t, tc.expectedResponse, success)
 			} else {
 				var apiErr utils.APIError
 				err := json.NewDecoder(res.Body).Decode(&apiErr)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, apiErr)
+				require.Equal(t, tc.expectedResponse, apiErr)
 			}
 		})
 	}
@@ -359,7 +359,7 @@ func TestApplicantHandler_GetProfile(t *testing.T) {
 		UpdatedAt:  time.Date(1990, 4, 2, 0, 0, 0, 0, time.UTC),
 	}
 
-	tests := []struct {
+	testCases := []struct {
 		name             string
 		pathID           string
 		setupRequest     func() *http.Request
@@ -490,9 +490,9 @@ func TestApplicantHandler_GetProfile(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -501,7 +501,7 @@ func TestApplicantHandler_GetProfile(t *testing.T) {
 			mockApplicant := mock.NewMockApplicant(ctrl)
 			mockAuth := mock.NewMockAuth(ctrl)
 
-			tt.mockSetup(mockApplicant, mockAuth)
+			tc.mockSetup(mockApplicant, mockAuth)
 
 			cfg := config.CSRFConfig{
 				CookieName: "csrf_token",
@@ -513,8 +513,8 @@ func TestApplicantHandler_GetProfile(t *testing.T) {
 			}
 			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
 
-			req := tt.setupRequest()
-			req.SetPathValue("id", tt.pathID)
+			req := tc.setupRequest()
+			req.SetPathValue("id", tc.pathID)
 			w := httptest.NewRecorder()
 
 			handler.GetProfile(w, req)
@@ -522,18 +522,18 @@ func TestApplicantHandler_GetProfile(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			require.Equal(t, tt.expectedStatus, res.StatusCode)
+			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
 			if res.StatusCode == http.StatusOK {
 				var profile dto.ApplicantProfileResponse
 				err := json.NewDecoder(res.Body).Decode(&profile)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, &profile)
+				require.Equal(t, tc.expectedResponse, &profile)
 			} else {
 				var apiErr utils.APIError
 				err := json.NewDecoder(res.Body).Decode(&apiErr)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, apiErr)
+				require.Equal(t, tc.expectedResponse, apiErr)
 			}
 		})
 	}
@@ -556,7 +556,7 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 		Facebook:   "https://facebook.com/ivanich",
 	}
 
-	tests := []struct {
+	testCases := []struct {
 		name             string
 		requestBody      interface{}
 		setupRequest     func() *http.Request
@@ -666,9 +666,9 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -677,7 +677,7 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 			mockApplicant := mock.NewMockApplicant(ctrl)
 			mockAuth := mock.NewMockAuth(ctrl)
 
-			tt.mockSetup(mockApplicant, mockAuth)
+			tc.mockSetup(mockApplicant, mockAuth)
 
 			cfg := config.CSRFConfig{
 				CookieName: "csrf_token",
@@ -689,7 +689,7 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 			}
 			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
 
-			req := tt.setupRequest()
+			req := tc.setupRequest()
 			w := httptest.NewRecorder()
 
 			handler.UpdateProfile(w, req)
@@ -697,13 +697,13 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			require.Equal(t, tt.expectedStatus, res.StatusCode)
+			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
-			if tt.expectedStatus != http.StatusNoContent {
+			if tc.expectedStatus != http.StatusNoContent {
 				var apiErr utils.APIError
 				err := json.NewDecoder(res.Body).Decode(&apiErr)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, apiErr)
+				require.Equal(t, tc.expectedResponse, apiErr)
 			} else {
 				require.Empty(t, w.Body.Bytes())
 			}
@@ -722,7 +722,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 		UpdatedAt: fixedTime,
 	}
 
-	tests := []struct {
+	testCases := []struct {
 		name             string
 		setupRequest     func() *http.Request
 		mockSetup        func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic)
@@ -877,9 +877,9 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -889,7 +889,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 			mockAuth := mock.NewMockAuth(ctrl)
 			mockStatic := mock.NewMockStatic(ctrl)
 
-			tt.mockSetup(mockApplicant, mockAuth, mockStatic)
+			tc.mockSetup(mockApplicant, mockAuth, mockStatic)
 
 			cfg := config.CSRFConfig{
 				CookieName: "csrf_token",
@@ -901,7 +901,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 			}
 			handler := NewApplicantHandler(mockAuth, mockApplicant, mockStatic, cfg)
 
-			req := tt.setupRequest()
+			req := tc.setupRequest()
 			w := httptest.NewRecorder()
 
 			handler.UploadAvatar(w, req)
@@ -909,18 +909,18 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			require.Equal(t, tt.expectedStatus, res.StatusCode)
+			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
 			if res.StatusCode == http.StatusOK {
 				var avatar dto.UploadStaticResponse
 				err := json.NewDecoder(res.Body).Decode(&avatar)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, &avatar)
-			} else if tt.expectedResponse != nil {
+				require.Equal(t, tc.expectedResponse, &avatar)
+			} else if tc.expectedResponse != nil {
 				var apiErr utils.APIError
 				err := json.NewDecoder(res.Body).Decode(&apiErr)
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedResponse, apiErr)
+				require.Equal(t, tc.expectedResponse, apiErr)
 			}
 		})
 	}

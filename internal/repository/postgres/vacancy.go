@@ -465,40 +465,67 @@ func (r *VacancyRepository) CreateSkillIfNotExists(ctx context.Context, skillNam
 	return id, nil
 }
 
-func (r *VacancyRepository) GetSpecializationByID(ctx context.Context, id int) (*entity.Specialization, error) {
+func (r *VacancyRepository) GetSpecializationByResumeID(ctx context.Context, vacancyID int) ([]entity.Specialization, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("sql-запрос в БД на получение специализаций GetSpecializationsByResumeID")
+
 	query := `
-		SELECT id, name
-		FROM specialization
-		WHERE id = $1
+		SELECT s.id, s.name
+		FROM specialization s
+		JOIN vacancy_specialization rs ON s.id = rs.specialization_id
+		WHERE rs.vacancy_id = $1
 	`
 
-	var specialization entity.Specialization
-	err := r.DB.QueryRowContext(ctx, query, id).Scan(
-		&specialization.ID,
-		&specialization.Name,
-	)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, entity.NewError(
-			entity.ErrNotFound,
-			fmt.Errorf("специализация с id=%d не найдена", id),
-		)
-	} else if err != nil {
+	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
+	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
-			"id":        id,
+			"vacancyID": vacancyID,
 			"error":     err,
-		}).Error("не удалось найти специализацию по id")
+		}).Error("ошибка при получении специализаций вакансии")
 
 		return nil, entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось получить специализацию по id=%d", id),
+			fmt.Errorf("ошибка при получении специализаций вакансии: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var specializations []entity.Specialization
+	for rows.Next() {
+		var specialization entity.Specialization
+		if err := rows.Scan(&specialization.ID, &specialization.Name); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"vacancyID": vacancyID,
+				"error":     err,
+			}).Error("ошибка при сканировании специализации")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании специализации: %w", err),
+			)
+		}
+		specializations = append(specializations, specialization)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"vacancyID": vacancyID,
+			"error":     err,
+		}).Error("ошибка при итерации по специализациям")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по специализациям: %w", err),
 		)
 	}
 
-	return &specialization, nil
+	return specializations, nil
 }
 
 func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.VacancyResponse, error) {

@@ -9,7 +9,7 @@ type VacancyRepository interface {
 	Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)
 	AddSkills(ctx context.Context, vacancyID int, skillIDs []int) error
 	AddCity(ctx context.Context, vacancyID int, cityIDs []int) error
-	GetByID(ctx context.Context, id int) (*entity.Vacancy, error)
+	GetByID(ctx context.Context, id int) (*entity.VacancyResponse, error)
 	Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)
 	GetAll(ctx context.Context, limit int, offset int) ([]*entity.Vacancy, error)
 	Delete(ctx context.Context, vacancyID int) error

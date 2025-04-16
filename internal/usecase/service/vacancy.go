@@ -149,14 +149,14 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		return nil, err
 	}
 
-	var specializationName string
-	if vacancy.SpecializationID != 0 {
-		specialization, err := vs.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
-		if err != nil {
-			return nil, err
-		}
-		specializationName = specialization.Name
-	}
+	// var specializationName string
+	// if vacancy.Specialization != "" {
+	// 	specialization, err := vs.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	specializationName = specialization.Name
+	// }
 
 	skills, err := vs.vacanciesRepository.GetSkillsByVacancyID(ctx, vacancy.ID)
 	if err != nil {
@@ -169,7 +169,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		ID:                   vacancy.ID,
 		EmployerID:           vacancy.EmployerID,
 		Title:                vacancy.Title,
-		SpecializationID:     specializationName,
+		SpecializationID:     vacancy.Specialization,
 		WorkFormat:           vacancy.WorkFormat,
 		Employment:           vacancy.Employment,
 		Schedule:             vacancy.Schedule,

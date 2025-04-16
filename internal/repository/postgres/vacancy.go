@@ -32,7 +32,7 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 
 	query := `
 	INSERT INTO vacancy (
-        employer_id,
+        	employer_id,
             title,
             specialization_id,
             work_format,
@@ -46,10 +46,12 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
             description,
             tasks,
             requirements,
+            optional_requirements,
 			city,
-            optional_requirements
+			created_at,
+			updated_at
 	)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
         RETURNING id, employer_id, title, is_active, specialization_id, work_format,
             employment, schedule, working_hours, salary_from, salary_to,
             taxes_included, experience, description, tasks,
@@ -91,9 +93,9 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 		&createdVacancy.Tasks,
 		&createdVacancy.Requirements,
 		&createdVacancy.OptionalRequirements,
+		&createdVacancy.City,
 		&createdVacancy.CreatedAt,
 		&createdVacancy.UpdatedAt,
-		&createdVacancy.City,
 	)
 
 	if err != nil {

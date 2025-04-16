@@ -17,7 +17,7 @@ CREATE TABLE vacancy (
     salary_from INTEGER CHECK (salary_from >= 0),
     salary_to INTEGER CHECK (salary_to >= 0),
     taxes_included BOOLEAN DEFAULT TRUE,
-    experience experience_type (experience >= 0),
+    experience experience_type NOT NULL,
     description TEXT,
     city TEXT,
     tasks TEXT,

@@ -78,7 +78,7 @@ type ResumeShortResponse struct {
 	ID             int                 `json:"id"`
 	ApplicantID    int                 `json:"applicant_id"`
 	Specialization string              `json:"specialization"`
-	WorkExperience WorkExperienceShort `json:"work_experience"`
+	WorkExperience WorkExperienceShort `json:"work_experiences"`
 	CreatedAt      string              `json:"created_at"`
 	UpdatedAt      string              `json:"updated_at"`
 }

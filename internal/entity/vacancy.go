@@ -78,9 +78,9 @@ type VacancyResponse struct {
 	WorkFormat           string    `json:"work_format"`
 	Employment           string    `json:"employment"`
 	Schedule             string    `json:"schedule"`
-	WorkingHours         int32     `json:"working_hours"`
-	SalaryFrom           int32     `json:"salary_from"`
-	SalaryTo             int32     `json:"salary_to"`
+	WorkingHours         int       `json:"working_hours"`
+	SalaryFrom           int       `json:"salary_from"`
+	SalaryTo             int       `json:"salary_to"`
 	TaxesIncluded        bool      `json:"taxes_included"`
 	Experience           string    `json:"experience"`
 	City                 string    `json:"city"`

@@ -100,7 +100,6 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 		&createdVacancy.City,
 		&createdVacancy.CreatedAt,
 		&createdVacancy.UpdatedAt,
-		&createdVacancy.City,
 	)
 
 	if err != nil {

@@ -873,6 +873,7 @@ func TestVacancyRepository_Delete(t *testing.T) {
 			},
 		},
 		{
+
 			name: "Ошибка при выполнении запроса",
 			id:   2,
 			expectedErr: entity.NewError(
@@ -2370,6 +2371,7 @@ func TestVacancyRepository_CreateSkillIfNotExists(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
 func TestVacancyRepository_DeleteCity(t *testing.T) {
 	t.Parallel()
 
@@ -2575,6 +2577,9 @@ func TestVacancyRepository_DeleteSkills(t *testing.T) {
 func TestVacancyRepository_GetCityByVacancyID(t *testing.T) {
 	t.Parallel()
 
+=======
+func TestVacancyRepository_GetAll(t *testing.T) {
+>>>>>>> 2e7b1e7 (Fix creating skills)
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)

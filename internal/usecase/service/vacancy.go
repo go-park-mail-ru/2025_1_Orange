@@ -413,9 +413,11 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 			WorkingHours:   vacancy.WorkingHours,
 			SalaryFrom:     vacancy.SalaryFrom,
 			SalaryTo:       vacancy.SalaryTo,
+			TaxesIncluded:  vacancy.TaxesIncluded,
 			CreatedAt:      vacancy.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
 			City:           vacancy.City,
+			Responded:      vacancy.Responded,
 		}
 
 		response = append(response, shortVacancy)

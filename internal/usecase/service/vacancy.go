@@ -454,6 +454,7 @@ func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, appli
 	if _, err := vs.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
 		return fmt.Errorf("vacancy not found: %w", err)
 	}
+
 	// Проверяем, не откликался ли уже
 	hasResponded, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
 	if err != nil {

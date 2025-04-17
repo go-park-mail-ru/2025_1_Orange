@@ -15,9 +15,11 @@ type VacancyShortResponse struct {
 	WorkingHours   int    `json:"working_hours"`
 	SalaryFrom     int    `json:"salary_from"`
 	SalaryTo       int    `json:"salary_to"`
+	TaxesIncluded  bool   `json:"taxes_included"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
 	City           string `json:"city"`
+	Responded      bool   `json:"responded"`
 }
 
 type VacancyCreate struct {

@@ -79,6 +79,7 @@ type VacancyResponse struct {
 	OptionalRequirements string   `json:"optional_requirements"`
 	CreatedAt            string   `json:"created_at"`
 	UpdatedAt            string   `json:"updated_at"`
+	Responded            bool     `json:"responded"`
 }
 
 type VacancyResponsed struct {

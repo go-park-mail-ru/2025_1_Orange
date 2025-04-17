@@ -507,7 +507,7 @@ func (r *VacancyRepository) GetSpecializationByResumeID(ctx context.Context, vac
 	return specializations, nil
 }
 
-func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.VacancyResponse, error) {
+func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -535,12 +535,12 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
         WHERE id = $1
     `
 
-	var vacancy entity.VacancyResponse
+	var vacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
 		&vacancy.ID,
 		&vacancy.Title,
 		&vacancy.EmployerID,
-		&vacancy.Specialization,
+		&vacancy.SpecializationID,
 		&vacancy.WorkFormat,
 		&vacancy.Employment,
 		&vacancy.Schedule,

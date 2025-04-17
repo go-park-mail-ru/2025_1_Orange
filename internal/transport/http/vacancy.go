@@ -231,7 +231,25 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	vacancies, err := h.vacancy.GetAll(ctx)
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	vacancies, err := h.vacancy.GetAll(ctx, currentUserID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

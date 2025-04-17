@@ -51,13 +51,13 @@ CREATE TABLE vacancy_city (
 );
 
 -- Таблица откликов на вакансии
-CREATE TABLE vacancy_response (
+CREATE TABLE IF NOT EXISTS vacancy_response (
     id SERIAL PRIMARY KEY,
-    vacancy_id INTEGER NOT NULL REFERENCES vacancy(id) ON DELETE CASCADE,
-    applicant_id INTEGER NOT NULL REFERENCES applicant(id) ON DELETE CASCADE,
-    resume_id INTEGER REFERENCES resume(id) ON DELETE SET NULL,
+    vacancy_id INTEGER NOT NULL REFERENCES vacancy(id),
+    applicant_id INTEGER NOT NULL REFERENCES applicant(id),
+    resume_id INTEGER REFERENCES resume(id),
     applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE (vacancy_id, applicant_id) -- один отклик от соискателя на вакансию
+    UNIQUE(vacancy_id, applicant_id)
 );
 
 -- Таблица лайков вакансий

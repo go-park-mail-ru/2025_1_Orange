@@ -87,6 +87,24 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
 	idStr := r.PathValue("id")
 	vacancyID, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -94,7 +112,7 @@ func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vacancy, err := h.vacancy.GetVacancy(ctx, vacancyID)
+	vacancy, err := h.vacancy.GetVacancy(ctx, vacancyID, currentUserID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -213,28 +231,6 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
-		return
-	}
-
-	if cookie == nil {
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
-		return
-	}
-
-	// _, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-	// if err != nil {
-	// 	utils.WriteAPIError(w, utils.ToAPIError(err))
-	// 	return
-	// }
-
-	// if role != "applicant" {
-	// 	utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
-	// 	return
-	// }
-
 	vacancies, err := h.vacancy.GetAll(ctx)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -252,12 +248,7 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 
 	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
-		return
-	}
-
-	if cookie == nil {
+	if err != nil || cookie == nil {
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -269,10 +260,10 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Получаем ID текущего пользователя из контекста аутентификации
-	applicantID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+	// Получаем ID текущего пользователя
+	applicantID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil || userType != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
 

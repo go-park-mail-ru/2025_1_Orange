@@ -873,6 +873,7 @@ func TestVacancyRepository_Delete(t *testing.T) {
 			},
 		},
 		{
+
 			name: "Ошибка при выполнении запроса",
 			id:   2,
 			expectedErr: entity.NewError(

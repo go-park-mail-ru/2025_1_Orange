@@ -866,7 +866,7 @@ func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 	return nil
 }
 
-func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]string, error) {
+func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -895,7 +895,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 	}
 	defer rows.Close()
 
-	var skills []string
+	var skills []entity.Skill
 	for rows.Next() {
 		var skill entity.Skill
 		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
@@ -910,7 +910,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 				fmt.Errorf("ошибка при сканировании навыка: %w", err),
 			)
 		}
-		skills = append(skills, skill.Name)
+		skills = append(skills, skill)
 	}
 
 	if err := rows.Err(); err != nil {

@@ -752,7 +752,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 	}
 	defer rows.Close()
 
-	var vacancies []*entity.Vacancy
+	vacancies := make([]*entity.Vacancy, 0)
 	for rows.Next() {
 		var vacancy entity.Vacancy
 		err := rows.Scan(
@@ -803,13 +803,12 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 		)
 	}
 
-	if len(vacancies) == 0 {
-		return nil, entity.NewError(
-			entity.ErrNotFound,
-			fmt.Errorf("вакансии не найдены"),
-		)
-	}
-
+	// // if len(vacancies) == 0 {
+	// // 	return nil, entity.NewError(
+	// // 		entity.ErrNotFound,
+	// // 		fmt.Errorf("вакансии не найдены"),
+	// // 	)
+	// }
 	return vacancies, nil
 }
 
@@ -845,11 +844,11 @@ func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 			"requestID": requestID,
 			"vacancyID": vacancyID,
 			"error":     err,
-		}).Error("не удалось получить количество удаленных строк")
+		}).Error("ошибка при получении количества затронутых строк")
 
 		return entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("не удалось проверить удаление вакансии с id=%d", vacancyID),
+			fmt.Errorf("ошибка при получении количества затронутых строк: %w", err),
 		)
 	}
 
@@ -991,77 +990,6 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 	}
 
 	return cities, nil
-}
-
-func (r *VacancyRepository) GetVacancyResponsesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyResponses, error) {
-	requestID := utils.GetRequestID(ctx)
-
-	l.Log.WithFields(logrus.Fields{
-		"requestID": requestID,
-		"vacancyID": vacancyID,
-	}).Info("SQL запрос на получение откликов по вакансии")
-
-	query := `
-		SELECT 
-			r.id,
-			r.vacancy_id,
-			r.applicant_id,
-			r.applied_at
-		FROM vacancy_response
-        WHERE vacancy_id = $1
-        ORDER BY applied_at DESC
-	`
-	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"vacancyID": vacancyID,
-			"error":     err,
-		}).Error("ошибка при получении откликов на вакансию")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("ошибка при получении откликов на вакансию: %w", err),
-		)
-	}
-	defer rows.Close()
-
-	var responses []entity.VacancyResponses
-	for rows.Next() {
-		var response entity.VacancyResponses
-		if err := rows.Scan(
-			&response.ID,
-			&response.VacancyID,
-			&response.ApplicantID,
-			&response.AppliedAt,
-		); err != nil {
-			l.Log.WithFields(logrus.Fields{
-				"requestID": requestID,
-				"vacancyID": vacancyID,
-				"error":     err,
-			}).Error("ошибка при сканировании отклика")
-
-			return nil, entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при сканировании отклика: %w", err),
-			)
-		}
-		responses = append(responses, response)
-	}
-
-	if err := rows.Err(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"vacancyID": vacancyID,
-			"error":     err,
-		}).Error("ошибка при итерации по откликам")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("ошибка при итерации по откликам: %w", err),
-		)
-	}
-	return responses, nil
 }
 
 func (r *VacancyRepository) GetVacancyLikesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyLike, error) {

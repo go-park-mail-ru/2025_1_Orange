@@ -103,7 +103,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 		return nil, err
 	}
 
-	experienceStr := fmt.Sprintf("%d+ лет", createdVacancy.Experience)
+	experienceStr := fmt.Sprintf(createdVacancy.Experience)
 
 	response := &dto.VacancyResponse{
 		ID:                   createdVacancy.ID,

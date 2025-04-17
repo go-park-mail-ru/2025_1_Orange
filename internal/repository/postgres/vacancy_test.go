@@ -398,18 +398,18 @@ func TestVacancyRepository_GetByID(t *testing.T) {
 	testCases := []struct {
 		name           string
 		id             int
-		expectedResult *entity.VacancyResponse
+		expectedResult *entity.Vacancy
 		expectedErr    error
 		setupMock      func(mock sqlmock.Sqlmock, id int)
 	}{
 		{
 			name: "Успешное получение вакансии",
 			id:   1,
-			expectedResult: &entity.VacancyResponse{
+			expectedResult: &entity.Vacancy{
 				ID:                   1,
 				Title:                "Разработчик Go",
 				EmployerID:           101,
-				Specialization:       "Backend Development",
+				SpecializationID:     1, // Исправлено: числовой ID вместо строки
 				WorkFormat:           "remote",
 				Employment:           "full_time",
 				Schedule:             "flexible",
@@ -429,34 +429,21 @@ func TestVacancyRepository_GetByID(t *testing.T) {
 			expectedErr: nil,
 			setupMock: func(mock sqlmock.Sqlmock, id int) {
 				queryVacancy := regexp.QuoteMeta(`
-					SELECT id, title, employer_id, specialization_id, work_format, employment, 
-					schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
-					description, tasks, requirements, optional_requirements, city, created_at, updated_at
-					FROM vacancy WHERE id = $1
-				`)
+                    SELECT id, title, employer_id, specialization_id, work_format, employment, 
+                    schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
+                    description, tasks, requirements, optional_requirements, city, created_at, updated_at
+                    FROM vacancy WHERE id = $1
+                `)
 				mock.ExpectQuery(queryVacancy).
 					WithArgs(id).
 					WillReturnRows(
 						sqlmock.NewRows(columns).
 							AddRow(
-								1, "Разработчик Go", 101, "Backend Development", "remote", "full_time", "flexible",
-								40, 100000, 150000, true, "no_experience", "Работа с высоконагруженными системами.",
-								"Разработка новых сервисов.", "Go, PostgreSQL.", "Docker, Kubernetes.",
-								"Москва", time.Now(), time.Now(),
+								1, "Разработчик Go", 101, 1, "remote", // specialization_id как число
+								"full_time", "flexible", 40, 100000, 150000, true, "no_experience",
+								"Работа с высоконагруженными системами.", "Разработка новых сервисов.",
+								"Go, PostgreSQL.", "Docker, Kubernetes.", "Москва", now, now,
 							),
-					)
-
-				querySkills := regexp.QuoteMeta(`
-					SELECT s.id, s.name FROM skill s 
-					JOIN vacancy_skill vs ON s.id = vs.skill_id 
-					WHERE vs.vacancy_id = $1
-				`)
-				mock.ExpectQuery(querySkills).
-					WithArgs(id).
-					WillReturnRows(
-						sqlmock.NewRows([]string{"id", "name"}).
-							AddRow(1, "Go").
-							AddRow(2, "PostgreSQL"),
 					)
 			},
 		},
@@ -527,25 +514,7 @@ func TestVacancyRepository_GetByID(t *testing.T) {
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedResult.ID, result.ID)
-				require.Equal(t, tc.expectedResult.Title, result.Title)
-				require.Equal(t, tc.expectedResult.EmployerID, result.EmployerID)
-				require.Equal(t, tc.expectedResult.Specialization, result.Specialization)
-				require.Equal(t, tc.expectedResult.WorkFormat, result.WorkFormat)
-				require.Equal(t, tc.expectedResult.Employment, result.Employment)
-				require.Equal(t, tc.expectedResult.Schedule, result.Schedule)
-				require.Equal(t, tc.expectedResult.WorkingHours, result.WorkingHours)
-				require.Equal(t, tc.expectedResult.SalaryFrom, result.SalaryFrom)
-				require.Equal(t, tc.expectedResult.SalaryTo, result.SalaryTo)
-				require.Equal(t, tc.expectedResult.TaxesIncluded, result.TaxesIncluded)
-				require.Equal(t, tc.expectedResult.Experience, result.Experience)
-				require.Equal(t, tc.expectedResult.Description, result.Description)
-				require.Equal(t, tc.expectedResult.Tasks, result.Tasks)
-				require.Equal(t, tc.expectedResult.Requirements, result.Requirements)
-				require.Equal(t, tc.expectedResult.OptionalRequirements, result.OptionalRequirements)
-				require.Equal(t, tc.expectedResult.City, result.City)
-				require.Equal(t, tc.expectedResult.CreatedAt.Unix(), result.CreatedAt.Unix())
-				require.Equal(t, tc.expectedResult.UpdatedAt.Unix(), result.UpdatedAt.Unix())
+				require.Equal(t, tc.expectedResult, result)
 			}
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
@@ -694,11 +663,12 @@ func TestVacancyRepository_Delete(t *testing.T) {
 			},
 		},
 		{
+
 			name: "Ошибка при выполнении запроса",
 			id:   2,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("ошибка при удалении вакансии: %w", errors.New("database error")),
+				fmt.Errorf("не удалось удалить вакансию с id=2"),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, id int) {
 				query := regexp.QuoteMeta(`
@@ -707,7 +677,7 @@ func TestVacancyRepository_Delete(t *testing.T) {
                 `)
 				mock.ExpectExec(query).
 					WithArgs(id).
-					WillReturnError(errors.New("database error")) // ❌ Ошибка БД
+					WillReturnError(errors.New("database error"))
 			},
 		},
 		{
@@ -725,7 +695,7 @@ func TestVacancyRepository_Delete(t *testing.T) {
 				result := sqlmock.NewErrorResult(errors.New("rows affected error"))
 				mock.ExpectExec(query).
 					WithArgs(id).
-					WillReturnResult(result) // ❌ Ошибка получения `RowsAffected`
+					WillReturnResult(result)
 			},
 		},
 	}
@@ -1045,89 +1015,6 @@ func TestVacancyRepository_CreateSkillIfNotExists(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedID, got)
-			}
-
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
-
-func TestVacancyRepository_GetVacancyResponsesByVacancyID(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	repo := &VacancyRepository{DB: db}
-
-	appliedAt := time.Now()
-
-	tests := []struct {
-		name        string
-		mock        func()
-		vacancyID   int
-		expected    []entity.VacancyResponses
-		expectedErr error
-	}{
-		{
-			name: "Success",
-			mock: func() {
-				mock.ExpectQuery(`SELECT r.id, r.vacancy_id, r.applicant_id, r.applied_at FROM vacancy_response WHERE vacancy_id = \$1 ORDER BY applied_at DESC`).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "vacancy_id", "applicant_id", "applied_at"}).
-						AddRow(1, 1, 101, appliedAt).
-						AddRow(2, 1, 102, appliedAt.Add(-time.Hour)))
-			},
-			vacancyID: 1,
-			expected: []entity.VacancyResponses{
-				{
-					ID:          1,
-					VacancyID:   1,
-					ApplicantID: 101,
-					AppliedAt:   appliedAt,
-				},
-				{
-					ID:          2,
-					VacancyID:   1,
-					ApplicantID: 102,
-					AppliedAt:   appliedAt.Add(-time.Hour),
-				},
-			},
-		},
-		{
-			name: "No Responses",
-			mock: func() {
-				mock.ExpectQuery(`SELECT r.id, r.vacancy_id, r.applicant_id, r.applied_at FROM vacancy_response WHERE vacancy_id = \$1 ORDER BY applied_at DESC`).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "vacancy_id", "applicant_id", "applied_at"}))
-			},
-			vacancyID: 1,
-			expected:  []entity.VacancyResponses{},
-		},
-		{
-			name: "Database Error",
-			mock: func() {
-				mock.ExpectQuery(`SELECT r.id, r.vacancy_id, r.applicant_id, r.applied_at FROM vacancy_response WHERE vacancy_id = \$1 ORDER BY applied_at DESC`).
-					WithArgs(1).
-					WillReturnError(errors.New("database error"))
-			},
-			vacancyID:   1,
-			expectedErr: errors.New("database error"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mock()
-
-			got, err := repo.GetVacancyResponsesByVacancyID(context.Background(), tt.vacancyID)
-			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErr.Error())
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, got)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())

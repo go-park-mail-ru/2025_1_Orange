@@ -374,7 +374,7 @@ func (vs *VacanciesService) DeleteVacancy(ctx context.Context, id int, employerI
 	}, nil
 }
 
-func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortResponse, error) {
+func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -403,6 +403,14 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 			specializationName = specialization.Name
 		}
 
+		responded := false
+		if currentUserID != 0 {
+			responded, err = s.vacanciesRepository.ResponseExists(ctx, vacancy.ID, currentUserID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
@@ -417,7 +425,7 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 			CreatedAt:      vacancy.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
 			City:           vacancy.City,
-			Responded:      vacancy.Responded,
+			Responded:      responded,
 		}
 
 		response = append(response, shortVacancy)

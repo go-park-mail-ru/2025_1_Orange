@@ -34,6 +34,21 @@ func (h *ResumeHandler) Configure(r *http.ServeMux) {
 	r.Handle("/resume/", http.StripPrefix("/resume", resumeMux))
 }
 
+// CreateResume godoc
+// @Tags Resume
+// @Summary Создание нового резюме
+// @Description Создает новое резюме для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param resumeData body dto.CreateResumeRequest true "Данные для создания резюме"
+// @Success 201 {object} dto.ResumeResponse "Созданное резюме"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателей)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /resume/create [post]
+// @Security csrf_token
+// @Security session_cookie
 func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -105,6 +120,19 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetResume godoc
+// @Tags Resume
+// @Summary Получение резюме по ID
+// @Description Возвращает полную информацию о резюме по его ID. Доступно всем авторизованным пользователям.
+// @Produce json
+// @Param id path int true "ID резюме"
+// @Success 200 {object} dto.ResumeResponse "Информация о резюме"
+// @Failure 400 {object} utils.APIError "Неверный ID"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 404 {object} utils.APIError "Резюме не найдено"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /resume/{id} [get]
+// @Security session_cookie
 func (h *ResumeHandler) GetResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -132,6 +160,23 @@ func (h *ResumeHandler) GetResume(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateResume godoc
+// @Tags Resume
+// @Summary Обновление резюме
+// @Description Обновляет информацию о резюме. Доступно только владельцу резюме (соискателю). Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param id path int true "ID резюме"
+// @Param updateData body dto.UpdateResumeRequest true "Данные для обновления"
+// @Success 200 {object} dto.ResumeResponse "Обновленное резюме"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (не владелец)"
+// @Failure 404 {object} utils.APIError "Резюме не найдено"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /resume/{id} [put]
+// @Security session_cookie
+// @Security csrf_token
 func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -210,6 +255,21 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeleteResume godoc
+// @Tags Resume
+// @Summary Удаление резюме
+// @Description Удаляет резюме по ID. Доступно только владельцу резюме (соискателю). Требует авторизации и CSRF-токена.
+// @Produce json
+// @Param id path int true "ID резюме"
+// @Success 200 {object} dto.DeleteResumeResponse "Результат удаления"
+// @Failure 400 {object} utils.APIError "Неверный ID"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (не владелец)"
+// @Failure 404 {object} utils.APIError "Резюме не найдено"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /resume/{id} [delete]
+// @Security session_cookie
+// @Security csrf_token
 func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -261,6 +321,16 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetAllResumes godoc
+// @Tags Resume
+// @Summary Получение всех резюме
+// @Description Возвращает список резюме. Для соискателей возвращает только их собственные резюме. Для других ролей - все резюме. Требует авторизации.
+// @Produce json
+// @Success 200 {object} dto.ResumeShortResponse "Список резюме"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /resume/all [get]
+// @Security session_cookie
 func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

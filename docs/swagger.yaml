@@ -86,6 +86,38 @@ definitions:
       user_id:
         type: integer
     type: object
+  dto.CreateResumeRequest:
+    properties:
+      about_me:
+        type: string
+      additional_specializations:
+        items:
+          type: string
+        type: array
+      education:
+        $ref: '#/definitions/entity.EducationType'
+      educational_institution:
+        type: string
+      graduation_year:
+        type: string
+      skills:
+        items:
+          type: string
+        type: array
+      specialization:
+        type: string
+      work_experiences:
+        items:
+          $ref: '#/definitions/dto.WorkExperienceDTO'
+        type: array
+    type: object
+  dto.DeleteResumeResponse:
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   dto.EmailExistsRequest:
     properties:
       email:
@@ -176,6 +208,79 @@ definitions:
     - email
     - password
     type: object
+  dto.ResumeResponse:
+    properties:
+      about_me:
+        type: string
+      additional_specializations:
+        items:
+          type: string
+        type: array
+      applicant_id:
+        type: integer
+      created_at:
+        type: string
+      education:
+        $ref: '#/definitions/entity.EducationType'
+      educational_institution:
+        type: string
+      graduation_year:
+        type: string
+      id:
+        type: integer
+      skills:
+        items:
+          type: string
+        type: array
+      specialization:
+        type: string
+      updated_at:
+        type: string
+      work_experiences:
+        items:
+          $ref: '#/definitions/dto.WorkExperienceResponse'
+        type: array
+    type: object
+  dto.ResumeShortResponse:
+    properties:
+      applicant_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      specialization:
+        type: string
+      updated_at:
+        type: string
+      work_experiences:
+        $ref: '#/definitions/dto.WorkExperienceShort'
+    type: object
+  dto.UpdateResumeRequest:
+    properties:
+      about_me:
+        type: string
+      additional_specializations:
+        items:
+          type: string
+        type: array
+      education:
+        $ref: '#/definitions/entity.EducationType'
+      educational_institution:
+        type: string
+      graduation_year:
+        type: string
+      skills:
+        items:
+          type: string
+        type: array
+      specialization:
+        type: string
+      work_experiences:
+        items:
+          $ref: '#/definitions/dto.WorkExperienceDTO'
+        type: array
+    type: object
   dto.UploadStaticResponse:
     properties:
       created_at:
@@ -187,6 +292,85 @@ definitions:
       updated_at:
         type: string
     type: object
+  dto.WorkExperienceDTO:
+    properties:
+      achievements:
+        type: string
+      duties:
+        type: string
+      employer_name:
+        maxLength: 64
+        type: string
+      end_date:
+        type: string
+      position:
+        maxLength: 64
+        type: string
+      start_date:
+        type: string
+      until_now:
+        type: boolean
+    required:
+    - employer_name
+    - position
+    - start_date
+    type: object
+  dto.WorkExperienceResponse:
+    properties:
+      achievements:
+        type: string
+      duties:
+        type: string
+      employer_name:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      position:
+        type: string
+      start_date:
+        type: string
+      until_now:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+  dto.WorkExperienceShort:
+    properties:
+      achievements:
+        type: string
+      duties:
+        type: string
+      employer_name:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      position:
+        type: string
+      start_date:
+        type: string
+      until_now:
+        type: boolean
+    type: object
+  entity.EducationType:
+    enum:
+    - secondary_school
+    - incomplete_higher
+    - higher
+    - bachelor
+    - master
+    - phd
+    type: string
+    x-enum-varnames:
+    - SecondarySchool
+    - IncompleteHigher
+    - Higher
+    - Bachelor
+    - Master
+    - PhD
   utils.APIError:
     properties:
       message:
@@ -700,6 +884,202 @@ paths:
       summary: Регистрация работодателя
       tags:
       - Employer
+  /resume/{id}:
+    delete:
+      description: Удаляет резюме по ID. Доступно только владельцу резюме (соискателю).
+        Требует авторизации и CSRF-токена.
+      parameters:
+      - description: ID резюме
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Результат удаления
+          schema:
+            $ref: '#/definitions/dto.DeleteResumeResponse'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (не владелец)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Резюме не найдено
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Удаление резюме
+      tags:
+      - Resume
+    get:
+      description: Возвращает полную информацию о резюме по его ID. Доступно всем
+        авторизованным пользователям.
+      parameters:
+      - description: ID резюме
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о резюме
+          schema:
+            $ref: '#/definitions/dto.ResumeResponse'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Резюме не найдено
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получение резюме по ID
+      tags:
+      - Resume
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о резюме. Доступно только владельцу резюме
+        (соискателю). Требует авторизации и CSRF-токена.
+      parameters:
+      - description: ID резюме
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: updateData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateResumeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленное резюме
+          schema:
+            $ref: '#/definitions/dto.ResumeResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (не владелец)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Резюме не найдено
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Обновление резюме
+      tags:
+      - Resume
+  /resume/all:
+    get:
+      description: Возвращает список резюме. Для соискателей возвращает только их
+        собственные резюме. Для других ролей - все резюме. Требует авторизации.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список резюме
+          schema:
+            $ref: '#/definitions/dto.ResumeShortResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получение всех резюме
+      tags:
+      - Resume
+  /resume/create:
+    post:
+      consumes:
+      - application/json
+      description: Создает новое резюме для авторизованного соискателя. Требует авторизации
+        и CSRF-токена.
+      parameters:
+      - description: Данные для создания резюме
+        in: body
+        name: resumeData
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateResumeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданное резюме
+          schema:
+            $ref: '#/definitions/dto.ResumeResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателей)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Создание нового резюме
+      tags:
+      - Resume
 securityDefinitions:
   csrf_token:
     in: header

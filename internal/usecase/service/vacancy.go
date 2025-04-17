@@ -305,7 +305,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, request *
 		return nil, err
 	}
 
-	experienceStr := fmt.Sprintf("%d+ лет", updatedVacancy.Experience)
+	experienceStr := fmt.Sprintf(updatedVacancy.Experience)
 	response := &dto.VacancyResponse{
 		ID:                   updatedVacancy.ID,
 		EmployerID:           updatedVacancy.EmployerID,

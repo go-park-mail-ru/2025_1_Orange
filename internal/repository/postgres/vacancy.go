@@ -731,6 +731,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
             tasks,
             requirements,
             optional_requirements,
+			city,
 			created_at,
 			updated_at
         FROM vacancy
@@ -772,6 +773,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 			&vacancy.Tasks,
 			&vacancy.Requirements,
 			&vacancy.OptionalRequirements,
+			&vacancy.City,
 			&vacancy.CreatedAt,
 			&vacancy.UpdatedAt,
 		)
@@ -1290,10 +1292,13 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
-		"requestID": requestID,
-	}).Info("sql-запрос в БД на создание отклика на вакансию CreateResponse")
+		"requestID":   requestID,
+		"vacancyID":   vacancyID,
+		"applicantID": applicantID,
+	}).Info("Creating vacancy response")
 
-	var resumeID int
+	// Получаем последнее резюме соискателя
+	var resumeID sql.NullInt32
 	err := r.DB.QueryRowContext(ctx,
 		`SELECT id FROM resume WHERE applicant_id = $1 ORDER BY created_at DESC LIMIT 1`,
 		applicantID,
@@ -1301,9 +1306,10 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("no resumes found for applicant")
+			return entity.NewError(entity.ErrNotFound,
+				fmt.Errorf("no active resumes found for applicant"))
 		}
-		return fmt.Errorf("failed to get last resume: %w", err)
+		return fmt.Errorf("failed to get applicant resume: %w", err)
 	}
 
 	query := `
@@ -1315,15 +1321,22 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
         ) VALUES ($1, $2, $3, NOW())
     `
 
-	if resumeID != -1 {
-		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
-	} else {
-		_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, sql.NullInt32{Valid: false})
+	_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			switch pqErr.Code {
+			case "23503": // foreign key violation
+				return entity.NewError(entity.ErrBadRequest,
+					fmt.Errorf("vacancy or applicant does not exist"))
+			case "23505": // unique violation
+				return entity.NewError(entity.ErrAlreadyExists,
+					fmt.Errorf("response already exists"))
+			}
+		}
+		return fmt.Errorf("failed to create vacancy response: %w", err)
 	}
 
-	if err != nil {
-		return fmt.Errorf("Ошибка в создании отклика на вакансию: %w", err)
-	}
 	return nil
 }
 

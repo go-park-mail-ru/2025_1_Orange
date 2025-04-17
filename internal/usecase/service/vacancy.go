@@ -78,23 +78,17 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 	}
 
 	if len(request.Skills) > 0 {
-		_, err := s.vacanciesRepository.FindSkillIDsByNames(ctx, request.Skills)
+		skillIDs, err := s.vacanciesRepository.FindSkillIDsByNames(ctx, request.Skills)
 		if err != nil {
 			return nil, err
 		}
 
-		// if len(skillIDs) > 0 {
-		// 	if err := s.vacanciesRepository.AddSkills(ctx, createdVacancy.ID, skillIDs); err != nil {
-		// 		return nil, err
-		// 	}
-		// }
+		if len(skillIDs) > 0 {
+			if err := s.vacanciesRepository.AddSkills(ctx, createdVacancy.ID, skillIDs); err != nil {
+				return nil, err
+			}
+		}
 	}
-
-	skills, err := s.vacanciesRepository.GetSkillsByVacancyID(ctx, createdVacancy.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	var specializationName string
 	if createdVacancy.SpecializationID != 0 {
 		specialization, err := s.specializationRepository.GetByID(ctx, createdVacancy.SpecializationID)
@@ -102,6 +96,11 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 			return nil, err
 		}
 		specializationName = specialization.Name
+	}
+
+	skills, err := s.vacanciesRepository.GetSkillsByVacancyID(ctx, createdVacancy.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	experienceStr := fmt.Sprintf("%d+ лет", createdVacancy.Experience)
@@ -136,7 +135,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 	return response, nil
 }
 
-func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.VacancyResponse, error) {
+func (vs *VacanciesService) GetVacancy(ctx context.Context, id, currentUserID int) (*dto.VacancyResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -163,7 +162,15 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		return nil, err
 	}
 
-	experienceStr := fmt.Sprintf("%d+ лет", vacancy.Experience)
+	responded := false
+	if currentUserID != 0 {
+		responded, err = vs.vacanciesRepository.ResponseExists(ctx, vacancy.ID, currentUserID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	experienceStr := fmt.Sprintf(vacancy.Experience)
 
 	response := &dto.VacancyResponse{
 		ID:                   vacancy.ID,
@@ -186,6 +193,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id int) (*dto.Vacanc
 		UpdatedAt:            vacancy.UpdatedAt.Format(time.RFC3339),
 		Skills:               skills,
 		City:                 vacancy.City,
+		Responded:            responded,
 	}
 
 	for _, skill := range skills {
@@ -408,13 +416,15 @@ func (s *VacanciesService) GetAll(ctx context.Context) ([]dto.VacancyShortRespon
 	return response, nil
 }
 func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error {
+	// Проверяем существование вакансии
 	if _, err := s.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
-		return err
+		return fmt.Errorf("vacancy not found: %w", err)
 	}
+
 	// Проверяем, не откликался ли уже
 	hasResponded, err := s.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check existing responses: %w", err)
 	}
 	if hasResponded {
 		return entity.NewError(entity.ErrAlreadyExists,

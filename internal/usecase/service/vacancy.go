@@ -451,3 +451,86 @@ func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applic
 
 	return s.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
 }
+
+func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]dto.VacancyShortResponse, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":  requestID,
+		"employerID": employerID,
+	}).Info("Получение вакансии по ID работодателя")
+
+	vacancies, err := vs.vacanciesRepository.GetActiveVacanciesByEmployerID(ctx, employerID)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]dto.VacancyShortResponse, 0, len(vacancies))
+	for _, vacancy := range vacancies {
+		var specializationName string
+		if vacancy.SpecializationID != 0 {
+			specialization, err := vs.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":  requestID,
+					"vacancyID":  vacancy.ID,
+					"employerID": employerID,
+					"error":      err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		responded := false
+		if employerID != 0 {
+			responded, err = vs.vacanciesRepository.ResponseExists(ctx, vacancy.ID, employerID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		shortVacancy := dto.VacancyShortResponse{
+			ID:             vacancy.ID,
+			Title:          vacancy.Title,
+			EmployerID:     vacancy.EmployerID,
+			Specialization: specializationName,
+			WorkFormat:     vacancy.WorkFormat,
+			Employment:     vacancy.Employment,
+			WorkingHours:   vacancy.WorkingHours,
+			SalaryFrom:     vacancy.SalaryFrom,
+			SalaryTo:       vacancy.SalaryTo,
+			TaxesIncluded:  vacancy.TaxesIncluded,
+			CreatedAt:      vacancy.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
+			City:           vacancy.City,
+			Responded:      responded,
+		}
+
+		response = append(response, shortVacancy)
+	}
+
+	return response, nil
+}
+
+func (uc *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*dto.VacancyResponse, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"applicantID": applicantID,
+	}).Info("Получение вакансии по ID работодателя")
+
+	vacancies, err := uc.vacanciesRepository.GetVacanciesByApplicantID(ctx, applicantID)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"requestID":   requestID,
+			"applicantID": applicantID,
+			"error":       err,
+		}).Error("Ошибка при получении вакансий соискателя")
+
+		return nil, entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка при получении вакансий: %w", err))
+	}
+
+	return vacancies, nil
+}

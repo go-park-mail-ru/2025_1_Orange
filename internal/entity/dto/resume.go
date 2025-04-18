@@ -26,7 +26,6 @@ type WorkExperienceDTO struct {
 	UntilNow     bool   `json:"until_now"`
 }
 
-// Updated ResumeResponse - renamed specialization_name to specialization, changed skills and specializations to string arrays
 type ResumeResponse struct {
 	ID                        int                      `json:"id"`
 	ApplicantID               int                      `json:"applicant_id"`
@@ -41,8 +40,6 @@ type ResumeResponse struct {
 	AdditionalSpecializations []string                 `json:"additional_specializations"`
 	WorkExperiences           []WorkExperienceResponse `json:"work_experiences"`
 }
-
-// Removed SkillDTO and SpecializationDTO as they're no longer needed
 
 type WorkExperienceResponse struct {
 	ID           int    `json:"id"`
@@ -78,7 +75,7 @@ type ResumeShortResponse struct {
 	ID             int                 `json:"id"`
 	ApplicantID    int                 `json:"applicant_id"`
 	Specialization string              `json:"specialization"`
-	WorkExperience WorkExperienceShort `json:"work_experience"`
+	WorkExperience WorkExperienceShort `json:"work_experiences"`
 	CreatedAt      string              `json:"created_at"`
 	UpdatedAt      string              `json:"updated_at"`
 }

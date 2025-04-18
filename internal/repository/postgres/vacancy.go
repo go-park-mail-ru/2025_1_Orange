@@ -245,10 +245,6 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 	return nil
 }
 
-func (r *VacancyRepository) AddApplicant(ctx context.Context, vacancyID, applicantID int) error {
-	return nil
-}
-
 func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs []int) error {
 	requestID := utils.GetRequestID(ctx)
 
@@ -451,69 +447,6 @@ func (r *VacancyRepository) CreateSkillIfNotExists(ctx context.Context, skillNam
 	}).Info("навык успешно создан")
 
 	return id, nil
-}
-
-func (r *VacancyRepository) GetSpecializationByResumeID(ctx context.Context, vacancyID int) ([]entity.Specialization, error) {
-	requestID := utils.GetRequestID(ctx)
-
-	l.Log.WithFields(logrus.Fields{
-		"requestID": requestID,
-	}).Info("sql-запрос в БД на получение специализаций GetSpecializationsByResumeID")
-
-	query := `
-		SELECT s.id, s.name
-		FROM specialization s
-		JOIN vacancy_specialization rs ON s.id = rs.specialization_id
-		WHERE rs.vacancy_id = $1
-	`
-
-	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"vacancyID": vacancyID,
-			"error":     err,
-		}).Error("ошибка при получении специализаций вакансии")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("ошибка при получении специализаций вакансии: %w", err),
-		)
-	}
-	defer rows.Close()
-
-	var specializations []entity.Specialization
-	for rows.Next() {
-		var specialization entity.Specialization
-		if err := rows.Scan(&specialization.ID, &specialization.Name); err != nil {
-			l.Log.WithFields(logrus.Fields{
-				"requestID": requestID,
-				"vacancyID": vacancyID,
-				"error":     err,
-			}).Error("ошибка при сканировании специализации")
-
-			return nil, entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при сканировании специализации: %w", err),
-			)
-		}
-		specializations = append(specializations, specialization)
-	}
-
-	if err := rows.Err(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"vacancyID": vacancyID,
-			"error":     err,
-		}).Error("ошибка при итерации по специализациям")
-
-		return nil, entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("ошибка при итерации по специализациям: %w", err),
-		)
-	}
-
-	return specializations, nil
 }
 
 func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacancy, error) {
@@ -999,70 +932,6 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 	}
 
 	return cities, nil
-}
-
-func (r *VacancyRepository) GetVacancyLikesByVacancyID(ctx context.Context, vacancyID int) ([]entity.VacancyLike, error) {
-	requestID := utils.GetRequestID(ctx)
-
-	l.Log.WithFields(logrus.Fields{
-		"requestID": requestID,
-		"vacancyID": vacancyID,
-	}).Info("SQL запрос на получение лайкнутых вакансий")
-
-	query := `
-        SELECT 
-            id,
-            vacancy_id,
-            applicant_id,
-            liked_at
-        FROM vacancy_like
-        WHERE vacancy_id = $1
-        ORDER BY liked_at DESC
-    `
-
-	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID": requestID,
-			"vacancyID": vacancyID,
-			"error":     err,
-		}).Error("ошибка при получении лайкнутых вакансий")
-
-		return nil, fmt.Errorf("failed to get liked vacancies: %w", err)
-	}
-	defer rows.Close()
-
-	var likes []entity.VacancyLike
-	for rows.Next() {
-		var like entity.VacancyLike
-		if err := rows.Scan(
-			&like.ID,
-			&like.VacancyID,
-			&like.ApplicantID,
-			&like.LikedAt,
-		); err != nil {
-			l.Log.WithFields(logrus.Fields{
-				"requestID": requestID,
-				"vacancyID": vacancyID,
-				"error":     err,
-			}).Error("ошибка при сканировании лайка")
-
-			return nil, fmt.Errorf("ошибка при сканировании лайка: %w", err)
-		}
-		likes = append(likes, like)
-	}
-
-	if err := rows.Err(); err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID":   requestID,
-			"applicantID": vacancyID,
-			"error":       err,
-		}).Error("ошибка при итерации по лайкам")
-
-		return nil, fmt.Errorf("error iterating vacancy likes: %w", err)
-	}
-
-	return likes, nil
 }
 
 func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) error {

@@ -237,8 +237,8 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 
 	cookie, err := r.Cookie("session_id")
 	if err == nil && cookie != nil {
-		currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-		if err == nil {
+		currentUserID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil && role == "applicant" {
 			userID = currentUserID
 		}
 	}

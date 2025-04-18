@@ -8,7 +8,6 @@ import (
 type VacancyRepository interface {
 	Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)
 	AddSkills(ctx context.Context, vacancyID int, skillIDs []int) error
-	AddApplicant(ctx context.Context, vacancyID, applicantID int) error
 	AddCity(ctx context.Context, vacancyID int, cityIDs []int) error
 	GetByID(ctx context.Context, id int) (*entity.Vacancy, error)
 	Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)

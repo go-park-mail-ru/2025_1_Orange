@@ -12,6 +12,6 @@ type Vacancy interface {
 	DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error)
 	GetAll(ctx context.Context, currentUserID int) ([]dto.VacancyShortResponse, error)
 	ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error
-	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*dto.VacancyResponse, error)
-	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*dto.VacancyResponse, error)
+	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error)
+	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]dto.VacancyShortResponse, error)
 }

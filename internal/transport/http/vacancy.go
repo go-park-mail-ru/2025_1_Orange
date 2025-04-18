@@ -34,6 +34,8 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("PUT /vacancy/{id}", h.UpdateVacancy)
 	vacancyMux.HandleFunc("DELETE /vacancy/{id}", h.DeleteVacancy)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
+	vacancyMux.HandleFunc("GET /employer/{id}/vacancies", h.GetActiveVacanciesByEmployer)
+	vacancyMux.HandleFunc("GET /applicant/{id}/vacancies", h.GetVacanciesByApplicant)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -284,4 +286,77 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	idStr := r.PathValue("id")
+	employerID, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	vacancies, err := h.vacancy.GetActiveVacanciesByEmployerID(ctx, employerID)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil || cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if userType != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	// Получаем `applicantID` из URL
+	idStr := r.PathValue("id")
+	applicantID, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Проверяем, что соискатель получает **свои** отклики
+	if applicantID != currentUserID {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	// Получаем список вакансий, на которые откликнулся соискатель
+	vacancies, err := h.vacancy.GetVacanciesByApplicantID(ctx, applicantID)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
 }

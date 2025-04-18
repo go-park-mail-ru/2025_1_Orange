@@ -26,6 +26,10 @@ func NewVacancyRepository(db *sql.DB) (repository.VacancyRepository, error) {
 func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	if vacancy.Title == "" || vacancy.SpecializationID == 0 {
+		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("обязательное поле отсутствует"))
+	}
+
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
 	}).Info("sql-запрос в БД на создание резюме Create")
@@ -106,6 +110,11 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 				return nil, entity.NewError(
 					entity.ErrBadRequest,
 					fmt.Errorf("обязательное поле отсутствует"),
+				)
+			case entity.PSQLUniqueViolation:
+				return nil, entity.NewError(
+					entity.ErrAlreadyExists,
+					fmt.Errorf("вакансия с такими параметрами уже существует"),
 				)
 			case entity.PSQLDatatypeViolation:
 				return nil, entity.NewError(
@@ -1379,4 +1388,106 @@ func (r *VacancyRepository) CreateSpecializationIfNotExists(ctx context.Context,
 	}).Info("специализация успешно создана")
 
 	return id, nil
+}
+
+func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	query := `
+        SELECT id, title, employer_id, specialization_id, work_format, employment, 
+               schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
+               description, tasks, requirements, optional_requirements, city, created_at, updated_at
+        FROM vacancy
+        WHERE employer_id = $1 AND is_active = TRUE
+        ORDER BY updated_at DESC;
+    `
+
+	rows, err := r.DB.QueryContext(ctx, query, employerID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":  requestID,
+			"employerID": employerID,
+			"error":      err,
+		}).Error("Ошибка при получении активных вакансий работодателя")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении активных вакансий работодателя: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var vacancies []*entity.Vacancy
+	for rows.Next() {
+		var vacancy entity.Vacancy
+		err := rows.Scan(
+			&vacancy.ID, &vacancy.Title, &vacancy.EmployerID, &vacancy.SpecializationID,
+			&vacancy.WorkFormat, &vacancy.Employment, &vacancy.Schedule, &vacancy.WorkingHours,
+			&vacancy.SalaryFrom, &vacancy.SalaryTo, &vacancy.TaxesIncluded, &vacancy.Experience,
+			&vacancy.Description, &vacancy.Tasks, &vacancy.Requirements, &vacancy.OptionalRequirements,
+			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("Ошибка при сканировании вакансии")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка обработки данных вакансии: %w", err),
+			)
+		}
+		vacancies = append(vacancies, &vacancy)
+	}
+
+	return vacancies, nil
+}
+
+func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*entity.Vacancy, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	query := `
+        SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
+               v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
+               v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
+               v.optional_requirements, v.city, v.created_at, v.updated_at
+        FROM vacancy v
+        JOIN vacancy_response vr ON v.id = vr.vacancy_id
+        WHERE vr.applicant_id = $1
+        ORDER BY vr.applied_at DESC;
+    `
+	rows, err := r.DB.QueryContext(ctx, query, applicantID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":   requestID,
+			"applicantID": applicantID,
+			"error":       err,
+		}).Error("Ошибка при получении вакансий, на которые откликнулся соискатель")
+
+		return nil, entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка при получении списка вакансий: %w", err))
+	}
+	defer rows.Close()
+
+	var vacancies []*entity.Vacancy
+	for rows.Next() {
+		var vacancy entity.Vacancy
+		err := rows.Scan(
+			&vacancy.ID, &vacancy.Title, &vacancy.EmployerID, &vacancy.SpecializationID,
+			&vacancy.WorkFormat, &vacancy.Employment, &vacancy.Schedule, &vacancy.WorkingHours,
+			&vacancy.SalaryFrom, &vacancy.SalaryTo, &vacancy.TaxesIncluded, &vacancy.Experience,
+			&vacancy.Description, &vacancy.Tasks, &vacancy.Requirements, &vacancy.OptionalRequirements,
+			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt,
+		)
+		if err != nil {
+			return nil, entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка обработки данных вакансии: %w", err))
+		}
+		vacancies = append(vacancies, &vacancy)
+	}
+
+	if len(vacancies) == 0 {
+		return []*entity.Vacancy{}, nil
+	}
+
+	return vacancies, nil
 }

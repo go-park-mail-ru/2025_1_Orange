@@ -98,7 +98,7 @@ func (r *EmployerRepository) CreateEmployer(ctx context.Context, email, companyN
 			case entity.PSQLUniqueViolation: // Уникальное ограничение
 				return nil, entity.NewError(
 					entity.ErrAlreadyExists,
-					fmt.Errorf("работодатель с таким email уже зарегистрирован"),
+					fmt.Errorf("такой работодатель уже зарегистрирован"),
 				)
 			case entity.PSQLNotNullViolation: // NOT NULL ограничение
 				return nil, entity.NewError(

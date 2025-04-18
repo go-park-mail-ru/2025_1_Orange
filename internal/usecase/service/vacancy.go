@@ -152,21 +152,13 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id, currentUserID in
 	}
 
 	var specializationName string
-	if vacancy.SpecializationID != 0 { // 0 или другое значение по умолчанию
+	if vacancy.SpecializationID != 0 {
 		specialization, err := vs.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
 		if err != nil {
 			return nil, err
 		}
 		specializationName = specialization.Name
 	}
-	// var specializationName string
-	// if vacancy.Specialization != "" {
-	// 	specialization, err := vs.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	specializationName = specialization.Name
-	// }
 
 	skills, err := vs.vacanciesRepository.GetSkillsByVacancyID(ctx, vacancy.ID)
 	if err != nil {
@@ -753,7 +745,7 @@ func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, 
 	return response, nil
 }
 
-func (uc *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*dto.VacancyResponse, error) {
+func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -761,16 +753,55 @@ func (uc *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 		"applicantID": applicantID,
 	}).Info("Получение вакансии по ID работодателя")
 
-	vacancies, err := uc.vacanciesRepository.GetVacanciesByApplicantID(ctx, applicantID)
+	vacancies, err := vs.vacanciesRepository.GetVacanciesByApplicantID(ctx, applicantID)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"requestID":   requestID,
-			"applicantID": applicantID,
-			"error":       err,
-		}).Error("Ошибка при получении вакансий соискателя")
-
-		return nil, entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка при получении вакансий: %w", err))
+		return nil, err
 	}
 
-	return vacancies, nil
+	response := make([]dto.VacancyShortResponse, 0, len(vacancies))
+	for _, vacancy := range vacancies {
+		var specializationName string
+		if vacancy.SpecializationID != 0 {
+			specialization, err := vs.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":   requestID,
+					"vacancyID":   vacancy.ID,
+					"applicantID": applicantID,
+					"error":       err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		responded := false
+		if applicantID != 0 {
+			responded, err = vs.vacanciesRepository.ResponseExists(ctx, vacancy.ID, applicantID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		shortVacancy := dto.VacancyShortResponse{
+			ID:             vacancy.ID,
+			Title:          vacancy.Title,
+			EmployerID:     vacancy.EmployerID,
+			Specialization: specializationName,
+			WorkFormat:     vacancy.WorkFormat,
+			Employment:     vacancy.Employment,
+			WorkingHours:   vacancy.WorkingHours,
+			SalaryFrom:     vacancy.SalaryFrom,
+			SalaryTo:       vacancy.SalaryTo,
+			TaxesIncluded:  vacancy.TaxesIncluded,
+			CreatedAt:      vacancy.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
+			City:           vacancy.City,
+			Responded:      responded,
+		}
+
+		response = append(response, shortVacancy)
+	}
+
+	return response, nil
 }

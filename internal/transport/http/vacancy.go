@@ -6,6 +6,7 @@ import (
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
+	"ResuMatch/pkg/sanitizer"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -70,6 +71,23 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Санитизация всех строковых полей
+	vacancyCreate.Title = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Title)
+	vacancyCreate.Specialization = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Specialization)
+	vacancyCreate.WorkFormat = sanitizer.StrictPolicy.Sanitize(vacancyCreate.WorkFormat)
+	vacancyCreate.Employment = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Employment)
+	vacancyCreate.Schedule = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Schedule)
+	vacancyCreate.City = sanitizer.StrictPolicy.Sanitize(vacancyCreate.City)
+	vacancyCreate.Description = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Description)
+	vacancyCreate.Experience = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Experience)
+	vacancyCreate.Tasks = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Tasks)
+	vacancyCreate.Requirements = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Requirements)
+	vacancyCreate.OptionalRequirements = sanitizer.StrictPolicy.Sanitize(vacancyCreate.OptionalRequirements)
+
+	for i, skill := range vacancyCreate.Skills {
+		vacancyCreate.Skills[i] = sanitizer.StrictPolicy.Sanitize(skill)
+	}
+
 	ctx = context.WithValue(ctx, "employerID", currentUserID)
 
 	vacancy, err := h.vacancy.CreateVacancy(ctx, currentUserID, &vacancyCreate)
@@ -89,18 +107,15 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	var userID int
+
 	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
-		return
+	if err == nil && cookie != nil {
+		currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+		}
 	}
-
-	if cookie == nil {
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
-		return
-	}
-
-	currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -114,7 +129,7 @@ func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vacancy, err := h.vacancy.GetVacancy(ctx, vacancyID, currentUserID)
+	vacancy, err := h.vacancy.GetVacancy(ctx, vacancyID, userID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -165,6 +180,25 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&vacancyUpdate); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
+	}
+
+	// Санитизация всех строковых полей
+	vacancyUpdate.Title = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Title)
+	vacancyUpdate.Description = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Description)
+	vacancyUpdate.WorkFormat = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.WorkFormat)
+	vacancyUpdate.Employment = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Employment)
+	vacancyUpdate.Schedule = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Schedule)
+	vacancyUpdate.City = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.City)
+	vacancyUpdate.Experience = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Experience)
+	vacancyUpdate.Specialization = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Specialization)
+	vacancyUpdate.Requirements = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Requirements)
+	vacancyUpdate.OptionalRequirements = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.OptionalRequirements)
+	vacancyUpdate.Tasks = sanitizer.StrictPolicy.Sanitize(vacancyUpdate.Tasks)
+
+	// Санитизация массивов строк
+
+	for i, skill := range vacancyUpdate.Skills {
+		vacancyUpdate.Skills[i] = sanitizer.StrictPolicy.Sanitize(skill)
 	}
 
 	ctx = context.WithValue(ctx, "employerID", currentUserID)
@@ -237,8 +271,8 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 
 	cookie, err := r.Cookie("session_id")
 	if err == nil && cookie != nil {
-		currentUserID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-		if err == nil && role == "applicant" {
+		currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
 			userID = currentUserID
 		}
 	}
@@ -256,6 +290,7 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		return
 	}
 }
+
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -277,6 +312,17 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	if err != nil || userType != "applicant" {
 		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
+	}
+
+	// Санитизация данных отклика, если они есть в теле запроса
+	if r.ContentLength > 0 {
+		var application struct {
+			Message string `json:"message"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&application); err == nil {
+			application.Message = sanitizer.StrictPolicy.Sanitize(application.Message)
+			// Здесь можно передать санитизированное сообщение в usecase, если нужно
+		}
 	}
 
 	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID)

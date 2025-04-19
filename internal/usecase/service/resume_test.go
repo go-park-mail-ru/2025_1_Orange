@@ -1719,7 +1719,7 @@ func TestResumeService_GetAll(t *testing.T) {
 						Email:     "ivan@example.com",
 					}, nil)
 			},
-			expectedResult: []dto.ResumeShortResponse{
+			expectedResult: []dto.VacancyShortResponse{
 				{
 					ID:         1,
 					Applicant:  &dto.ApplicantProfileResponse{ID: 100, FirstName: "Иван", LastName: "Иванов", Email: "ivan@example.com"},
@@ -1758,8 +1758,33 @@ func TestResumeService_GetAll(t *testing.T) {
 						fmt.Errorf("ошибка при получении информации о соискателе"),
 					))
 			},
-			expectedResult: []dto.ResumeShortResponse{},
-			expectedErr:    nil,
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при проверке отклика"),
+			),
+		},
+		{
+			name:        "Неавторизованный пользователь (responded=false)",
+			applicantID: 0,
+			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+				vr.EXPECT().
+					GetVacanciesByApplicantID(gomock.Any(), 0).
+					Return([]entity.Vacancy{
+						{
+							ID: 6,
+						},
+					}, nil)
+
+				// ResponseExists не должен вызываться для applicantID=0
+			},
+			expectedResult: []dto.VacancyShortResponse{
+				{
+					ID:        6,
+					Responded: false,
+				},
+			},
+			expectedErr: nil,
 		},
 	}
 

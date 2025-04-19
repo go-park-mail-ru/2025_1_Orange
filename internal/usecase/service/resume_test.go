@@ -1800,9 +1800,6 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	startDate := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2022, time.December, 31, 0, 0, 0, 0, time.UTC)
-
 	testCases := []struct {
 		name           string
 		applicantID    int
@@ -1813,7 +1810,7 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 		expectedErr    error
 	}{
 		{
-			name:        "Успешное получение списка резюме с опытом работы",
+			name:        "Успешное получение вакансий с полной информацией",
 			applicantID: 1,
 			limit:       10,
 			offset:      0,
@@ -1823,19 +1820,23 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					Return([]entity.Resume{
 						{
 							ID:               1,
-							ApplicantID:      1,
+							Title:            "Backend Developer",
+							EmployerID:       100,
 							SpecializationID: 1,
 							Profession:       "Backend Developer",
 							CreatedAt:        now,
 							UpdatedAt:        now,
+							City:             "Москва",
 						},
 						{
 							ID:               2,
-							ApplicantID:      1,
+							Title:            "Frontend Developer",
+							EmployerID:       101,
 							SpecializationID: 2,
 							Profession:       "Frontend Developer",
 							CreatedAt:        now.Add(-time.Hour),
 							UpdatedAt:        now.Add(-time.Hour),
+							City:             "Санкт-Петербург",
 						},
 					}, nil)
 
@@ -1888,7 +1889,7 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					}, nil).
 					Times(2)
 			},
-			expectedResult: []dto.ResumeShortResponse{
+			expectedResult: []dto.VacancyShortResponse{
 				{
 					ID:             1,
 					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов", Email: "ivan@example.com"},
@@ -1896,16 +1897,8 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					Profession:     "Backend Developer",
 					CreatedAt:      now.Format(time.RFC3339),
 					UpdatedAt:      now.Format(time.RFC3339),
-					WorkExperience: dto.WorkExperienceShort{
-						ID:           1,
-						EmployerName: "Яндекс",
-						Position:     "Разработчик",
-						Duties:       "Разработка сервисов",
-						Achievements: "Оптимизация запросов",
-						StartDate:    startDate.Format("2006-01-02"),
-						EndDate:      endDate.Format("2006-01-02"),
-						UntilNow:     false,
-					},
+					City:           "Москва",
+					Responded:      true,
 				},
 				{
 					ID:             2,
@@ -1914,21 +1907,14 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					Profession:     "Frontend Developer",
 					CreatedAt:      now.Add(-time.Hour).Format(time.RFC3339),
 					UpdatedAt:      now.Add(-time.Hour).Format(time.RFC3339),
-					WorkExperience: dto.WorkExperienceShort{
-						ID:           2,
-						EmployerName: "Google",
-						Position:     "Инженер",
-						Duties:       "Разработка интерфейсов",
-						Achievements: "Улучшение UX",
-						StartDate:    startDate.Format("2006-01-02"),
-						UntilNow:     true,
-					},
+					City:           "Санкт-Петербург",
+					Responded:      false,
 				},
 			},
 			expectedErr: nil,
 		},
 		{
-			name:        "Резюме без специализации и опыта работы",
+			name:        "Вакансия без специализации",
 			applicantID: 2,
 			limit:       10,
 			offset:      0,
@@ -1958,7 +1944,7 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 						Email:     "petr@example.com",
 					}, nil)
 			},
-			expectedResult: []dto.ResumeShortResponse{
+			expectedResult: []dto.VacancyShortResponse{
 				{
 					ID:         3,
 					Applicant:  &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров", Email: "petr@example.com"},
@@ -1970,7 +1956,7 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "Ошибка при получении списка резюме",
+			name:        "Ошибка при получении вакансий",
 			applicantID: 3,
 			limit:       10,
 			offset:      0,
@@ -1979,17 +1965,17 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					GetAllResumesByApplicantID(gomock.Any(), 3, 10, 0).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении списка резюме"),
+						fmt.Errorf("ошибка при получении вакансий"),
 					))
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("ошибка при получении списка резюме"),
+				fmt.Errorf("ошибка при получении вакансий"),
 			),
 		},
 		{
-			name:        "Ошибка при получении специализации (пропускаем резюме)",
+			name:        "Ошибка при получении специализации (пропускаем вакансию)",
 			applicantID: 4,
 			limit:       10,
 			offset:      0,
@@ -1999,7 +1985,6 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					Return([]entity.Resume{
 						{
 							ID:               4,
-							ApplicantID:      4,
 							SpecializationID: 1,
 							Profession:       "DevOps Engineer",
 							CreatedAt:        now,
@@ -2007,7 +1992,7 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 						},
 					}, nil)
 
-				spr.EXPECT().
+				sr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
@@ -2035,7 +2020,7 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "Ошибка при получении опыта работы (пропускаем опыт)",
+			name:        "Ошибка при проверке отклика",
 			applicantID: 5,
 			limit:       10,
 			offset:      0,
@@ -2057,11 +2042,11 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Specialization{ID: 1, Name: "Data Science"}, nil)
 
-				rr.EXPECT().
-					GetWorkExperienceByResumeID(gomock.Any(), 5).
-					Return(nil, entity.NewError(
+				vr.EXPECT().
+					ResponseExists(gomock.Any(), 5, 5).
+					Return(false, entity.NewError(
 						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении опыта работы"),
+						fmt.Errorf("ошибка при проверке отклика"),
 					))
 
 				am.EXPECT().
@@ -2095,8 +2080,33 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 					GetAllResumesByApplicantID(gomock.Any(), 6, 10, 0).
 					Return([]entity.Resume{}, nil)
 			},
-			expectedResult: []dto.ResumeShortResponse{},
-			expectedErr:    nil,
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при проверке отклика"),
+			),
+		},
+		{
+			name:        "Неавторизованный пользователь (responded=false)",
+			applicantID: 0,
+			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+				vr.EXPECT().
+					GetVacanciesByApplicantID(gomock.Any(), 0).
+					Return([]entity.Vacancy{
+						{
+							ID: 6,
+						},
+					}, nil)
+
+				// ResponseExists не должен вызываться для applicantID=0
+			},
+			expectedResult: []dto.VacancyShortResponse{
+				{
+					ID:        6,
+					Responded: false,
+				},
+			},
+			expectedErr: nil,
 		},
 	}
 
@@ -2108,7 +2118,7 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockVacancyRepo := mock.NewMockVacancyRepository(ctrl)
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockApplicant := m.NewMockApplicant(ctrl)
 			mockSkillRepo := mock.NewMockSkillRepository(ctrl)

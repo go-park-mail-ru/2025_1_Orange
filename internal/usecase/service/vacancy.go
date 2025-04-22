@@ -1099,7 +1099,7 @@ func (vs *VacanciesService) GetLikedVacancies(ctx context.Context, applicantID i
 	return response, nil
 }
 
-func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]dto.VacancyShortResponse, error) {
+func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -1130,8 +1130,8 @@ func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, 
 		}
 
 		responded := false
-		if employerID != 0 {
-			responded, err = vs.vacanciesRepository.ResponseExists(ctx, vacancy.ID, employerID)
+		if userRole == "applicant" && userID != 0 {
+			responded, err = vs.vacanciesRepository.ResponseExists(ctx, vacancy.ID, userID)
 			if err != nil {
 				return nil, err
 			}

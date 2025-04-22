@@ -59,9 +59,10 @@ type WorkExperienceDTO struct {
 	Position     string `json:"position" valid:"required,stringlength(2|50)"`
 	Duties       string `json:"duties" valid:"stringlength(5|250),optional"`
 	Achievements string `json:"achievements" valid:"stringlength(0|1000),optional"`
-	StartDate    string `json:"start_date" valid:"required,date_iso"`
-	EndDate      string `json:"end_date" valid:"date_iso,optional"`
-	UntilNow     bool   `json:"until_now" valid:"optional"`
+
+	StartDate string `json:"start_date" valid:"required,date_iso"`
+	EndDate   string `json:"end_date" valid:"date_iso,optional"`
+	UntilNow  bool   `json:"until_now" valid:"optional"`
 }
 
 type ResumeResponse struct {
@@ -94,14 +95,15 @@ type WorkExperienceResponse struct {
 
 // Updated UpdateResumeRequest - similar changes as CreateResumeRequest
 type UpdateResumeRequest struct {
-	AboutMe                   string               `json:"about_me" valid:"stringlength(10|500), optional"`
-	Specialization            string               `json:"specialization" valid:"required,stringlength(3|30)"`
-	Education                 entity.EducationType `json:"education" valid:"required,in(secondary_school|incomplete_higher|higher|bachelor|master|phd)"`
-	EducationalInstitution    string               `json:"educational_institution" valid:"required,stringlength(3|50)"`
-	GraduationYear            string               `json:"graduation_year" valid:"required,customYearValidation"`
-	Skills                    []string             `json:"skills" valid:"optional"`
-	AdditionalSpecializations []string             `json:"additional_specializations" valid:"optional"`
-	WorkExperiences           []WorkExperienceDTO  `json:"work_experiences" valid:"optional"`
+	AboutMe                string               `json:"about_me" valid:"stringlength(10|500), optional"`
+	Specialization         string               `json:"specialization" valid:"required,stringlength(3|30)"`
+	Education              entity.EducationType `json:"education" valid:"required,in(secondary_school|incomplete_higher|higher|bachelor|master|phd)"`
+	EducationalInstitution string               `json:"educational_institution" valid:"required,stringlength(3|50)"`
+
+	GraduationYear            string              `json:"graduation_year" valid:"required,customYearValidation"`
+	Skills                    []string            `json:"skills" valid:"optional"`
+	AdditionalSpecializations []string            `json:"additional_specializations" valid:"optional"`
+	WorkExperiences           []WorkExperienceDTO `json:"work_experiences" valid:"optional"`
 }
 
 type DeleteResumeResponse struct {

@@ -107,19 +107,16 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID int
+	var userID int = 0
+	var userRole string
 
 	cookie, err := r.Cookie("session_id")
 	if err == nil && cookie != nil {
-		currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		currentUserID, currenyUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 		if err == nil {
 			userID = currentUserID
+			userRole = currenyUserRole
 		}
-	}
-
-	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
 	}
 
 	idStr := r.PathValue("id")
@@ -129,7 +126,7 @@ func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vacancy, err := h.vacancy.GetVacancy(ctx, vacancyID, userID)
+	vacancy, err := h.vacancy.GetVacancy(ctx, vacancyID, userID, userRole)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -268,16 +265,18 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 
 	var userID int
+	var userRole string
 
 	cookie, err := r.Cookie("session_id")
 	if err == nil && cookie != nil {
-		currentUserID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 		if err == nil {
 			userID = currentUserID
+			userRole = currentUserRole
 		}
 	}
 
-	vacancies, err := h.vacancy.GetAll(ctx, userID)
+	vacancies, err := h.vacancy.GetAll(ctx, userID, userRole)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

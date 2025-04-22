@@ -336,6 +336,9 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	var userID int = 0
+	var userRole string
+
 	idStr := r.PathValue("id")
 	employerID, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -343,7 +346,16 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 		return
 	}
 
-	vacancies, err := h.vacancy.GetActiveVacanciesByEmployerID(ctx, employerID)
+	cookie, err := r.Cookie("session_id")
+	if err == nil && cookie != nil {
+		currentUserID, currenyUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+			userRole = currenyUserRole
+		}
+	}
+
+	vacancies, err := h.vacancy.GetActiveVacanciesByEmployerID(ctx, employerID, userID, userRole)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

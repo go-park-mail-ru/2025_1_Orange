@@ -3,7 +3,6 @@ package entity
 import (
 	"fmt"
 	"time"
-	"unicode/utf8"
 )
 
 type EducationType string
@@ -53,13 +52,6 @@ func (r *Resume) Validate() error {
 		)
 	}
 
-	if r.AboutMe != "" && utf8.RuneCountInString(r.AboutMe) > 2000 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("информация о себе не может быть длиннее 2000 символов"),
-		)
-	}
-
 	if r.SpecializationID < 0 {
 		return NewError(
 			ErrBadRequest,
@@ -71,34 +63,6 @@ func (r *Resume) Validate() error {
 }
 
 func (w *WorkExperience) Validate() error {
-	if utf8.RuneCountInString(w.EmployerName) > 64 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("название работодателя не может быть длиннее 64 символов"),
-		)
-	}
-
-	if utf8.RuneCountInString(w.Position) > 64 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("должность не может быть длиннее 64 символов"),
-		)
-	}
-
-	if w.Duties != "" && utf8.RuneCountInString(w.Duties) > 1000 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("обязанности не могут быть длиннее 1000 символов"),
-		)
-	}
-
-	if w.Achievements != "" && utf8.RuneCountInString(w.Achievements) > 1000 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("достижения не могут быть длиннее 1000 символов"),
-		)
-	}
-
 	if !w.UntilNow && !w.EndDate.IsZero() && w.EndDate.Before(w.StartDate) {
 		return NewError(
 			ErrBadRequest,

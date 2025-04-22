@@ -135,7 +135,7 @@ func (s *VacanciesService) CreateVacancy(ctx context.Context, employerID int, re
 	return response, nil
 }
 
-func (vs *VacanciesService) GetVacancy(ctx context.Context, id, currentUserID int) (*dto.VacancyResponse, error) {
+func (vs *VacanciesService) GetVacancy(ctx context.Context, id, currentUserID int, userRole string) (*dto.VacancyResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -163,7 +163,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id, currentUserID in
 	}
 
 	responded := false
-	if currentUserID != 0 {
+	if userRole == "applicant" && currentUserID != 0 {
 		responded, err = vs.vacanciesRepository.ResponseExists(ctx, vacancy.ID, currentUserID)
 		if err != nil {
 			return nil, err
@@ -366,7 +366,7 @@ func (vs *VacanciesService) DeleteVacancy(ctx context.Context, id int, employerI
 	}, nil
 }
 
-func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int) ([]dto.VacancyShortResponse, error) {
+func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRole string) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -396,7 +396,7 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int) ([]dto
 		}
 
 		responded := false
-		if currentUserID != 0 {
+		if userRole == "applicant" && currentUserID != 0 {
 			responded, err = s.vacanciesRepository.ResponseExists(ctx, vacancy.ID, currentUserID)
 			if err != nil {
 				return nil, err

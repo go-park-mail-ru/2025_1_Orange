@@ -11,23 +11,24 @@ import (
 func init() {
 	govalidator.CustomTypeTagMap.Set("customYearValidation", func(i interface{}, _ interface{}) bool {
 		dateStr, ok := i.(string)
-		if !ok || dateStr == "" {
+		if !ok {
 			return false
 		}
-
-		var year int
 
 		// Пробуем распарсить как полную дату
 		if t, err := time.Parse("2006-01-02", dateStr); err == nil {
-			year = t.Year()
-		} else if y, err := strconv.Atoi(dateStr); err == nil { // Пробуем распарсить как просто год
-			year = y
-		} else {
-			return false
+			year := t.Year()
+			currentYear := time.Now().Year()
+			return year >= (currentYear-50) && year <= (currentYear+5)
 		}
 
-		currentYear := time.Now().Year()
-		return year >= (currentYear-50) && year <= (currentYear+5)
+		// Пробуем распарсить как просто год
+		if year, err := strconv.Atoi(dateStr); err == nil {
+			currentYear := time.Now().Year()
+			return year >= (currentYear-50) && year <= (currentYear+5)
+		}
+
+		return false
 	})
 
 	// Регистрируем кастомный валидатор для формата даты YYYY-MM-DD
@@ -42,12 +43,12 @@ func init() {
 	}))
 }
 
+// Updated CreateResumeRequest - removed applicant_id, changed specialization and skills to strings
 type CreateResumeRequest struct {
-	AboutMe                   string               `json:"about_me" valid:"stringlength(10|500),optional"`
-	Specialization            string               `json:"specialization" valid:"required,stringlength(3|30)"`
-	Profession                string               `json:"profession" valid:"required,stringlength(3|50)"`
+	AboutMe                   string               `json:"about_me" valid:"length(0|2000), optional"`
+	Specialization            string               `json:"specialization" valid:"required,length(1|128)"`
 	Education                 entity.EducationType `json:"education" valid:"required,in(secondary_school|incomplete_higher|higher|bachelor|master|phd)"`
-	EducationalInstitution    string               `json:"educational_institution" valid:"required,stringlength(3|50)"`
+	EducationalInstitution    string               `json:"educational_institution" valid:"required,length(1|256)"`
 	GraduationYear            string               `json:"graduation_year" valid:"required,customYearValidation"`
 	Skills                    []string             `json:"skills" valid:"optional"`
 	AdditionalSpecializations []string             `json:"additional_specializations" valid:"optional"`
@@ -55,14 +56,13 @@ type CreateResumeRequest struct {
 }
 
 type WorkExperienceDTO struct {
-	EmployerName string `json:"employer_name" valid:"required,stringlength(2|50)"`
-	Position     string `json:"position" valid:"required,stringlength(2|50)"`
-	Duties       string `json:"duties" valid:"stringlength(5|250),optional"`
-	Achievements string `json:"achievements" valid:"stringlength(0|1000),optional"`
-
-	StartDate string `json:"start_date" valid:"required,date_iso"`
-	EndDate   string `json:"end_date" valid:"date_iso,optional"`
-	UntilNow  bool   `json:"until_now" valid:"optional"`
+	EmployerName string `json:"employer_name" valid:"required,length(1|64)"`
+	Position     string `json:"position" valid:"required,length(1|64)"`
+	Duties       string `json:"duties" valid:"length(0|1000),optional"`
+	Achievements string `json:"achievements" valid:"length(0|1000),optional"`
+	StartDate    string `json:"start_date" valid:"required,date_iso"`
+	EndDate      string `json:"end_date" valid:"date_iso,optional"`
+	UntilNow     bool   `json:"until_now" valid:"optional"`
 }
 
 type ResumeResponse struct {
@@ -95,11 +95,10 @@ type WorkExperienceResponse struct {
 
 // Updated UpdateResumeRequest - similar changes as CreateResumeRequest
 type UpdateResumeRequest struct {
-	AboutMe                   string               `json:"about_me" valid:"stringlength(10|500), optional"`
-	Specialization            string               `json:"specialization" valid:"required,stringlength(3|30)"`
-	Profession                string               `json:"profession" valid:"required,stringlength(3|50)"`
+	AboutMe                   string               `json:"about_me" valid:"length(0|2000), optional"`
+	Specialization            string               `json:"specialization" valid:"required,length(1|128)"`
 	Education                 entity.EducationType `json:"education" valid:"required,in(secondary_school|incomplete_higher|higher|bachelor|master|phd)"`
-	EducationalInstitution    string               `json:"educational_institution" valid:"required,stringlength(3|50)"`
+	EducationalInstitution    string               `json:"educational_institution" valid:"required,length(1|256)"`
 	GraduationYear            string               `json:"graduation_year" valid:"required,customYearValidation"`
 	Skills                    []string             `json:"skills" valid:"optional"`
 	AdditionalSpecializations []string             `json:"additional_specializations" valid:"optional"`

@@ -3,7 +3,6 @@ package entity
 import (
 	"fmt"
 	"time"
-	"unicode/utf8"
 )
 
 type ApplicantStatus string
@@ -37,46 +36,6 @@ type Applicant struct {
 	UpdatedAt    time.Time       `db:"updated_at"`
 }
 
-func ValidateFirstName(firstName string) error {
-	if utf8.RuneCountInString(firstName) > 30 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("имя не может быть длиннее 30 символов"),
-		)
-	}
-	return nil
-}
-
-func ValidateLastName(lastName string) error {
-	if utf8.RuneCountInString(lastName) > 30 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("фамилия не может быть длиннее 30 символов"),
-		)
-	}
-	return nil
-}
-
-func ValidateMiddleName(middleName string) error {
-	if middleName != "" && utf8.RuneCountInString(middleName) > 30 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("отчество не может быть длиннее 30 символов"),
-		)
-	}
-	return nil
-}
-
-func ValidateSex(sex string) error {
-	if sex != "" && !(sex == "M" || sex == "F") {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("пол должен быть 'M' или 'F'"),
-		)
-	}
-	return nil
-}
-
 func ValidateStatus(status string) error {
 	if !validStatus(status) {
 		return NewError(
@@ -97,16 +56,6 @@ func validStatus(status string) bool {
 		return true
 	}
 	return false
-}
-
-func ValidateQuote(quote string) error {
-	if utf8.RuneCountInString(quote) > 255 {
-		return NewError(
-			ErrBadRequest,
-			fmt.Errorf("цитата не может быть длиннее 255 символов"),
-		)
-	}
-	return nil
 }
 
 func ValidateBirthDate(birthDate time.Time) error {

@@ -2,6 +2,7 @@ package app
 
 import (
 	"ResuMatch/internal/config"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository/postgres"
 	"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/server"
@@ -10,6 +11,10 @@ import (
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
 	"net/http"
+
+	//"runtime/metrics"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func Init(cfg *config.Config) *server.Server {
@@ -121,10 +126,10 @@ func Init(cfg *config.Config) *server.Server {
 	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 
-	// Server Init
-	srv := server.NewServer(cfg)
+	metrics := metrics.NewMetrics("ResuMatch")
 
-	// Router config
+	srv := server.NewServer(cfg, metrics)
+
 	srv.SetupRoutes(func(r *http.ServeMux) {
 		authHandler.Configure(r)
 		applicantHandler.Configure(r)
@@ -134,4 +139,25 @@ func Init(cfg *config.Config) *server.Server {
 	})
 
 	return srv
+}
+
+func PrometheusHandler() http.Handler {
+	return promhttp.Handler()
+}
+
+type responseRecorder struct {
+	http.ResponseWriter
+	statusCode int
+	size       int
+}
+
+func (r *responseRecorder) WriteHeader(status int) {
+	r.statusCode = status
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func (r *responseRecorder) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.size += size
+	return size, err
 }

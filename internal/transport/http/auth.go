@@ -22,6 +22,7 @@ func NewAuthHandler(auth usecase.Auth, cfg config.CSRFConfig) AuthHandler {
 
 func (h *AuthHandler) Configure(r *http.ServeMux) {
 	authMux := http.NewServeMux()
+
 	authMux.HandleFunc("GET /isAuth", h.IsAuth)
 	authMux.HandleFunc("POST /logout", h.Logout)
 	authMux.HandleFunc("POST /logoutAll", h.LogoutAll)

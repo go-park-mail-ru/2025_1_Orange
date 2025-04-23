@@ -29,6 +29,7 @@ func NewVacancyHandler(auth usecase.Auth, vac usecase.Vacancy, cfg config.CSRFCo
 
 func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux := http.NewServeMux()
+
 	vacancyMux.HandleFunc("GET /vacancies", h.GetAllVacancies)
 	vacancyMux.HandleFunc("POST /vacancies", h.CreateVacancy)
 	vacancyMux.HandleFunc("GET /vacancy/{id}", h.GetVacancy)

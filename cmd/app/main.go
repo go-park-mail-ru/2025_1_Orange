@@ -3,6 +3,8 @@ package main
 import (
 	"ResuMatch/internal/app"
 	"ResuMatch/internal/config"
+
+	//"ResuMatch/internal/metrics"
 	l "ResuMatch/pkg/logger"
 	"errors"
 	"net/http"
@@ -28,6 +30,7 @@ func main() {
 		l.Log.Fatalf("Failed to load config: %v", err)
 	}
 
+	//metrics := metrics.NewMetrics("ResuMatch")
 	// 2. Инициализация приложения
 	srv := app.Init(cfg)
 

@@ -1,163 +1,127 @@
 {
 	"info": {
-		"_postman_id": "bfee835e-a701-4310-84a3-557a343ab83c",
-		"name": "resumatch",
+		"_postman_id": "a1b2c3d4-e5f6-7890-1234-5678abcdef",
+		"name": "Vacancy API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "37173509"
+		"_exporter_id": "12345678"
 	},
 	"item": [
 		{
-			"name": "applicant",
+			"name": "Vacancies",
 			"item": [
 				{
-					"name": "register",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"aboba@mail.ru\",\r\n    \"password\": \"qwerR01_#kdqo!\",\r\n    \"first_name\": \"Тестовый\",\r\n    \"last_name\": \"Пользователь\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/applicant/register",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"applicant",
-								"register"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "login",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"aboba@mail.ru\",\r\n    \"password\": \"qwerR01_#kdqo!\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/applicant/login",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"applicant",
-								"login"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "profile",
+					"name": "Get All Vacancies",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "session_id={{session_id}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "http://localhost:8000/api/v1/applicant/profile/1",
+							"raw": "{{base_url}}/vacancies",
 							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"applicant",
-								"profile",
-								"1"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["vacancies"]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "avatar",
+					"name": "Create Vacancy",
 					"request": {
 						"method": "POST",
 						"header": [
 							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "session_id={{session_id}}",
+								"type": "text"
+							},
+							{
 								"key": "X-CSRF-Token",
-								"value": "",
+								"value": "{{csrf_token}}",
 								"type": "text"
 							}
 						],
 						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "avatar",
-									"type": "file",
-									"src": []
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Backend Developer\",\n    \"specialization\": \"IT\",\n    \"work_format\": \"remote\",\n    \"employment\": \"full\",\n    \"schedule\": \"flexible\",\n    \"working_hours\": 40,\n    \"salary_from\": 100000,\n    \"salary_to\": 150000,\n    \"taxes_included\": \"net\",\n    \"experience\": 3,\n    \"city\": [\"Москва\", \"Санкт-Петербург\"],\n    \"skills\": [\"Go\", \"PostgreSQL\", \"Docker\"],\n    \"description\": \"Ищем опытного разработчика...\",\n    \"tasks\": \"Разработка API...\",\n    \"requirements\": \"Опыт от 3 лет...\",\n    \"optional_requirements\": \"Знание Kubernetes...\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
 								}
-							]
+							}
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/v1/applicant/avatar",
+							"raw": "{{base_url}}/vacancies",
 							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"applicant",
-								"avatar"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["vacancies"]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "profile",
+					"name": "Get Vacancy by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "session_id={{session_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/vacancy/1",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["vacancy", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Vacancy",
 					"request": {
 						"method": "PUT",
 						"header": [
 							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "session_id={{session_id}}",
+								"type": "text"
+							},
+							{
 								"key": "X-CSRF-Token",
-								"value": "",
+								"value": "{{csrf_token}}",
 								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"last_name\": \"Нагапетян\",\r\n    \"first_name\": \"Валерий\",\r\n    \"quote\": \"лежит груша нельзя можно\"\r\n}",
+							"raw": "{\n    \"title\": \"Updated Backend Position\",\n    \"salary_to\": 160000,\n    \"description\": \"Обновленное описание\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -165,320 +129,89 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/v1/applicant/profile",
+							"raw": "{{base_url}}/vacancy/1",
 							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"applicant",
-								"profile"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["vacancy", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Vacancy",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "session_id={{session_id}}",
+								"type": "text"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/vacancy/1",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["vacancy", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Apply to Vacancy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "session_id={{session_id}}",
+								"type": "text"
+							},
+							{
+								"key": "X-CSRF-Token",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/vacancy/1/response",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["vacancy", "1", "response"]
 						}
 					},
 					"response": []
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
 		},
 		{
-			"name": "employer",
-			"item": [
-				{
-					"name": "login",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"valery.b@mail.ru\",\r\n    \"password\": \"qwerR01_#kdqo!\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/employer/login",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"employer",
-								"login"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "register",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"valery.b@mail.ru\",\r\n    \"password\": \"qwerR01_#kdqo!\",\r\n    \"company_name\": \"Вк\",\r\n    \"legal_address\": \"Москва\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/employer/register",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"employer",
-								"register"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "profile",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/api/v1/employer/profile/1",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"employer",
-								"profile",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "profile",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"slogan\": \"Что разум человека может постигнуть и во что он может поверить, того он способен достичь.\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/employer/profile",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"employer",
-								"profile"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "logo",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "logo",
-									"type": "file",
-									"src": []
-								}
-							]
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/employer/logo",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"employer",
-								"logo"
-							]
-						}
-					},
-					"response": []
-				}
-			]
+			"key": "session_id",
+			"value": ""
 		},
 		{
-			"name": "auth",
-			"item": [
-				{
-					"name": "isAuth",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/api/v1/auth/isAuth",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"isAuth"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "logout",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:8000/api/v1/auth/logout",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"logout"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "logoutAll",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:8000/api/v1/auth/logoutAll",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"logoutAll"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "emailExists",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-CSRF-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"email\" : \"djdjdjw@mail.ru\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/auth/emailExists",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"emailExists"
-							]
-						}
-					},
-					"response": []
-				}
-			]
+			"key": "csrf_token",
+			"value": ""
 		}
 	]
 }

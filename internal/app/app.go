@@ -141,7 +141,9 @@ func Init(cfg *config.Config) *server.Server {
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
 	employerService := service.NewEmployerService(employerRepo, staticRepo)
-	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
+
+	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
+	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo)
 >>>>>>> b8e1fb1 (Fix vacancy)
 

@@ -117,21 +117,7 @@ type ResumeShortResponse struct {
 	ApplicantID    int                       `json:"applicant_id,omitempty"` // Keep for backward compatibility
 	Applicant      *ApplicantProfileResponse `json:"applicant"`              // Add applicant information
 	Specialization string                    `json:"specialization"`
-	Profession     string                    `json:"profession"`
-	WorkExperience WorkExperienceShort       `json:"work_experiences"`
-	CreatedAt      string                    `json:"created_at"`
-	UpdatedAt      string                    `json:"updated_at"`
-}
-
-// Добавляем новое DTO для вывода списка резюме соискателя с навыками
-type ResumeApplicantShortResponse struct {
-	ID             int                       `json:"id"`
-	ApplicantID    int                       `json:"applicant_id,omitempty"`
-	Applicant      *ApplicantProfileResponse `json:"applicant"`
-	Skills         []string                  `json:"skills"` // Добавлено поле навыков
-	Specialization string                    `json:"specialization"`
-	Profession     string                    `json:"profession"`
-	WorkExperience WorkExperienceShort       `json:"work_experiences"`
+	WorkExperience WorkExperienceShort       `json:"work_experience"`
 	CreatedAt      string                    `json:"created_at"`
 	UpdatedAt      string                    `json:"updated_at"`
 }

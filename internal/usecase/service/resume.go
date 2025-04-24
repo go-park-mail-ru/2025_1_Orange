@@ -750,16 +750,16 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 		return nil, err
 	}
 
-	// // Get applicant information once since all resumes belong to the same applicant
-	// applicantDTO, err := s.applicantService.GetUser(ctx, applicantID)
-	// if err != nil {
-	// 	l.Log.WithFields(logrus.Fields{
-	// 		"requestID":   requestID,
-	// 		"applicantID": applicantID,
-	// 		"error":       err,
-	// 	}).Error("ошибка при получении информации о соискателе")
-	// 	return nil, err
-	// }
+	// Get applicant information once since all resumes belong to the same applicant
+	applicantDTO, err := s.applicantService.GetUser(ctx, applicantID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":   requestID,
+			"applicantID": applicantID,
+			"error":       err,
+		}).Error("ошибка при получении информации о соискателе")
+		return nil, err
+	}
 
 	// Build response
 	response := make([]dto.ResumeApplicantShortResponse, 0, len(resumes))
@@ -824,7 +824,6 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 		shortResume := dto.ResumeApplicantShortResponse{
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
-			Skills:         skillNames,
 			Specialization: specializationName,
 			Profession:     resume.Profession,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),

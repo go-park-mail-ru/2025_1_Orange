@@ -14,21 +14,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Add the required dependencies to the ResumeService struct
 type ResumeService struct {
 	resumeRepository         repository.ResumeRepository
 	skillRepository          repository.SkillRepository
 	specializationRepository repository.SpecializationRepository
+	applicantRepository      repository.ApplicantRepository
+	applicantService         usecase.Applicant
 }
 
+// Update the constructor to include the new dependencies
 func NewResumeService(
 	resumeRepo repository.ResumeRepository,
 	skillRepo repository.SkillRepository,
 	specializationRepo repository.SpecializationRepository,
+	applicantRepo repository.ApplicantRepository,
+	applicantService usecase.Applicant,
 ) usecase.ResumeUsecase {
 	return &ResumeService{
 		resumeRepository:         resumeRepo,
 		skillRepository:          skillRepo,
 		specializationRepository: specializationRepo,
+		applicantRepository:      applicantRepo,
+		applicantService:         applicantService,
 	}
 }
 
@@ -663,10 +671,33 @@ func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, 
 			continue
 		}
 
+		// // Get applicant information
+		// applicantProfile, err := s.applicantRepository.GetApplicantByID(ctx, resume.ApplicantID)
+		// if err != nil {
+		// 	l.Log.WithFields(logrus.Fields{
+		// 		"requestID":   requestID,
+		// 		"resumeID":    resume.ID,
+		// 		"applicantID": resume.ApplicantID,
+		// 		"error":       err,
+		// 	}).Error("ошибка при получении информации о соискателе")
+		// 	continue
+		// }
+		// Convert applicant entity to DTO
+		applicantDTO, err := s.applicantService.GetUser(ctx, resume.ApplicantID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    resume.ID,
+				"applicantID": resume.ApplicantID,
+				"error":       err,
+			}).Error("ошибка при конвертации соискателя в DTO")
+			continue
+		}
+
 		// Create short resume response
 		shortResume := dto.ResumeShortResponse{
 			ID:             resume.ID,
-			ApplicantID:    resume.ApplicantID,
+			Applicant:      applicantDTO,
 			Specialization: specializationName,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
@@ -713,6 +744,17 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 		return nil, err
 	}
 
+	// Get applicant information once since all resumes belong to the same applicant
+	applicantDTO, err := s.applicantService.GetUser(ctx, applicantID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":   requestID,
+			"applicantID": applicantID,
+			"error":       err,
+		}).Error("ошибка при получении информации о соискателе")
+		return nil, err
+	}
+
 	// Build response
 	response := make([]dto.ResumeShortResponse, 0, len(resumes))
 	for _, resume := range resumes {
@@ -746,7 +788,7 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 		// Create short resume response
 		shortResume := dto.ResumeShortResponse{
 			ID:             resume.ID,
-			ApplicantID:    resume.ApplicantID,
+			Applicant:      applicantDTO,
 			Specialization: specializationName,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),

@@ -112,12 +112,13 @@ type DeleteResumeResponse struct {
 
 // New DTO for resume list
 type ResumeShortResponse struct {
-	ID             int                 `json:"id"`
-	ApplicantID    int                 `json:"applicant_id"`
-	Specialization string              `json:"specialization"`
-	WorkExperience WorkExperienceShort `json:"work_experiences"`
-	CreatedAt      string              `json:"created_at"`
-	UpdatedAt      string              `json:"updated_at"`
+	ID             int                       `json:"id"`
+	ApplicantID    int                       `json:"applicant_id,omitempty"` // Keep for backward compatibility
+	Applicant      *ApplicantProfileResponse `json:"applicant"`              // Add applicant information
+	Specialization string                    `json:"specialization"`
+	WorkExperience WorkExperienceShort       `json:"work_experience"`
+	CreatedAt      string                    `json:"created_at"`
+	UpdatedAt      string                    `json:"updated_at"`
 }
 
 type WorkExperienceShort struct {

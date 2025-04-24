@@ -11,24 +11,23 @@ import (
 func init() {
 	govalidator.CustomTypeTagMap.Set("customYearValidation", func(i interface{}, _ interface{}) bool {
 		dateStr, ok := i.(string)
-		if !ok {
+		if !ok || dateStr == "" {
 			return false
 		}
 
+		var year int
+
 		// Пробуем распарсить как полную дату
 		if t, err := time.Parse("2006-01-02", dateStr); err == nil {
-			year := t.Year()
-			currentYear := time.Now().Year()
-			return year >= (currentYear-50) && year <= (currentYear+5)
+			year = t.Year()
+		} else if y, err := strconv.Atoi(dateStr); err == nil { // Пробуем распарсить как просто год
+			year = y
+		} else {
+			return false
 		}
 
-		// Пробуем распарсить как просто год
-		if year, err := strconv.Atoi(dateStr); err == nil {
-			currentYear := time.Now().Year()
-			return year >= (currentYear-50) && year <= (currentYear+5)
-		}
-
-		return false
+		currentYear := time.Now().Year()
+		return year >= (currentYear-50) && year <= (currentYear+5)
 	})
 
 	// Регистрируем кастомный валидатор для формата даты YYYY-MM-DD

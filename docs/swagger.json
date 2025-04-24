@@ -796,6 +796,309 @@
                     }
                 }
             }
+        },
+        "/resume/all": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Возвращает список резюме. Для соискателей возвращает только их собственные резюме. Для других ролей - все резюме. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resume"
+                ],
+                "summary": "Получение всех резюме",
+                "responses": {
+                    "200": {
+                        "description": "Список резюме",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResumeShortResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/resume/create": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Создает новое резюме для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resume"
+                ],
+                "summary": "Создание нового резюме",
+                "parameters": [
+                    {
+                        "description": "Данные для создания резюме",
+                        "name": "resumeData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateResumeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Созданное резюме",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателей)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/resume/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Возвращает полную информацию о резюме по его ID. Доступно всем авторизованным пользователям.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resume"
+                ],
+                "summary": "Получение резюме по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID резюме",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о резюме",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Резюме не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    },
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Обновляет информацию о резюме. Доступно только владельцу резюме (соискателю). Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resume"
+                ],
+                "summary": "Обновление резюме",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID резюме",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления",
+                        "name": "updateData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateResumeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Обновленное резюме",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не владелец)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Резюме не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    },
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Удаляет резюме по ID. Доступно только владельцу резюме (соискателю). Требует авторизации и CSRF-токена.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resume"
+                ],
+                "summary": "Удаление резюме",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID резюме",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Результат удаления",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeleteResumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не владелец)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Резюме не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -924,6 +1227,55 @@
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.CreateResumeRequest": {
+            "type": "object",
+            "properties": {
+                "about_me": {
+                    "type": "string"
+                },
+                "additional_specializations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "education": {
+                    "$ref": "#/definitions/entity.EducationType"
+                },
+                "educational_institution": {
+                    "type": "string"
+                },
+                "graduation_year": {
+                    "type": "string"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "work_experiences": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkExperienceDTO"
+                    }
+                }
+            }
+        },
+        "dto.DeleteResumeResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1062,6 +1414,117 @@
                 }
             }
         },
+        "dto.ResumeResponse": {
+            "type": "object",
+            "properties": {
+                "about_me": {
+                    "type": "string"
+                },
+                "additional_specializations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "applicant_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "education": {
+                    "$ref": "#/definitions/entity.EducationType"
+                },
+                "educational_institution": {
+                    "type": "string"
+                },
+                "graduation_year": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "work_experiences": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkExperienceResponse"
+                    }
+                }
+            }
+        },
+        "dto.ResumeShortResponse": {
+            "type": "object",
+            "properties": {
+                "applicant_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "work_experiences": {
+                    "$ref": "#/definitions/dto.WorkExperienceShort"
+                }
+            }
+        },
+        "dto.UpdateResumeRequest": {
+            "type": "object",
+            "properties": {
+                "about_me": {
+                    "type": "string"
+                },
+                "additional_specializations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "education": {
+                    "$ref": "#/definitions/entity.EducationType"
+                },
+                "educational_institution": {
+                    "type": "string"
+                },
+                "graduation_year": {
+                    "type": "string"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "work_experiences": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WorkExperienceDTO"
+                    }
+                }
+            }
+        },
         "dto.UploadStaticResponse": {
             "type": "object",
             "properties": {
@@ -1078,6 +1541,119 @@
                     "type": "string"
                 }
             }
+        },
+        "dto.WorkExperienceDTO": {
+            "type": "object",
+            "required": [
+                "employer_name",
+                "position",
+                "start_date"
+            ],
+            "properties": {
+                "achievements": {
+                    "type": "string"
+                },
+                "duties": {
+                    "type": "string"
+                },
+                "employer_name": {
+                    "type": "string",
+                    "maxLength": 64
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string",
+                    "maxLength": 64
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "until_now": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.WorkExperienceResponse": {
+            "type": "object",
+            "properties": {
+                "achievements": {
+                    "type": "string"
+                },
+                "duties": {
+                    "type": "string"
+                },
+                "employer_name": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "until_now": {
+                    "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.WorkExperienceShort": {
+            "type": "object",
+            "properties": {
+                "achievements": {
+                    "type": "string"
+                },
+                "duties": {
+                    "type": "string"
+                },
+                "employer_name": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "until_now": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "entity.EducationType": {
+            "type": "string",
+            "enum": [
+                "secondary_school",
+                "incomplete_higher",
+                "higher",
+                "bachelor",
+                "master",
+                "phd"
+            ],
+            "x-enum-varnames": [
+                "SecondarySchool",
+                "IncompleteHigher",
+                "Higher",
+                "Bachelor",
+                "Master",
+                "PhD"
+            ]
         },
         "utils.APIError": {
             "type": "object",

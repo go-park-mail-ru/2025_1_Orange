@@ -219,7 +219,7 @@ func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request)
 
 	var applicantDTO dto.ApplicantProfileUpdate
 	if err := json.NewDecoder(r.Body).Decode(&applicantDTO); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 

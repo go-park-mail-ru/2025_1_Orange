@@ -1,13 +1,10 @@
 package entity
 
 import (
-	"fmt"
-	"regexp"
 	"time"
 	_ "unicode/utf8"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/go-playground/validator"
 )
 
 type Vacancy struct {
@@ -116,39 +113,4 @@ type VacancyLike struct {
 type SupplementaryConditions struct {
 	ID   int    `json:"id"`
 	Text string `json:"text"`
-}
-
-func (v *Vacancy) Validate() error {
-	validate := validator.New()
-	if err := v.registerCustomValidators(validate); err != nil {
-		return fmt.Errorf("validator setup failed: %w", err)
-	}
-	return nil
-}
-
-func (v *Vacancy) registerCustomValidators(validate *validator.Validate) error {
-	titleRegex := regexp.MustCompile(`^[а-яА-Яa-zA-Z0-9\s\.,#+\-]+$`)
-	textRegex := regexp.MustCompile(`^[а-яА-Яa-zA-Z0-9\s\.,#+\-]+$`)
-	cityRegex := regexp.MustCompile(`^[а-яА-Яa-zA-Z0-9\s\.,]+$`)
-
-	// Регистрируем кастомные валидаторы
-	if err := validate.RegisterValidation("validTitle", func(fl validator.FieldLevel) bool {
-		return titleRegex.MatchString(fl.Field().String())
-	}); err != nil {
-		return err
-	}
-
-	if err := validate.RegisterValidation("validText", func(fl validator.FieldLevel) bool {
-		return textRegex.MatchString(fl.Field().String())
-	}); err != nil {
-		return err
-	}
-
-	if err := validate.RegisterValidation("validCity", func(fl validator.FieldLevel) bool {
-		return cityRegex.MatchString(fl.Field().String())
-	}); err != nil {
-		return err
-	}
-
-	return nil
 }

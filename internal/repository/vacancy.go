@@ -24,7 +24,6 @@ type VacancyRepository interface {
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error)
 	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
-<<<<<<< HEAD
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int, limit int, offset int) ([]*entity.Vacancy, error)
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]*entity.Vacancy, error)
 	SearchVacancies(ctx context.Context, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
@@ -35,8 +34,4 @@ type VacancyRepository interface {
 	DeleteLike(ctx context.Context, vacancyID, applicantID int) error
 	GetlikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]*entity.Vacancy, error)
 	LikeExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
-=======
-	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error)
-	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*entity.Vacancy, error)
->>>>>>> 49ee829 (Добавил получение активных вакаксий роботодателя и получение вакансий на которые откликнулся соискатель)
 }

@@ -12,10 +12,16 @@ type Vacancy interface {
 	DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error)
 	GetAll(ctx context.Context, currentUserID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error
+<<<<<<< HEAD
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	SearchVacancies(ctx context.Context, userID int, userRole string, searchQuery string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	SearchVacanciesBySpecializations(ctx context.Context, userID int, userRole string, specializations []string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	LikeVacancy(ctx context.Context, vacancyID, applicantID int) error
 	GetLikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]dto.VacancyShortResponse, error)
+=======
+	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error)
+	GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string) ([]dto.VacancyShortResponse, error)
+	SearchVacancies(ctx context.Context, userID int, userRole string, searchQuery string, limit int, offset int) ([]dto.VacancyShortResponse, error)
+>>>>>>> 0adf28b (added vacancy_search)
 }

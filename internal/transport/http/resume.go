@@ -343,6 +343,8 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 // @Summary Получение всех резюме
 // @Description Возвращает список резюме. Для соискателей возвращает только их собственные резюме. Для других ролей - все резюме. Требует авторизации.
 // @Produce json
+// @Param limit query int false "Количество резюме на странице"
+// @Param offset query int false "Смещение от начала списка"
 // @Success 200 {object} dto.ResumeShortResponse "Список резюме"
 // @Failure 401 {object} utils.APIError "Не авторизован"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
@@ -369,18 +371,40 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получаем параметры пагинации из URL
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
 	var resumes []dto.ResumeShortResponse
 
 	if role == "applicant" {
 		// Получаем список всех резюме соискателя
-		resumes, err = h.resume.GetAllResumesByApplicantID(ctx, userID)
+		resumes, err = h.resume.GetAllResumesByApplicantID(ctx, userID, limit, offset)
 		if err != nil {
 			utils.WriteAPIError(w, utils.ToAPIError(err))
 			return
 		}
 	} else {
 		// Получаем список всех резюме
-		resumes, err = h.resume.GetAll(ctx)
+		resumes, err = h.resume.GetAll(ctx, limit, offset)
 		if err != nil {
 			utils.WriteAPIError(w, utils.ToAPIError(err))
 			return

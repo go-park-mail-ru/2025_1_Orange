@@ -1126,7 +1126,7 @@ func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) err
 }
 
 // GetAll получает список всех резюме
-func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) {
+func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([]entity.Resume, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -1136,12 +1136,12 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, profession, created_at, updated_at
-	FROM resume
-	ORDER BY updated_at DESC
-	LIMIT 100
-`
+		FROM resume
+		ORDER BY updated_at DESC
+		LIMIT $1 OFFSET $2
+	`
 
-	rows, err := r.DB.QueryContext(ctx, query)
+	rows, err := r.DB.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
@@ -1208,7 +1208,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 }
 
 // GetAllResumesByApplicantID получает список всех резюме одного соискателя
-func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]entity.Resume, error) {
+func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]entity.Resume, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -1219,13 +1219,13 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, profession, created_at, updated_at
-	FROM resume
-	WHERE applicant_id = $1
-	ORDER BY updated_at DESC
-	LIMIT 100
-`
+		FROM resume
+		WHERE applicant_id = $1
+		ORDER BY updated_at DESC
+		LIMIT $2 OFFSET $3
+	`
 
-	rows, err := r.DB.QueryContext(ctx, query, applicantID)
+	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,

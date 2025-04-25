@@ -26,4 +26,6 @@ type VacancyRepository interface {
 	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error)
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*entity.Vacancy, error)
+	SearchVacancies(ctx context.Context, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
+	SearchVacanciesByEmployerID(ctx context.Context, employerID int, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
 }

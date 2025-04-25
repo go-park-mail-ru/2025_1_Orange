@@ -1136,10 +1136,10 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, profession, created_at, updated_at
-	FROM resume
-	ORDER BY updated_at DESC
-	LIMIT 100
-`
+		FROM resume
+		ORDER BY updated_at DESC
+		LIMIT $1 OFFSET $2
+	`
 
 	rows, err := r.DB.QueryContext(ctx, query, limit, offset)
 	if err != nil {
@@ -1219,11 +1219,11 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, profession, created_at, updated_at
-	FROM resume
-	WHERE applicant_id = $1
-	ORDER BY updated_at DESC
-	LIMIT 100
-`
+		FROM resume
+		WHERE applicant_id = $1
+		ORDER BY updated_at DESC
+		LIMIT $2 OFFSET $3
+	`
 
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {

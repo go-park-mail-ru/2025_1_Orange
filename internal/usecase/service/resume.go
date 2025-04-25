@@ -78,7 +78,7 @@ func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dt
 		Education:              request.Education,
 		EducationalInstitution: request.EducationalInstitution,
 		GraduationYear:         graduationYear,
-		Profession:             request.Profession,
+		Profession:             request.Profession, // Дополнение - добавлено поле профессии
 	}
 
 	// Validate resume
@@ -193,7 +193,7 @@ func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dt
 		ApplicantID:               createdResume.ApplicantID,
 		AboutMe:                   createdResume.AboutMe,
 		Specialization:            specializationName,
-		Profession:                createdResume.Profession,
+		Profession:                createdResume.Profession, // Дополнение - добавлено поле профессии
 		Skills:                    make([]string, 0, len(skills)),
 		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
@@ -297,7 +297,7 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 		ApplicantID:               resume.ApplicantID,
 		AboutMe:                   resume.AboutMe,
 		Specialization:            specializationName,
-		Profession:                resume.Profession,
+		Profession:                resume.Profession, // Дополнение - добавлено поле профессии
 		Skills:                    make([]string, 0, len(skills)),
 		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
@@ -406,7 +406,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, req
 		Education:              request.Education,
 		EducationalInstitution: request.EducationalInstitution,
 		GraduationYear:         graduationYear,
-		Profession:             request.Profession,
+		Profession:             request.Profession, // Дополнение - добавлено поле профессии
 	}
 
 	// Validate resume
@@ -529,7 +529,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, req
 		ApplicantID:               updatedResume.ApplicantID,
 		AboutMe:                   updatedResume.AboutMe,
 		Specialization:            specializationName,
-		Profession:                updatedResume.Profession,
+		Profession:                updatedResume.Profession, // Дополнение - добавлено поле профессии
 		Skills:                    make([]string, 0, len(skills)),
 		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
@@ -704,7 +704,7 @@ func (s *ResumeService) GetAll(ctx context.Context, limit int, offset int) ([]dt
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
 			Specialization: specializationName,
-			Profession:     resume.Profession,
+			Profession:     resume.Profession, // Дополнение - добавлено поле профессии
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
 		}
@@ -825,7 +825,7 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
 			Specialization: specializationName,
-			Profession:     resume.Profession,
+			Profession:     resume.Profession, // Дополнение - добавлено поле профессии
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
 		}

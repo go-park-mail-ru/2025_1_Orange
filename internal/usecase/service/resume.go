@@ -736,7 +736,11 @@ func (s *ResumeService) GetAll(ctx context.Context, limit int, offset int) ([]dt
 }
 
 // GetAll returns a list of all resumes (for applicants)
+<<<<<<< HEAD
 func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.ResumeApplicantShortResponse, error) {
+=======
+func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.ResumeShortResponse, error) {
+>>>>>>> 336f233 (добавил пагинацию в методы списка резюме)
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -750,16 +754,16 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 		return nil, err
 	}
 
-	// Get applicant information once since all resumes belong to the same applicant
-	applicantDTO, err := s.applicantService.GetUser(ctx, applicantID)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID":   requestID,
-			"applicantID": applicantID,
-			"error":       err,
-		}).Error("ошибка при получении информации о соискателе")
-		return nil, err
-	}
+	// // Get applicant information once since all resumes belong to the same applicant
+	// applicantDTO, err := s.applicantService.GetUser(ctx, applicantID)
+	// if err != nil {
+	// 	l.Log.WithFields(logrus.Fields{
+	// 		"requestID":   requestID,
+	// 		"applicantID": applicantID,
+	// 		"error":       err,
+	// 	}).Error("ошибка при получении информации о соискателе")
+	// 	return nil, err
+	// }
 
 	// Build response
 	response := make([]dto.ResumeApplicantShortResponse, 0, len(resumes))
@@ -803,6 +807,7 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 			continue
 		}
 
+<<<<<<< HEAD
 		// Получаем навыки для резюме - добавлено для нового DTO
 		skills, err := s.resumeRepository.GetSkillsByResumeID(ctx, resume.ID)
 		if err != nil {
@@ -820,6 +825,8 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 			skillNames = append(skillNames, skill.Name)
 		}
 
+=======
+>>>>>>> 336f233 (добавил пагинацию в методы списка резюме)
 		// Create short resume response
 		shortResume := dto.ResumeApplicantShortResponse{
 			ID:             resume.ID,

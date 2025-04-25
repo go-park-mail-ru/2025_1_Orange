@@ -65,19 +65,11 @@ definitions:
       email:
         type: string
       first_name:
-        maxLength: 30
         type: string
       last_name:
-        maxLength: 30
         type: string
       password:
-        minLength: 8
         type: string
-    required:
-    - email
-    - first_name
-    - last_name
-    - password
     type: object
   dto.AuthResponse:
     properties:
@@ -122,8 +114,6 @@ definitions:
     properties:
       email:
         type: string
-    required:
-    - email
     type: object
   dto.EmailExistsResponse:
     properties:
@@ -183,20 +173,13 @@ definitions:
   dto.EmployerRegister:
     properties:
       company_name:
-        maxLength: 64
         type: string
       email:
         type: string
       legal_address:
-        maxLength: 255
         type: string
       password:
-        minLength: 8
         type: string
-    required:
-    - company_name
-    - email
-    - password
     type: object
   dto.Login:
     properties:
@@ -204,9 +187,6 @@ definitions:
         type: string
       password:
         type: string
-    required:
-    - email
-    - password
     type: object
   dto.ResumeResponse:
     properties:
@@ -243,7 +223,12 @@ definitions:
     type: object
   dto.ResumeShortResponse:
     properties:
+      applicant:
+        allOf:
+        - $ref: '#/definitions/dto.ApplicantProfileResponse'
+        description: Add applicant information
       applicant_id:
+        description: Keep for backward compatibility
         type: integer
       created_at:
         type: string
@@ -253,7 +238,7 @@ definitions:
         type: string
       updated_at:
         type: string
-      work_experiences:
+      work_experience:
         $ref: '#/definitions/dto.WorkExperienceShort'
     type: object
   dto.UpdateResumeRequest:
@@ -299,21 +284,15 @@ definitions:
       duties:
         type: string
       employer_name:
-        maxLength: 64
         type: string
       end_date:
         type: string
       position:
-        maxLength: 64
         type: string
       start_date:
         type: string
       until_now:
         type: boolean
-    required:
-    - employer_name
-    - position
-    - start_date
     type: object
   dto.WorkExperienceResponse:
     properties:

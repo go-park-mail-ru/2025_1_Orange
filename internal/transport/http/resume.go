@@ -579,3 +579,82 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// SearchResumes godoc
+// @Tags Resume
+// @Summary Поиск резюме по профессии
+// @Description Ищет резюме по профессии. Для соискателей возвращает только их собственные резюме. Для других ролей - все резюме. Требует авторизации.
+// @Produce json
+// @Param profession query string true "Строка поиска по профессии"
+// @Param limit query int false "Количество резюме на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Success 200 {array} dto.ResumeShortResponse "Список найденных резюме"
+// @Failure 400 {object} utils.APIError "Неверные параметры запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /resume/search [get]
+// @Security session_cookie
+func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Проверяем авторизацию
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	if cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Получаем параметры из URL
+	profession := r.URL.Query().Get("profession")
+	if profession == "" {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("параметр profession обязателен"))
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	// Ищем резюме
+	resumes, err := h.resume.SearchResumesByProfession(ctx, userID, role, profession, limit, offset)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Отправляем ответ
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resumes); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}

@@ -682,3 +682,79 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 
 	return response, nil
 }
+
+// SearchVacancies ищет вакансии по заданному запросу с учетом роли пользователя
+func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, userRole string, searchQuery string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"userID":    userID,
+		"role":      userRole,
+		"query":     searchQuery,
+	}).Info("Поиск вакансий")
+
+	var vacancies []*entity.Vacancy
+	var err error
+
+	// В зависимости от роли пользователя выбираем метод поиска
+	if userRole == "employer" {
+		// Для работодателя ищем только его вакансии
+		vacancies, err = s.vacanciesRepository.SearchVacanciesByEmployerID(ctx, userID, searchQuery, limit, offset)
+	} else {
+		// Для соискателя или неавторизованного пользователя ищем все вакансии
+		vacancies, err = s.vacanciesRepository.SearchVacancies(ctx, searchQuery, limit, offset)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Формируем ответ, аналогично методу GetAll
+	response := make([]dto.VacancyShortResponse, 0, len(vacancies))
+	for _, vacancy := range vacancies {
+		var specializationName string
+		if vacancy.SpecializationID != 0 {
+			specialization, err := s.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":        requestID,
+					"vacancyID":        vacancy.ID,
+					"specializationID": vacancy.SpecializationID,
+					"error":            err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		responded := false
+		if userRole == "applicant" && userID != 0 {
+			responded, err = s.vacanciesRepository.ResponseExists(ctx, vacancy.ID, userID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		shortVacancy := dto.VacancyShortResponse{
+			ID:             vacancy.ID,
+			Title:          vacancy.Title,
+			EmployerID:     vacancy.EmployerID,
+			Specialization: specializationName,
+			WorkFormat:     vacancy.WorkFormat,
+			Employment:     vacancy.Employment,
+			WorkingHours:   vacancy.WorkingHours,
+			SalaryFrom:     vacancy.SalaryFrom,
+			SalaryTo:       vacancy.SalaryTo,
+			TaxesIncluded:  vacancy.TaxesIncluded,
+			CreatedAt:      vacancy.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
+			City:           vacancy.City,
+			Responded:      responded,
+		}
+
+		response = append(response, shortVacancy)
+	}
+
+	return response, nil
+}

@@ -497,6 +497,7 @@ func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 
 	var userID = 0
+
 	var userRole string
 
 	// Проверяем авторизацию (если есть)

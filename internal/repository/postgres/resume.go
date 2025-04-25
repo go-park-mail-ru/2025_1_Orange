@@ -34,10 +34,10 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 	query := `
 		INSERT INTO resume (
 			applicant_id, about_me, specialization_id, education, 
-			educational_institution, graduation_year, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+			educational_institution, graduation_year, profession, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING id, applicant_id, about_me, specialization_id, education, 
-				  educational_institution, graduation_year, created_at, updated_at
+				  educational_institution, graduation_year, profession, created_at, updated_at
 	`
 
 	var createdResume entity.Resume
@@ -50,6 +50,7 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 		resume.Education,
 		resume.EducationalInstitution,
 		resume.GraduationYear,
+		resume.Profession, // Дополнение - добавлено поле профессии
 	).Scan(
 		&createdResume.ID,
 		&createdResume.ApplicantID,
@@ -58,6 +59,7 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 		&createdResume.Education,
 		&createdResume.EducationalInstitution,
 		&createdResume.GraduationYear,
+		&createdResume.Profession, // Дополнение - добавлено поле профессии
 		&createdResume.CreatedAt,
 		&createdResume.UpdatedAt,
 	)
@@ -315,10 +317,10 @@ func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume,
 
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
-			   educational_institution, graduation_year, created_at, updated_at
-		FROM resume
-		WHERE id = $1
-	`
+			   educational_institution, graduation_year, profession, created_at, updated_at
+	FROM resume
+	WHERE id = $1
+`
 
 	var resume entity.Resume
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(
@@ -329,6 +331,7 @@ func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume,
 		&resume.Education,
 		&resume.EducationalInstitution,
 		&resume.GraduationYear,
+		&resume.Profession, // Дополнение - добавлено поле профессии
 		&resume.CreatedAt,
 		&resume.UpdatedAt,
 	)
@@ -713,10 +716,11 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 			education = $3,
 			educational_institution = $4,
 			graduation_year = $5,
+			profession = $6,
 			updated_at = NOW()
-		WHERE id = $6 AND applicant_id = $7
+		WHERE id = $7 AND applicant_id = $8
 		RETURNING id, applicant_id, about_me, specialization_id, education, 
-				  educational_institution, graduation_year, created_at, updated_at
+				  educational_institution, graduation_year, profession, created_at, updated_at
 	`
 
 	var updatedResume entity.Resume
@@ -728,6 +732,7 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 		resume.Education,
 		resume.EducationalInstitution,
 		resume.GraduationYear,
+		resume.Profession, // Дополнение - добавлено поле профессии
 		resume.ID,
 		resume.ApplicantID,
 	).Scan(
@@ -738,6 +743,7 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 		&updatedResume.Education,
 		&updatedResume.EducationalInstitution,
 		&updatedResume.GraduationYear,
+		&updatedResume.Profession, // Дополнение - добавлено поле профессии
 		&updatedResume.CreatedAt,
 		&updatedResume.UpdatedAt,
 	)
@@ -1129,11 +1135,11 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
-			   educational_institution, graduation_year, created_at, updated_at
-		FROM resume
-		ORDER BY updated_at DESC
-		LIMIT 100
-	`
+			   educational_institution, graduation_year, profession, created_at, updated_at
+	FROM resume
+	ORDER BY updated_at DESC
+	LIMIT 100
+`
 
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -1168,6 +1174,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) 
 			&resume.Education,
 			&resume.EducationalInstitution,
 			&resume.GraduationYear,
+			&resume.Profession, // Дополнение - добавлено поле профессии
 			&resume.CreatedAt,
 			&resume.UpdatedAt,
 		)
@@ -1211,12 +1218,12 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
-			   educational_institution, graduation_year, created_at, updated_at
-		FROM resume
-		WHERE applicant_id = $1
-		ORDER BY updated_at DESC
-		LIMIT 100
-	`
+			   educational_institution, graduation_year, profession, created_at, updated_at
+	FROM resume
+	WHERE applicant_id = $1
+	ORDER BY updated_at DESC
+	LIMIT 100
+`
 
 	rows, err := r.DB.QueryContext(ctx, query, applicantID)
 	if err != nil {
@@ -1251,6 +1258,7 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 			&resume.Education,
 			&resume.EducationalInstitution,
 			&resume.GraduationYear,
+			&resume.Profession, // Дополнение - добавлено поле профессии
 			&resume.CreatedAt,
 			&resume.UpdatedAt,
 		)

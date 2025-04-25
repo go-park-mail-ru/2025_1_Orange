@@ -1202,27 +1202,18 @@ const docTemplate = `{
         },
         "dto.ApplicantRegister": {
             "type": "object",
-            "required": [
-                "email",
-                "first_name",
-                "last_name",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "first_name": {
-                    "type": "string",
-                    "maxLength": 30
+                    "type": "string"
                 },
                 "last_name": {
-                    "type": "string",
-                    "maxLength": 30
+                    "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 8
+                    "type": "string"
                 }
             }
         },
@@ -1288,9 +1279,6 @@ const docTemplate = `{
         },
         "dto.EmailExistsRequest": {
             "type": "object",
-            "required": [
-                "email"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -1383,35 +1371,23 @@ const docTemplate = `{
         },
         "dto.EmployerRegister": {
             "type": "object",
-            "required": [
-                "company_name",
-                "email",
-                "password"
-            ],
             "properties": {
                 "company_name": {
-                    "type": "string",
-                    "maxLength": 64
+                    "type": "string"
                 },
                 "email": {
                     "type": "string"
                 },
                 "legal_address": {
-                    "type": "string",
-                    "maxLength": 255
+                    "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 8
+                    "type": "string"
                 }
             }
         },
         "dto.Login": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -1474,7 +1450,16 @@ const docTemplate = `{
         "dto.ResumeShortResponse": {
             "type": "object",
             "properties": {
+                "applicant": {
+                    "description": "Add applicant information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ApplicantProfileResponse"
+                        }
+                    ]
+                },
                 "applicant_id": {
+                    "description": "Keep for backward compatibility",
                     "type": "integer"
                 },
                 "created_at": {
@@ -1489,7 +1474,7 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string"
                 },
-                "work_experiences": {
+                "work_experience": {
                     "$ref": "#/definitions/dto.WorkExperienceShort"
                 }
             }
@@ -1551,11 +1536,6 @@ const docTemplate = `{
         },
         "dto.WorkExperienceDTO": {
             "type": "object",
-            "required": [
-                "employer_name",
-                "position",
-                "start_date"
-            ],
             "properties": {
                 "achievements": {
                     "type": "string"
@@ -1564,15 +1544,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "employer_name": {
-                    "type": "string",
-                    "maxLength": 64
+                    "type": "string"
                 },
                 "end_date": {
                     "type": "string"
                 },
                 "position": {
-                    "type": "string",
-                    "maxLength": 64
+                    "type": "string"
                 },
                 "start_date": {
                     "type": "string"

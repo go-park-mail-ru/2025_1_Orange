@@ -8,8 +8,11 @@ import (
 	"ResuMatch/internal/usecase"
 	"ResuMatch/pkg/sanitizer"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/asaskevich/govalidator"
 )
 
 type ResumeHandler struct {
@@ -80,6 +83,12 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	var createResumeRequest dto.CreateResumeRequest
 	if err := json.NewDecoder(r.Body).Decode(&createResumeRequest); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Валидация DTO
+	if valid, err := govalidator.ValidateStruct(createResumeRequest); !valid {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("неверные данные: %v", err))
 		return
 	}
 
@@ -216,6 +225,12 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	var updateResumeRequest dto.UpdateResumeRequest
 	if err := json.NewDecoder(r.Body).Decode(&updateResumeRequest); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Валидация DTO
+	if valid, err := govalidator.ValidateStruct(updateResumeRequest); !valid {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("неверные данные: %v", err))
 		return
 	}
 

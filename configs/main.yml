@@ -7,6 +7,11 @@ http:
   corsAllowedOrigins:
     - "http://localhost:8001"
 
+microservices:
+  auth_service:
+    host: "auth"
+    port: "8081"
+
 session:
   cookieName: "session_id"
   lifetime: "24h"
@@ -28,8 +33,3 @@ postgres:
   dbname: "mydb"
   sslmode: "disable"
 
-redis:
-  host: "localhost"
-  port: "6379"
-  db: 0
-  ttl: 86400

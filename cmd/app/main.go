@@ -23,9 +23,9 @@ import (
 // @name session_id
 func main() {
 	// 1. Загрузка конфигурации
-	cfg, err := config.Load()
+	cfg, err := config.LoadAppConfig()
 	if err != nil {
-		l.Log.Fatalf("Failed to load config: %v", err)
+		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}
 
 	// 2. Инициализация приложения
@@ -36,16 +36,16 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		<-quit
-		l.Log.Info("Shutting down server...")
+		sig := <-quit
+		l.Log.Info("Завершение работы сервера приложения... : %v", sig)
 		if err := srv.Stop(); err != nil {
-			l.Log.Fatalf("Failed to stop server: %v", err)
+			l.Log.Fatalf("Не удалось остановить сервер приложения: %v", err)
 		}
 	}()
 
 	// 4. Запуск сервера
-	l.Log.Infof("Starting server on %s", cfg.HTTP.Port)
+	l.Log.Infof("Запуск сервера на порте %s", cfg.HTTP.Port)
 	if err := srv.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		l.Log.Fatalf("Failed to run server: %v", err)
+		l.Log.Fatalf("Не удалось запустить сервер: %v", err)
 	}
 }

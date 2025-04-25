@@ -11,4 +11,5 @@ type Employer interface {
 	GetUser(context.Context, int) (*dto.EmployerProfileResponse, error)
 	UpdateProfile(context.Context, int, *dto.EmployerProfileUpdate) error
 	UpdateLogo(context.Context, int, int) error
+	EmailExists(context.Context, string) (*dto.EmailExistsResponse, error)
 }

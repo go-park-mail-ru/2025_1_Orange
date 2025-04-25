@@ -198,3 +198,19 @@ func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID, avatarID in
 	}
 	return nil
 }
+
+func (a *ApplicantService) EmailExists(ctx context.Context, email string) (*dto.EmailExistsResponse, error) {
+	if err := entity.ValidateEmail(email); err != nil {
+		return nil, err
+	}
+
+	applicant, err := a.applicantRepository.GetApplicantByEmail(ctx, email)
+	if err == nil && applicant != nil {
+		return &dto.EmailExistsResponse{
+			Exists: true,
+			Role:   "applicant",
+		}, err
+	}
+
+	return nil, err
+}

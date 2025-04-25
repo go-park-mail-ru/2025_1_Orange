@@ -33,6 +33,7 @@ func (h *EmployerHandler) Configure(r *http.ServeMux) {
 	employerMux.HandleFunc("GET /profile/{id}", h.GetProfile)
 	employerMux.HandleFunc("PUT /profile", h.UpdateProfile)
 	employerMux.HandleFunc("POST /logo", h.UploadLogo)
+	employerMux.HandleFunc("POST /emailExists", h.EmailExists)
 
 	r.Handle("/employer/", http.StripPrefix("/employer", employerMux))
 }
@@ -276,6 +277,43 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = json.NewEncoder(w).Encode(logo); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+// EmailExists godoc
+// @Tags Employer
+// @Summary Проверка email
+// @Description Проверяет, есть ли работодатель с таким email
+// @Accept json
+// @Produce json
+// @Param input body dto.EmailExistsRequest true "Email для проверки"
+// @Success 200 {object} dto.EmailExistsResponse
+// @Failure 400 {object} utils.APIError
+// @Failure 403 {object} utils.APIError
+// @Failure 404 {object} utils.APIError
+// @Failure 500 {object} utils.APIError
+// @Router /employer/emailExists [post]
+// @Security csrf_token
+func (h *EmployerHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var emailDTO dto.EmailExistsRequest
+	err := json.NewDecoder(r.Body).Decode(&emailDTO)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	response, err := h.employer.EmailExists(ctx, emailDTO.Email)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(response); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

@@ -11,4 +11,5 @@ type Applicant interface {
 	GetUser(context.Context, int) (*dto.ApplicantProfileResponse, error)
 	UpdateProfile(context.Context, int, *dto.ApplicantProfileUpdate) error
 	UpdateAvatar(context.Context, int, int) error
+	EmailExists(context.Context, string) (*dto.EmailExistsResponse, error)
 }

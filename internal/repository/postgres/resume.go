@@ -1774,6 +1774,7 @@ func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profes
 			fmt.Errorf("ошибка при поиске резюме по профессии: %w", err),
 		)
 	}
+<<<<<<< HEAD
 	// defer rows.Close()
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -1782,6 +1783,9 @@ func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profes
 			}).Errorf("не удалось закрыть rows: %v", err)
 		}
 	}()
+=======
+	defer rows.Close()
+>>>>>>> 45013b4 (added searc-method for resume)
 
 	var resumes []entity.Resume
 	for rows.Next() {
@@ -1858,6 +1862,7 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 			fmt.Errorf("ошибка при поиске резюме по профессии для соискателя: %w", err),
 		)
 	}
+<<<<<<< HEAD
 	// defer rows.Close()
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -1866,6 +1871,9 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 			}).Errorf("не удалось закрыть rows: %v", err)
 		}
 	}()
+=======
+	defer rows.Close()
+>>>>>>> 45013b4 (added searc-method for resume)
 
 	var resumes []entity.Resume
 	for rows.Next() {

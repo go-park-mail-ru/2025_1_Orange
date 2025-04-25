@@ -838,3 +838,108 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 
 	return response, nil
 }
+
+// SearchResumesByProfession ищет резюме по профессии с учетом роли пользователя
+func (s *ResumeService) SearchResumesByProfession(ctx context.Context, userID int, role string, profession string, limit int, offset int) ([]dto.ResumeShortResponse, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":  requestID,
+		"userID":     userID,
+		"role":       role,
+		"profession": profession,
+	}).Info("Поиск резюме по профессии")
+
+	var resumes []entity.Resume
+	var err error
+
+	// В зависимости от роли пользователя выбираем метод поиска
+	if role == "applicant" {
+		// Для соискателя ищем только его резюме
+		resumes, err = s.resumeRepository.SearchResumesByProfessionForApplicant(ctx, userID, profession, limit, offset)
+	} else {
+		// Для работодателя ищем все резюме
+		resumes, err = s.resumeRepository.SearchResumesByProfession(ctx, profession, limit, offset)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Формируем ответ, аналогично методам GetAll и GetAllResumesByApplicantID
+	response := make([]dto.ResumeShortResponse, 0, len(resumes))
+	for _, resume := range resumes {
+		// Получаем имя специализации
+		var specializationName string
+		if resume.SpecializationID != 0 {
+			specialization, err := s.specializationRepository.GetByID(ctx, resume.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":        requestID,
+					"resumeID":         resume.ID,
+					"specializationID": resume.SpecializationID,
+					"error":            err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		// Получаем последний опыт работы
+		workExperiences, err := s.resumeRepository.GetWorkExperienceByResumeID(ctx, resume.ID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"resumeID":  resume.ID,
+				"error":     err,
+			}).Error("ошибка при получении опыта работы")
+			continue
+		}
+
+		// Получаем информацию о соискателе
+		applicantDTO, err := s.applicantService.GetUser(ctx, resume.ApplicantID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    resume.ID,
+				"applicantID": resume.ApplicantID,
+				"error":       err,
+			}).Error("ошибка при конвертации соискателя в DTO")
+			continue
+		}
+
+		// Создаем краткий ответ о резюме
+		shortResume := dto.ResumeShortResponse{
+			ID:             resume.ID,
+			Applicant:      applicantDTO,
+			Specialization: specializationName,
+			Profession:     resume.Profession,
+			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
+		}
+
+		// Добавляем последний опыт работы, если он есть
+		if len(workExperiences) > 0 {
+			we := workExperiences[0] // Первый - самый последний из-за ORDER BY в запросе
+			workExp := dto.WorkExperienceShort{
+				ID:           we.ID,
+				EmployerName: we.EmployerName,
+				Position:     we.Position,
+				Duties:       we.Duties,
+				Achievements: we.Achievements,
+				StartDate:    we.StartDate.Format("2006-01-02"),
+				UntilNow:     we.UntilNow,
+			}
+
+			if !we.UntilNow && !we.EndDate.IsZero() {
+				workExp.EndDate = we.EndDate.Format("2006-01-02")
+			}
+
+			shortResume.WorkExperience = workExp
+		}
+
+		response = append(response, shortResume)
+	}
+
+	return response, nil
+}

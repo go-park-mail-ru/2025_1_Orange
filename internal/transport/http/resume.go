@@ -95,6 +95,7 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	// Санитизация всех полей, которые приходят с фронтенда
 	createResumeRequest.AboutMe = sanitizer.StrictPolicy.Sanitize(createResumeRequest.AboutMe)
 	createResumeRequest.Specialization = sanitizer.StrictPolicy.Sanitize(createResumeRequest.Specialization)
+	createResumeRequest.Profession = sanitizer.StrictPolicy.Sanitize(createResumeRequest.Profession) // Дополнение - добавлена санитизация поля профессии
 	createResumeRequest.EducationalInstitution = sanitizer.StrictPolicy.Sanitize(createResumeRequest.EducationalInstitution)
 
 	// Санитизация массивов строк
@@ -236,6 +237,7 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 
 	updateResumeRequest.AboutMe = sanitizer.StrictPolicy.Sanitize(updateResumeRequest.AboutMe)
 	updateResumeRequest.Specialization = sanitizer.StrictPolicy.Sanitize(updateResumeRequest.Specialization)
+	updateResumeRequest.Profession = sanitizer.StrictPolicy.Sanitize(updateResumeRequest.Profession) // Дополнение - добавлена санитизация поля профессии
 	updateResumeRequest.EducationalInstitution = sanitizer.StrictPolicy.Sanitize(updateResumeRequest.EducationalInstitution)
 
 	// Санитизация массивов строк

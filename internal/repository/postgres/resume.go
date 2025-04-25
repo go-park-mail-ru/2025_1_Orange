@@ -1743,3 +1743,156 @@ func (r *ResumeRepository) CreateSpecializationIfNotExists(ctx context.Context, 
 
 	return id, nil
 }
+
+// SearchResumesByProfession ищет резюме по профессии
+func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profession string, limit int, offset int) ([]entity.Resume, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":  requestID,
+		"profession": profession,
+	}).Info("sql-запрос в БД на поиск резюме по профессии SearchResumesByProfession")
+
+	query := `
+        SELECT id, applicant_id, about_me, specialization_id, education, 
+               educational_institution, graduation_year, profession, created_at, updated_at
+        FROM resume
+        WHERE profession ILIKE $1
+        ORDER BY updated_at DESC
+        LIMIT $2 OFFSET $3
+    `
+
+	rows, err := r.DB.QueryContext(ctx, query, "%"+profession+"%", limit, offset)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске резюме по профессии")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске резюме по профессии: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var resumes []entity.Resume
+	for rows.Next() {
+		var resume entity.Resume
+		err := rows.Scan(
+			&resume.ID,
+			&resume.ApplicantID,
+			&resume.AboutMe,
+			&resume.SpecializationID,
+			&resume.Education,
+			&resume.EducationalInstitution,
+			&resume.GraduationYear,
+			&resume.Profession,
+			&resume.CreatedAt,
+			&resume.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании резюме")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании резюме: %w", err),
+			)
+		}
+		resumes = append(resumes, resume)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по резюме: %w", err),
+		)
+	}
+
+	return resumes, nil
+}
+
+// SearchResumesByProfessionForApplicant ищет резюме по профессии для конкретного соискателя
+func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Context, applicantID int, profession string, limit int, offset int) ([]entity.Resume, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"applicantID": applicantID,
+		"profession":  profession,
+	}).Info("sql-запрос в БД на поиск резюме по профессии для соискателя SearchResumesByProfessionForApplicant")
+
+	query := `
+        SELECT id, applicant_id, about_me, specialization_id, education, 
+               educational_institution, graduation_year, profession, created_at, updated_at
+        FROM resume
+        WHERE applicant_id = $1 AND profession ILIKE $2
+        ORDER BY updated_at DESC
+        LIMIT $3 OFFSET $4
+    `
+
+	rows, err := r.DB.QueryContext(ctx, query, applicantID, "%"+profession+"%", limit, offset)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске резюме по профессии для соискателя")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске резюме по профессии для соискателя: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var resumes []entity.Resume
+	for rows.Next() {
+		var resume entity.Resume
+		err := rows.Scan(
+			&resume.ID,
+			&resume.ApplicantID,
+			&resume.AboutMe,
+			&resume.SpecializationID,
+			&resume.Education,
+			&resume.EducationalInstitution,
+			&resume.GraduationYear,
+			&resume.Profession,
+			&resume.CreatedAt,
+			&resume.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании резюме")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании резюме: %w", err),
+			)
+		}
+		resumes = append(resumes, resume)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по резюме")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по резюме: %w", err),
+		)
+	}
+
+	return resumes, nil
+}

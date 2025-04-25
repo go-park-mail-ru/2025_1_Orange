@@ -12,4 +12,5 @@ type ResumeUsecase interface {
 	Delete(ctx context.Context, id int, applicantID int) (*dto.DeleteResumeResponse, error)
 	GetAll(ctx context.Context, limit int, offset int) ([]dto.ResumeShortResponse, error)                                      // Дополнение - добавлена пагинация
 	GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.ResumeShortResponse, error) // Дополнение - добавлена пагинация
+	SearchResumesByProfession(ctx context.Context, userID int, role string, profession string, limit int, offset int) ([]dto.ResumeShortResponse, error)
 }

@@ -50,11 +50,7 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 		resume.Education,
 		resume.EducationalInstitution,
 		resume.GraduationYear,
-<<<<<<< HEAD
-		resume.Profession,
-=======
 		resume.Profession, // Дополнение - добавлено поле профессии
->>>>>>> e897aad (добавил к резюме поле профессии)
 	).Scan(
 		&createdResume.ID,
 		&createdResume.ApplicantID,
@@ -63,11 +59,7 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 		&createdResume.Education,
 		&createdResume.EducationalInstitution,
 		&createdResume.GraduationYear,
-<<<<<<< HEAD
-		&createdResume.Profession,
-=======
 		&createdResume.Profession, // Дополнение - добавлено поле профессии
->>>>>>> e897aad (добавил к резюме поле профессии)
 		&createdResume.CreatedAt,
 		&createdResume.UpdatedAt,
 	)
@@ -339,11 +331,7 @@ func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume,
 		&resume.Education,
 		&resume.EducationalInstitution,
 		&resume.GraduationYear,
-<<<<<<< HEAD
-		&resume.Profession,
-=======
 		&resume.Profession, // Дополнение - добавлено поле профессии
->>>>>>> e897aad (добавил к резюме поле профессии)
 		&resume.CreatedAt,
 		&resume.UpdatedAt,
 	)
@@ -744,11 +732,7 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 		resume.Education,
 		resume.EducationalInstitution,
 		resume.GraduationYear,
-<<<<<<< HEAD
-		resume.Profession,
-=======
 		resume.Profession, // Дополнение - добавлено поле профессии
->>>>>>> e897aad (добавил к резюме поле профессии)
 		resume.ID,
 		resume.ApplicantID,
 	).Scan(
@@ -759,11 +743,7 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 		&updatedResume.Education,
 		&updatedResume.EducationalInstitution,
 		&updatedResume.GraduationYear,
-<<<<<<< HEAD
-		&updatedResume.Profession,
-=======
 		&updatedResume.Profession, // Дополнение - добавлено поле профессии
->>>>>>> e897aad (добавил к резюме поле профессии)
 		&updatedResume.CreatedAt,
 		&updatedResume.UpdatedAt,
 	)
@@ -1156,23 +1136,10 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, profession, created_at, updated_at
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 336f233 (добавил пагинацию в методы списка резюме)
-		FROM resume
-		ORDER BY updated_at DESC
-		LIMIT $1 OFFSET $2
-	`
-<<<<<<< HEAD
-=======
 	FROM resume
 	ORDER BY updated_at DESC
 	LIMIT 100
 `
->>>>>>> e897aad (добавил к резюме поле профессии)
-=======
->>>>>>> 336f233 (добавил пагинацию в методы списка резюме)
 
 	rows, err := r.DB.QueryContext(ctx, query, limit, offset)
 	if err != nil {
@@ -1207,11 +1174,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 			&resume.Education,
 			&resume.EducationalInstitution,
 			&resume.GraduationYear,
-<<<<<<< HEAD
-			&resume.Profession,
-=======
 			&resume.Profession, // Дополнение - добавлено поле профессии
->>>>>>> e897aad (добавил к резюме поле профессии)
 			&resume.CreatedAt,
 			&resume.UpdatedAt,
 		)
@@ -1256,25 +1219,11 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 	query := `
 		SELECT id, applicant_id, about_me, specialization_id, education, 
 			   educational_institution, graduation_year, profession, created_at, updated_at
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 336f233 (добавил пагинацию в методы списка резюме)
-		FROM resume
-		WHERE applicant_id = $1
-		ORDER BY updated_at DESC
-		LIMIT $2 OFFSET $3
-	`
-<<<<<<< HEAD
-=======
 	FROM resume
 	WHERE applicant_id = $1
 	ORDER BY updated_at DESC
 	LIMIT 100
 `
->>>>>>> e897aad (добавил к резюме поле профессии)
-=======
->>>>>>> 336f233 (добавил пагинацию в методы списка резюме)
 
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
@@ -1309,11 +1258,7 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 			&resume.Education,
 			&resume.EducationalInstitution,
 			&resume.GraduationYear,
-<<<<<<< HEAD
-			&resume.Profession,
-=======
 			&resume.Profession, // Дополнение - добавлено поле профессии
->>>>>>> e897aad (добавил к резюме поле профессии)
 			&resume.CreatedAt,
 			&resume.UpdatedAt,
 		)

@@ -6,20 +6,20 @@ import (
 
 // VacancyShort представляет сокращенную информацию о вакансии
 type VacancyShortResponse struct {
-	ID             int    `json:"id" validate:"required,email"`
-	Title          string `json:"title"`
-	EmployerID     int    `json:"employer_id"`
-	Specialization string `json:"specialization"`
-	WorkFormat     string `json:"work_format"`
-	Employment     string `json:"employment"`
-	WorkingHours   int    `json:"working_hours"`
-	SalaryFrom     int    `json:"salary_from"`
-	SalaryTo       int    `json:"salary_to"`
-	TaxesIncluded  bool   `json:"taxes_included"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
-	City           string `json:"city"`
-	Responded      bool   `json:"responded"`
+	ID             int                      `json:"id" validate:"required,email"`
+	Title          string                   `json:"title"`
+	Employer       *EmployerProfileResponse `json:"employer_id"`
+	Specialization string                   `json:"specialization"`
+	WorkFormat     string                   `json:"work_format"`
+	Employment     string                   `json:"employment"`
+	WorkingHours   int                      `json:"working_hours"`
+	SalaryFrom     int                      `json:"salary_from"`
+	SalaryTo       int                      `json:"salary_to"`
+	TaxesIncluded  bool                     `json:"taxes_included"`
+	CreatedAt      string                   `json:"created_at"`
+	UpdatedAt      string                   `json:"updated_at"`
+	City           string                   `json:"city"`
+	Responded      bool                     `json:"responded"`
 }
 
 type VacancyCreate struct {

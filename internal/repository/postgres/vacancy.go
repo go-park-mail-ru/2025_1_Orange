@@ -667,7 +667,7 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 	return &updatedVacancy, nil
 }
 
-func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, error) {
+func (r *VacancyRepository) GetAll(ctx context.Context, limit int, offset int) ([]*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -694,9 +694,9 @@ func (r *VacancyRepository) GetAll(ctx context.Context) ([]*entity.Vacancy, erro
 			updated_at
         FROM vacancy
 		ORDER BY updated_at DESC
-		LIMIT 100
+		LIMIT $1 OFFSET $2
 		`
-	rows, err := r.DB.QueryContext(ctx, query)
+	rows, err := r.DB.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
@@ -1307,7 +1307,7 @@ func (r *VacancyRepository) CreateSpecializationIfNotExists(ctx context.Context,
 	return id, nil
 }
 
-func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
+func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int, limit int, offset int) ([]*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -1316,10 +1316,11 @@ func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, 
                description, tasks, requirements, optional_requirements, city, created_at, updated_at
         FROM vacancy
         WHERE employer_id = $1 AND is_active = TRUE
-        ORDER BY updated_at DESC;
+        ORDER BY updated_at DESC
+		LIMIT $2 OFFSET $3;
     `
 
-	rows, err := r.DB.QueryContext(ctx, query, employerID)
+	rows, err := r.DB.QueryContext(ctx, query, employerID, limit, offset)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID":  requestID,
@@ -1369,7 +1370,7 @@ func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, 
 	return vacancies, nil
 }
 
-func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*entity.Vacancy, error) {
+func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
@@ -1380,7 +1381,8 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
         FROM vacancy v
         JOIN vacancy_response vr ON v.id = vr.vacancy_id
         WHERE vr.applicant_id = $1
-        ORDER BY vr.applied_at DESC;
+        ORDER BY vr.applied_at DESC
+		LIMIT $2 OFFSET $3
     `
 	rows, err := r.DB.QueryContext(ctx, query, applicantID)
 	if err != nil {

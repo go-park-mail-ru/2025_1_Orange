@@ -29,7 +29,10 @@ func NewVacancyHandler(auth usecase.Auth, vac usecase.Vacancy, cfg config.CSRFCo
 
 func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux := http.NewServeMux()
+<<<<<<< HEAD
 
+=======
+>>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b
 	vacancyMux.HandleFunc("GET /vacancies", h.GetAllVacancies)
 	vacancyMux.HandleFunc("POST /vacancies", h.CreateVacancy)
 	vacancyMux.HandleFunc("GET /vacancy/{id}", h.GetVacancy)
@@ -38,8 +41,11 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
 	vacancyMux.HandleFunc("GET /employer/{id}/vacancies", h.GetActiveVacanciesByEmployer)
 	vacancyMux.HandleFunc("GET /applicant/{id}/vacancies", h.GetVacanciesByApplicant)
+<<<<<<< HEAD
 	vacancyMux.HandleFunc("GET /applicant/{id}/liked", h.GetLikedVacancies)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/like", h.LikeVacancy)
+=======
+>>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -420,6 +426,7 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 		return
 	}
 }
+<<<<<<< HEAD
 
 func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -506,3 +513,5 @@ func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
+=======
+>>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b

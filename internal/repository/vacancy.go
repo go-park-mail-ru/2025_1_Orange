@@ -26,8 +26,11 @@ type VacancyRepository interface {
 	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error)
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*entity.Vacancy, error)
+<<<<<<< HEAD
 	CreateLike(ctx context.Context, vacancyID, applicantID int) error
 	DeleteLike(ctx context.Context, vacancyID, applicantID int) error
 	GetlikedVacancies(ctx context.Context, applicantID int) ([]*entity.Vacancy, error)
 	LikeExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
+=======
+>>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b
 }

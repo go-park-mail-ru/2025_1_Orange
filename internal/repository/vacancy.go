@@ -11,7 +11,7 @@ type VacancyRepository interface {
 	AddCity(ctx context.Context, vacancyID int, cityIDs []int) error
 	GetByID(ctx context.Context, id int) (*entity.Vacancy, error)
 	Update(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error)
-	GetAll(ctx context.Context) ([]*entity.Vacancy, error)
+	GetAll(ctx context.Context, limit int, offset int) ([]*entity.Vacancy, error)
 	Delete(ctx context.Context, vacancyID int) error
 	GetSkillsByVacancyID(ctx context.Context, vacancyID int) ([]entity.Skill, error)
 	GetCityByVacancyID(ctx context.Context, vacancyID int) ([]entity.City, error)
@@ -24,8 +24,8 @@ type VacancyRepository interface {
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error)
 	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
-	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error)
-	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]*entity.Vacancy, error)
+	GetActiveVacanciesByEmployerID(ctx context.Context, employerID int, limit int, offset int) ([]*entity.Vacancy, error)
+	GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]*entity.Vacancy, error)
 	SearchVacancies(ctx context.Context, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
 	SearchVacanciesByEmployerID(ctx context.Context, employerID int, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
 }

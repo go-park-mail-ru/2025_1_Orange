@@ -114,7 +114,7 @@ func Init(cfg *config.Config) *server.Server {
 
 	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
-	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo)
+	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService)
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)

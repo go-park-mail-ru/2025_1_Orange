@@ -18,16 +18,19 @@ type VacanciesService struct {
 	vacanciesRepository      repository.VacancyRepository
 	applicantRepository      repository.ApplicantRepository
 	specializationRepository repository.SpecializationRepository
+	employerService          usecase.Employer
 }
 
 func NewVacanciesService(vacancyRepo repository.VacancyRepository,
 	applicantRepo repository.ApplicantRepository,
 	specializationRepo repository.SpecializationRepository,
+	employerService usecase.Employer,
 ) usecase.Vacancy {
 	return &VacanciesService{
 		vacanciesRepository:      vacancyRepo,
 		applicantRepository:      applicantRepo,
 		specializationRepository: specializationRepo,
+		employerService:          employerService,
 	}
 }
 
@@ -366,14 +369,14 @@ func (vs *VacanciesService) DeleteVacancy(ctx context.Context, id int, employerI
 	}, nil
 }
 
-func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRole string) ([]dto.VacancyShortResponse, error) {
+func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
 	}).Info("Получение списка всех вакансий")
 
-	vacancies, err := s.vacanciesRepository.GetAll(ctx)
+	vacancies, err := s.vacanciesRepository.GetAll(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -403,10 +406,21 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 			}
 		}
 
+		employerDTO, err := s.employerService.GetUser(ctx, vacancy.EmployerID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    vacancy.ID,
+				"applicantID": vacancy.EmployerID,
+				"error":       err,
+			}).Error("ошибка при конвертации работодателя в DTO")
+			continue
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
-			EmployerID:     vacancy.EmployerID,
+			Employer:       employerDTO,
 			Specialization: specializationName,
 			WorkFormat:     vacancy.WorkFormat,
 			Employment:     vacancy.Employment,
@@ -443,7 +457,7 @@ func (s *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applic
 	return s.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
 }
 
-func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string) ([]dto.VacancyShortResponse, error) {
+func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -451,7 +465,7 @@ func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, 
 		"employerID": employerID,
 	}).Info("Получение вакансии по ID работодателя")
 
-	vacancies, err := vs.vacanciesRepository.GetActiveVacanciesByEmployerID(ctx, employerID)
+	vacancies, err := vs.vacanciesRepository.GetActiveVacanciesByEmployerID(ctx, employerID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -481,10 +495,21 @@ func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, 
 			}
 		}
 
+		employerDTO, err := vs.employerService.GetUser(ctx, vacancy.EmployerID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    vacancy.ID,
+				"applicantID": vacancy.EmployerID,
+				"error":       err,
+			}).Error("ошибка при конвертации работодателя в DTO")
+			continue
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
-			EmployerID:     vacancy.EmployerID,
+			Employer:       employerDTO,
 			Specialization: specializationName,
 			WorkFormat:     vacancy.WorkFormat,
 			Employment:     vacancy.Employment,
@@ -504,7 +529,7 @@ func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, 
 	return response, nil
 }
 
-func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error) {
+func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -512,7 +537,7 @@ func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 		"applicantID": applicantID,
 	}).Info("Получение вакансии по ID работодателя")
 
-	vacancies, err := vs.vacanciesRepository.GetVacanciesByApplicantID(ctx, applicantID)
+	vacancies, err := vs.vacanciesRepository.GetVacanciesByApplicantID(ctx, applicantID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -542,10 +567,21 @@ func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 			}
 		}
 
+		employerDTO, err := vs.employerService.GetUser(ctx, vacancy.EmployerID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    vacancy.ID,
+				"applicantID": vacancy.EmployerID,
+				"error":       err,
+			}).Error("ошибка при конвертации работодателя в DTO")
+			continue
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
-			EmployerID:     vacancy.EmployerID,
+			Employer:       employerDTO,
 			Specialization: specializationName,
 			WorkFormat:     vacancy.WorkFormat,
 			Employment:     vacancy.Employment,
@@ -618,10 +654,22 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 			}
 		}
 
+		// Получаем информацию о соискателе
+		employerDTO, err := s.employerService.GetUser(ctx, vacancy.EmployerID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    vacancy.ID,
+				"applicantID": vacancy.EmployerID,
+				"error":       err,
+			}).Error("ошибка при конвертации работодателя в DTO")
+			continue
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
-			EmployerID:     vacancy.EmployerID,
+			Employer:       employerDTO,
 			Specialization: specializationName,
 			WorkFormat:     vacancy.WorkFormat,
 			Employment:     vacancy.Employment,

@@ -54,6 +54,18 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to connect to employer postgres: %v", err)
 	}
 
+	// TODO
+	pollConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	if err != nil {
+		l.Log.Errorf("Failed to connect to poll postgres: %v", err)
+	}
+
+	// TODO
+	pollRepo, err := postgres.NewPollRepository(pollConn)
+	if err != nil {
+		l.Log.Errorf("Failed to create poll repository: %v", err)
+	}
+
 	// Redis Connection
 	sessionConn, err := connector.NewRedisConnection(cfg.Redis)
 	if err != nil {
@@ -107,6 +119,10 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
+
+	// TODO
+	pollService := service.NewPollService(pollRepo)
+
 	staticService := service.NewStaticService(staticRepo)
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
@@ -123,6 +139,9 @@ func Init(cfg *config.Config) *server.Server {
 	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 
+	// TODO
+	pollHandler := handler.NewPollHandler(authService, pollService)
+
 	// Server Init
 	srv := server.NewServer(cfg)
 
@@ -133,6 +152,7 @@ func Init(cfg *config.Config) *server.Server {
 		employmentHandler.Configure(r)
 		resumeHandler.Configure(r)
 		vacancyHandler.Configure(r)
+		pollHandler.Configure(r)
 	})
 
 	return srv

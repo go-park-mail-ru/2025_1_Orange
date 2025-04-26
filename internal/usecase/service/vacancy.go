@@ -362,7 +362,10 @@ func (vs *VacanciesService) DeleteVacancy(ctx context.Context, id int, employerI
 }
 
 func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7e2d7ce (Add pagination for vacancy)
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -370,7 +373,10 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 	}).Info("Получение списка всех вакансий")
 
 	vacancies, err := s.vacanciesRepository.GetAll(ctx, limit, offset)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7e2d7ce (Add pagination for vacancy)
 	if err != nil {
 		return nil, err
 	}
@@ -576,6 +582,7 @@ func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
 			Employer:       employerDTO,
+<<<<<<< HEAD
 			Specialization: specializationName,
 			WorkFormat:     vacancy.WorkFormat,
 			Employment:     vacancy.Employment,
@@ -664,6 +671,8 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
 			Employer:       employerDTO,
+=======
+>>>>>>> 7e2d7ce (Add pagination for vacancy)
 			Specialization: specializationName,
 			WorkFormat:     vacancy.WorkFormat,
 			Employment:     vacancy.Employment,
@@ -736,10 +745,22 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 			}
 		}
 
+		// Получаем информацию о соискателе
+		employerDTO, err := s.employerService.GetUser(ctx, vacancy.EmployerID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    vacancy.ID,
+				"applicantID": vacancy.EmployerID,
+				"error":       err,
+			}).Error("ошибка при конвертации работодателя в DTO")
+			continue
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
-			EmployerID:     vacancy.EmployerID,
+			Employer:       employerDTO,
 			Specialization: specializationName,
 			WorkFormat:     vacancy.WorkFormat,
 			Employment:     vacancy.Employment,

@@ -20,35 +20,20 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
-<<<<<<< HEAD
-=======
-	if err != nil {
-		l.Log.Errorf("Failed to connect to vacancy postgres: %v", err)
-	}
-
-	skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
->>>>>>> 442b3e9 (Add vacancy routing and fix issues with get vacancies)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с vacancy postgres: %v", err)
 	}
 
-<<<<<<< HEAD
 	skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
-=======
-	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
->>>>>>> 442b3e9 (Add vacancy routing and fix issues with get vacancies)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с skill postgres: %v", err)
 	}
 
-<<<<<<< HEAD
 	specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с specialization postgres: %v", err)
 	}
 
-=======
->>>>>>> 442b3e9 (Add vacancy routing and fix issues with get vacancies)
 	cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с city postgres: %v", err)
@@ -121,7 +106,6 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-<<<<<<< HEAD
 	applicantStaticService := service.NewStaticService(applicantStaticRepo)
 	employerStaticService := service.NewStaticService(employerStaticRepo)
 
@@ -136,16 +120,6 @@ func Init(cfg *config.Config) *server.Server {
 	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService)
-=======
-	staticService := service.NewStaticService(staticRepo)
-	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
-	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
-	employerService := service.NewEmployerService(employerRepo, staticRepo)
-
-	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
-	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
-	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo)
->>>>>>> b8e1fb1 (Fix vacancy)
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)

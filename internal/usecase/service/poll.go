@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/asaskevich/govalidator"
+	"math"
 )
 
 type PollService struct {
@@ -39,4 +40,60 @@ func (s *PollService) Vote(ctx context.Context, userID int, role string, voteDTO
 	}
 
 	return nil
+}
+
+func (s *PollService) GetStats(ctx context.Context) ([]*dto.PollStatsResponse, error) {
+	polls, err := s.pollRepository.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var statsArray []*dto.PollStatsResponse
+
+	for _, poll := range polls {
+		stats, err := s.pollRepository.GetVotesByPoll(ctx, poll.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		totalVotes := 0
+		sum := 0
+		starCounts := make(map[int]int)
+
+		for _, stat := range stats {
+			totalVotes += stat.Count
+			sum += stat.Answer * stat.Count
+			starCounts[stat.Answer] = stat.Count
+		}
+
+		var average float64
+		if totalVotes > 0 {
+			average = float64(sum) / float64(totalVotes)
+			average = math.Round(average*10) / 10
+		}
+
+		var stars []*dto.StarStats
+		for star := 1; star <= 5; star++ {
+			count := starCounts[star]
+			var percentage float64
+			if totalVotes > 0 {
+				percentage = math.Round(float64(count) / float64(totalVotes) * 100)
+			}
+
+			stars = append(stars, &dto.StarStats{
+				Star:       star,
+				Amount:     count,
+				Percentage: percentage,
+			})
+		}
+
+		statsArray = append(statsArray, &dto.PollStatsResponse{
+			PollID:  poll.ID,
+			Name:    poll.Name,
+			Average: average,
+			Stars:   stars,
+		})
+	}
+
+	return statsArray, nil
 }

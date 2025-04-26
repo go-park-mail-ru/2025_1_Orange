@@ -7,4 +7,5 @@ import (
 
 type Poll interface {
 	Vote(ctx context.Context, userID int, role string, voteDTO *dto.VotePollRequest) error
+	GetStats(ctx context.Context) ([]*dto.PollStatsResponse, error)
 }

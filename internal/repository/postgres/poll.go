@@ -100,3 +100,87 @@ func (r *PollRepository) CreateVote(ctx context.Context, voteEntity *entity.Vote
 
 	return nil
 }
+
+func (r *PollRepository) GetAll(ctx context.Context) ([]*entity.Poll, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса поолучения всех опросов")
+
+	query := `SELECT id, name FROM poll`
+
+	rows, err := r.DB.QueryContext(ctx, query)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("список опросов пустой"),
+			)
+		}
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении всех опросов err=%w", err),
+		)
+	}
+
+	defer rows.Close()
+
+	var polls []*entity.Poll
+	for rows.Next() {
+		p := new(entity.Poll)
+		if err := rows.Scan(&p.ID, &p.Name); err != nil {
+			return nil, err
+		}
+		polls = append(polls, p)
+	}
+
+	return polls, nil
+}
+
+func (r *PollRepository) GetVotesByPoll(ctx context.Context, pollID int) ([]*entity.VoteStats, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"pollID":    pollID,
+	}).Info("выполнение sql-запроса получения голосов по опросу")
+
+	query := `
+        SELECT answer, COUNT(*) as count 
+        FROM vote 
+        WHERE poll_id = $1
+        GROUP BY answer
+        ORDER BY answer
+    `
+
+	rows, err := r.DB.QueryContext(ctx, query, pollID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("список опросов пустой"),
+			)
+		}
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении всех опросов err=%w", err),
+		)
+	}
+	defer rows.Close()
+
+	var stats []*entity.VoteStats
+	for rows.Next() {
+		vs := new(entity.VoteStats)
+		if err := rows.Scan(&vs.Answer, &vs.Count); err != nil {
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при маппинге статистики голосов err=%w", err),
+			)
+		}
+		stats = append(stats, vs)
+	}
+
+	return stats, nil
+}

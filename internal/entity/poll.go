@@ -7,3 +7,13 @@ type Vote struct {
 	Role   string
 	Answer int
 }
+
+type Poll struct {
+	ID   int
+	Name string
+}
+
+type VoteStats struct {
+	Answer int
+	Count  int
+}

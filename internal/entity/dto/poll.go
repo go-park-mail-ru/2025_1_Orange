@@ -17,3 +17,8 @@ type StarStats struct {
 	Amount     int     `json:"amount"`
 	Percentage float64 `json:"percentage"`
 }
+
+type PollResponse struct {
+	PollID int    `json:"poll_id"`
+	Name   string `json:"name"`
+}

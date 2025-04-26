@@ -184,3 +184,41 @@ func (r *PollRepository) GetVotesByPoll(ctx context.Context, pollID int) ([]*ent
 
 	return stats, nil
 }
+
+func (r *PollRepository) GetNewPoll(ctx context.Context, userID int, role string) (*entity.Poll, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+	}).Info("выполнение sql-запроса получения нового опроса")
+
+	query := `
+        SELECT p.id, p.name 
+        FROM poll p
+        WHERE NOT EXISTS (
+            SELECT 1 FROM vote v 
+            WHERE v.poll_id = p.id 
+            AND v.user_id = $1 
+            AND v.role = $2
+        )
+        LIMIT 1
+    `
+
+	var poll entity.Poll
+	err := r.DB.QueryRowContext(ctx, query, userID, role).Scan(&poll.ID, &poll.Name)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, entity.NewError(
+			entity.ErrNotFound,
+			fmt.Errorf("не найдено опроса, на который бы не ответил пользователь"),
+		)
+	}
+	if err != nil {
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении нового опроса err=%w", err),
+		)
+	}
+
+	return &poll, nil
+}

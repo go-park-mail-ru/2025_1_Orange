@@ -97,3 +97,15 @@ func (s *PollService) GetStats(ctx context.Context) ([]*dto.PollStatsResponse, e
 
 	return statsArray, nil
 }
+
+func (s *PollService) GetNewPoll(ctx context.Context, userID int, role string) (*dto.PollResponse, error) {
+	poll, err := s.pollRepository.GetNewPoll(ctx, userID, role)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.PollResponse{
+		PollID: poll.ID,
+		Name:   poll.Name,
+	}, nil
+}

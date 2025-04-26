@@ -23,6 +23,7 @@ func (h *PollHandler) Configure(r *http.ServeMux) {
 
 	pollMux.HandleFunc("POST /vote", h.Vote)
 	pollMux.HandleFunc("GET /stats", h.GetStats)
+	pollMux.HandleFunc("GET /new", h.GetNew)
 
 	r.Handle("/poll/", http.StripPrefix("/poll", pollMux))
 }
@@ -83,6 +84,35 @@ func (h *PollHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(stats); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	}
+}
+
+func (h *PollHandler) GetNew(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil || cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	poll, err := h.poll.GetNewPoll(ctx, userID, role)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(poll); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 	}
 }

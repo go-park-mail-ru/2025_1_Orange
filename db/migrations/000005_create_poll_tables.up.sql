@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS vote (
     CONSTRAINT user_role CHECK (role IN ('applicant', 'employer')) NOT NULL,
   answer INT
     CONSTRAINT answer_value CHECK (answer BETWEEN 1 AND 5) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT unique_vote UNIQUE (poll_id, user_id, role)
 );
 
 INSERT INTO poll (name)
@@ -44,4 +45,4 @@ INSERT INTO vote (poll_id, user_id, role, answer) VALUES
 
 INSERT INTO vote (poll_id, user_id, role, answer) VALUES
   (3, 1, 'employer', 4),
-  (3, 1, 'employer', 3);
+  (3, 1, 'applicant', 3);

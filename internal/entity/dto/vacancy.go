@@ -6,7 +6,7 @@ import (
 
 // VacancyShort представляет сокращенную информацию о вакансии
 type VacancyShortResponse struct {
-	ID             int                      `json:"id" validate:"required,email"`
+	ID             int                      `json:"id"`
 	Title          string                   `json:"title"`
 	Employer       *EmployerProfileResponse `json:"employer"`
 	Specialization string                   `json:"specialization"`

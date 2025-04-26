@@ -20,6 +20,7 @@ type VacancyShortResponse struct {
 	UpdatedAt      string `json:"updated_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	City           string `json:"city" validate:"required,min=2,max=50"`
 	Responded      bool   `json:"responded"`
+	Liked          bool   `json:"liked"`
 }
 
 type VacancyCreate struct {
@@ -82,6 +83,7 @@ type VacancyResponse struct {
 	CreatedAt            string   `json:"created_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	UpdatedAt            string   `json:"updated_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 	Responded            bool     `json:"responded"`
+	Liked                bool     `json:"liked"`
 }
 
 type VacancyResponsed struct {

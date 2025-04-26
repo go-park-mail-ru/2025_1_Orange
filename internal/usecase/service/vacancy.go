@@ -170,6 +170,14 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id, currentUserID in
 		}
 	}
 
+	liked := false
+	if userRole == "applicant" && currentUserID != 0 {
+		liked, err = vs.vacanciesRepository.LikeExists(ctx, vacancy.ID, currentUserID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	experienceStr := fmt.Sprintf(vacancy.Experience)
 
 	response := &dto.VacancyResponse{
@@ -194,6 +202,7 @@ func (vs *VacanciesService) GetVacancy(ctx context.Context, id, currentUserID in
 		Skills:               make([]string, 0, len(skills)),
 		City:                 vacancy.City,
 		Responded:            responded,
+		Liked:                liked,
 	}
 
 	for _, skill := range skills {
@@ -403,6 +412,14 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 			}
 		}
 
+		liked := false
+		if userRole == "applicant" && currentUserID != 0 {
+			liked, err = s.vacanciesRepository.LikeExists(ctx, vacancy.ID, currentUserID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
@@ -418,6 +435,7 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
 			City:           vacancy.City,
 			Responded:      responded,
+			Liked:          liked,
 		}
 
 		response = append(response, shortVacancy)
@@ -481,6 +499,14 @@ func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, 
 			}
 		}
 
+		liked := false
+		if userRole == "applicant" && userID != 0 {
+			liked, err = vs.vacanciesRepository.LikeExists(ctx, vacancy.ID, userID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		shortVacancy := dto.VacancyShortResponse{
 			ID:             vacancy.ID,
 			Title:          vacancy.Title,
@@ -496,6 +522,7 @@ func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, 
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
 			City:           vacancy.City,
 			Responded:      responded,
+			Liked:          liked,
 		}
 
 		response = append(response, shortVacancy)
@@ -513,6 +540,92 @@ func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 	}).Info("Получение вакансии по ID работодателя")
 
 	vacancies, err := vs.vacanciesRepository.GetVacanciesByApplicantID(ctx, applicantID)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]dto.VacancyShortResponse, 0, len(vacancies))
+	for _, vacancy := range vacancies {
+		var specializationName string
+		if vacancy.SpecializationID != 0 {
+			specialization, err := vs.specializationRepository.GetByID(ctx, vacancy.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":   requestID,
+					"vacancyID":   vacancy.ID,
+					"applicantID": applicantID,
+					"error":       err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		// responded := false
+		// if applicantID != 0 {
+		// 	responded, err = vs.vacanciesRepository.ResponseExists(ctx, vacancy.ID, applicantID)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// }
+
+		liked := false
+		if applicantID != 0 {
+			liked, err = vs.vacanciesRepository.LikeExists(ctx, vacancy.ID, applicantID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		shortVacancy := dto.VacancyShortResponse{
+			ID:             vacancy.ID,
+			Title:          vacancy.Title,
+			EmployerID:     vacancy.EmployerID,
+			Specialization: specializationName,
+			WorkFormat:     vacancy.WorkFormat,
+			Employment:     vacancy.Employment,
+			WorkingHours:   vacancy.WorkingHours,
+			SalaryFrom:     vacancy.SalaryFrom,
+			SalaryTo:       vacancy.SalaryTo,
+			TaxesIncluded:  vacancy.TaxesIncluded,
+			CreatedAt:      vacancy.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
+			City:           vacancy.City,
+			Responded:      true,
+			Liked:          liked,
+		}
+
+		response = append(response, shortVacancy)
+	}
+
+	return response, nil
+}
+
+func (vs *VacanciesService) LikeVacancy(ctx context.Context, vacancyID, applicantID int) error {
+	// Проверяем существование вакансии
+	if _, err := vs.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
+		return fmt.Errorf("vacancy not found: %w", err)
+	}
+
+	hasLiked, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
+	if err != nil {
+		return fmt.Errorf("failed to check existing like: %w", err)
+	}
+	if hasLiked {
+		return vs.vacanciesRepository.DeleteLike(ctx, vacancyID, applicantID)
+	}
+
+	return vs.vacanciesRepository.CreateLike(ctx, vacancyID, applicantID)
+}
+func (vs *VacanciesService) GetLikedVacancies(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"applicantID": applicantID,
+	}).Info("Получение понравившихся вакансии по ID соискателя")
+
+	vacancies, err := vs.vacanciesRepository.GetlikedVacancies(ctx, applicantID)
 	if err != nil {
 		return nil, err
 	}
@@ -557,6 +670,7 @@ func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
 			City:           vacancy.City,
 			Responded:      responded,
+			Liked:          true,
 		}
 
 		response = append(response, shortVacancy)

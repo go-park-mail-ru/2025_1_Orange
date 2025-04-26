@@ -52,6 +52,7 @@ type VacancyShort struct {
 	CreatedAt      time.Time `json:"created_at" validate:"required"`
 	UpdatedAt      time.Time `json:"updated_at" validate:"required"`
 	Responded      bool      `json:"responded"`
+	Liked          bool      `json:"liked"`
 }
 
 type VacancyCreate struct {

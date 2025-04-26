@@ -1262,6 +1262,11 @@ func (r *VacancyRepository) CreateSpecializationIfNotExists(ctx context.Context,
 func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
+	l.Log.WithFields(logrus.Fields{
+		"requestID":  requestID,
+		"employerID": employerID,
+	}).Info("sql-запрос в БД на получение активных вакансий работодателя")
+
 	query := `
         SELECT id, title, employer_id, specialization_id, work_format, employment, 
                schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
@@ -1359,4 +1364,163 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
 	}
 
 	return vacancies, nil
+}
+
+func (r *VacancyRepository) CreateLike(ctx context.Context, vacancyID, applicantID int) error {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"vacancyID":   vacancyID,
+		"applicantID": applicantID,
+	}).Info("sql-запрос в БД на создания лайка для вакансии")
+
+	query := `
+        INSERT INTO vacancy_like (
+            vacancy_id, 
+            applicant_id,
+            applied_at
+        ) VALUES ($1, $2, NOW())
+    `
+	_, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			switch pqErr.Code {
+			case "23503": // foreign key violation
+				return entity.NewError(entity.ErrBadRequest,
+					fmt.Errorf("vacancy or applicant does not exist"))
+			case "23505": // unique violation
+				return entity.NewError(entity.ErrAlreadyExists,
+					fmt.Errorf("response already exists"))
+			}
+		}
+		return fmt.Errorf("failed to create vacancy response: %w", err)
+	}
+
+	return nil
+}
+func (r *VacancyRepository) DeleteLike(ctx context.Context, vacancyID, applicantID int) error {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"vacancyID":   vacancyID,
+		"applicantID": applicantID,
+	}).Info("Deleting vacancy like")
+
+	query := `
+        DELETE FROM vacancy_like 
+        WHERE vacancy_id = $1 AND applicant_id = $2
+    `
+	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("Failed to delete vacancy like")
+		return fmt.Errorf("failed to delete vacancy like: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("Failed to get rows affected")
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return entity.NewError(entity.ErrNotFound,
+			fmt.Errorf("like not found for vacancy %d and applicant %d", vacancyID, applicantID))
+	}
+
+	return nil
+}
+func (r *VacancyRepository) GetlikedVacancies(ctx context.Context, applicantID int) ([]*entity.Vacancy, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"applicantID": applicantID,
+	}).Info("Запрос в бд на получение всех понравившихся вакансий пользователем")
+
+	query := `
+	SELECT 
+    v.id,
+    v.title,
+    v.employer_id,
+    v.specialization_id,
+    v.work_format,
+    v.employment,
+    v.schedule,
+    v.working_hours,
+    v.salary_from,
+    v.salary_to,
+    v.taxes_included,
+    v.experience,
+    v.description,
+    v.tasks,
+    v.requirements,
+    v.optional_requirements,
+    v.city,
+    v.created_at,
+    v.updated_at,
+    vl.liked_at,
+FROM 
+    vacancy_like vl
+JOIN 
+    vacancy v ON vl.vacancy_id = v.id
+WHERE 
+    vl.applicant_id = $1
+ORDER BY 
+    vl.liked_at DESC;
+	`
+	rows, err := r.DB.QueryContext(ctx, query, applicantID)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID":   requestID,
+			"applicantID": applicantID,
+			"error":       err,
+		}).Error("Ошибка при получении понравившихся вакансий")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении понравившихся вакансий: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	var vacancies []*entity.Vacancy
+	for rows.Next() {
+		var vacancy entity.Vacancy
+		err := rows.Scan(
+			&vacancy.ID, &vacancy.Title, &vacancy.EmployerID, &vacancy.SpecializationID,
+			&vacancy.WorkFormat, &vacancy.Employment, &vacancy.Schedule, &vacancy.WorkingHours,
+			&vacancy.SalaryFrom, &vacancy.SalaryTo, &vacancy.TaxesIncluded, &vacancy.Experience,
+			&vacancy.Description, &vacancy.Tasks, &vacancy.Requirements, &vacancy.OptionalRequirements,
+			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("Ошибка при сканировании вакансии")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка обработки данных вакансии: %w", err),
+			)
+		}
+		vacancies = append(vacancies, &vacancy)
+	}
+	return vacancies, nil
+}
+
+func (r *VacancyRepository) LikeExists(ctx context.Context, vacancyID, applicantID int) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM vacancy_like WHERE vacancy_id = $1 AND applicant_id = $2)`
+	var exists bool
+	err := r.DB.QueryRowContext(ctx, query, vacancyID, applicantID).Scan(&exists)
+	return exists, err
 }

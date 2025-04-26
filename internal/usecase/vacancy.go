@@ -14,4 +14,6 @@ type Vacancy interface {
 	ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error)
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string) ([]dto.VacancyShortResponse, error)
+	LikeVacancy(ctx context.Context, vacancyID, applicantID int) error
+	GetLikedVacancies(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error)
 }

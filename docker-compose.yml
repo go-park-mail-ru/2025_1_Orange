@@ -1,11 +1,15 @@
 services:
   resumatch:
     container_name: app
-    build: .
+    build:
+      context: .
+      dockerfile: docker/app.dockerfile
     env_file: .env
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
     depends_on:
+      poll:
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:
@@ -20,6 +24,23 @@ services:
       - resumatch-network
     volumes:
       - ./assets:/app/assets
+
+  poll:
+    container_name: poll
+    build:
+      context: .
+      dockerfile: docker/poll.dockerfile
+    env_file: .env
+    ports:
+      - "${POLL_PORT}:${POLL_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+#    command: >
+#      sh -c "./.bin"
+    networks:
+      - resumatch-network
 
   postgres:
     container_name: postgres

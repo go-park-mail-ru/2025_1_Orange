@@ -5,6 +5,7 @@ import (
 	"ResuMatch/internal/repository/postgres"
 	"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/server"
+	"ResuMatch/internal/transport/grpc/poll"
 	handler "ResuMatch/internal/transport/http"
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
@@ -54,17 +55,17 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Failed to connect to employer postgres: %v", err)
 	}
 
-	// TODO
-	pollConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Failed to connect to poll postgres: %v", err)
-	}
-
-	// TODO
-	pollRepo, err := postgres.NewPollRepository(pollConn)
-	if err != nil {
-		l.Log.Errorf("Failed to create poll repository: %v", err)
-	}
+	//// TODO
+	//pollConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	//if err != nil {
+	//	l.Log.Errorf("Failed to connect to poll postgres: %v", err)
+	//}
+	//
+	//// TODO
+	//pollRepo, err := postgres.NewPollRepository(pollConn)
+	//if err != nil {
+	//	l.Log.Errorf("Failed to create poll repository: %v", err)
+	//}
 
 	// Redis Connection
 	sessionConn, err := connector.NewRedisConnection(cfg.Redis)
@@ -121,7 +122,12 @@ func Init(cfg *config.Config) *server.Server {
 	// Use Cases Init
 
 	// TODO
-	pollService := service.NewPollService(pollRepo)
+	//pollService := service.NewPollService(pollRepo)
+
+	pollService, err := poll.NewGateway(cfg.Microservices.Poll.Addr())
+	if err != nil {
+		l.Log.Errorf("Ошибка при подключении к сервису отзывов: %v", err)
+	}
 
 	staticService := service.NewStaticService(staticRepo)
 	authService := service.NewAuthService(sessionRepo, applicantRepo, employerRepo)
@@ -139,7 +145,6 @@ func Init(cfg *config.Config) *server.Server {
 	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 
-	// TODO
 	pollHandler := handler.NewPollHandler(authService, pollService)
 
 	// Server Init

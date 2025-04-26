@@ -7,6 +7,11 @@ http:
   corsAllowedOrigins:
     - "http://localhost:8001"
 
+microservices:
+  poll_service:
+    host: "poll"
+    port: "8081"
+
 session:
   cookieName: "session_id"
   lifetime: "24h"

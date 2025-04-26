@@ -54,12 +54,36 @@ type RedisConfig struct {
 	TTL      int    `yaml:"ttl"`
 }
 
-type Config struct {
-	HTTP     HTTPConfig     `yaml:"http"`
-	Session  SessionConfig  `yaml:"session_id"`
-	CSRF     CSRFConfig     `yaml:"csrf"`
+type MicroservicesConfig struct {
+	Poll PollClientConfig `yaml:"poll_service"`
+}
+
+type PollConfig struct {
+	Host     string         `yaml:"host"`
+	Port     string         `yaml:"port"`
 	Postgres PostgresConfig `yaml:"postgres"`
-	Redis    RedisConfig    `yaml:"redis"`
+}
+
+func (p *PollConfig) Addr() string {
+	return fmt.Sprintf("%s:%s", p.Host, p.Port)
+}
+
+type PollClientConfig struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
+}
+
+func (p *PollClientConfig) Addr() string {
+	return fmt.Sprintf("%s:%s", p.Host, p.Port)
+}
+
+type Config struct {
+	HTTP          HTTPConfig          `yaml:"http"`
+	Session       SessionConfig       `yaml:"session_id"`
+	CSRF          CSRFConfig          `yaml:"csrf"`
+	Postgres      PostgresConfig      `yaml:"postgres"`
+	Redis         RedisConfig         `yaml:"redis"`
+	Microservices MicroservicesConfig `yaml:"microservices"`
 }
 
 func Load() (*Config, error) {
@@ -107,6 +131,41 @@ func Load() (*Config, error) {
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       cfg.Redis.DB,
 		TTL:      cfg.Redis.TTL,
+	}
+
+	return &cfg, nil
+}
+
+func LoadPollConfig() (*PollConfig, error) {
+	if err := godotenv.Load(); err != nil {
+		return nil, fmt.Errorf("error loading .env: %w", err)
+	}
+
+	yamlFile, err := os.ReadFile("configs/poll.yml")
+	if err != nil {
+		return nil, fmt.Errorf("error reading poll config file: %w", err)
+	}
+
+	var cfg PollConfig
+	if err := yaml.Unmarshal(yamlFile, &cfg); err != nil {
+		return nil, fmt.Errorf("error parsing poll YAML: %w", err)
+	}
+
+	cfg.Postgres = PostgresConfig{
+		Host:     os.Getenv("POSTGRES_HOST"),
+		Port:     os.Getenv("POSTGRES_CONTAINER_PORT"),
+		User:     os.Getenv("POSTGRES_USER"),
+		Password: os.Getenv("POSTGRES_PASSWORD"),
+		DBName:   os.Getenv("POSTGRES_DB"),
+		SSLMode:  "disable",
+		DSN: fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			os.Getenv("POSTGRES_HOST"),
+			os.Getenv("POSTGRES_CONTAINER_PORT"),
+			os.Getenv("POSTGRES_USER"),
+			os.Getenv("POSTGRES_PASSWORD"),
+			os.Getenv("POSTGRES_DB"),
+		),
 	}
 
 	return &cfg, nil

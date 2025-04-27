@@ -21,16 +21,12 @@ require (
 )
 
 require (
-<<<<<<< HEAD
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-=======
->>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-<<<<<<< HEAD
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
@@ -38,9 +34,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
-=======
-	golang.org/x/text v0.24.0 // indirect
->>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b
 )
 
 require (
@@ -52,10 +45,7 @@ require (
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
-<<<<<<< HEAD
 	github.com/go-playground/validator v9.31.0+incompatible
-=======
->>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

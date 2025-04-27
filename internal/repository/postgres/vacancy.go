@@ -1262,14 +1262,11 @@ func (r *VacancyRepository) CreateSpecializationIfNotExists(ctx context.Context,
 func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
-<<<<<<< HEAD
 	l.Log.WithFields(logrus.Fields{
 		"requestID":  requestID,
 		"employerID": employerID,
 	}).Info("sql-запрос в БД на получение активных вакансий работодателя")
 
-=======
->>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b
 	query := `
         SELECT id, title, employer_id, specialization_id, work_format, employment, 
                schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
@@ -1368,7 +1365,6 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
 
 	return vacancies, nil
 }
-<<<<<<< HEAD
 
 func (r *VacancyRepository) CreateLike(ctx context.Context, vacancyID, applicantID int) error {
 	requestID := utils.GetRequestID(ctx)
@@ -1528,5 +1524,3 @@ func (r *VacancyRepository) LikeExists(ctx context.Context, vacancyID, applicant
 	err := r.DB.QueryRowContext(ctx, query, vacancyID, applicantID).Scan(&exists)
 	return exists, err
 }
-=======
->>>>>>> 327c6813add79596443fff2ebd31e7419339cd7b

@@ -395,12 +395,20 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resumes []dto.ResumeShortResponse
+	var resumesWithSkills []dto.ResumeApplicantShortResponse
 
 	if role == "applicant" {
 		// Получаем список всех резюме соискателя
-		resumes, err = h.resume.GetAllResumesByApplicantID(ctx, userID, limit, offset)
+		resumesWithSkills, err = h.resume.GetAllResumesByApplicantID(ctx, userID, limit, offset)
 		if err != nil {
 			utils.WriteAPIError(w, utils.ToAPIError(err))
+			return
+		}
+		// Отправляем ответ
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resumesWithSkills); err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 			return
 		}
 	} else {
@@ -410,15 +418,15 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 			utils.WriteAPIError(w, utils.ToAPIError(err))
 			return
 		}
+		// Отправляем ответ
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resumes); err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+			return
+		}
 	}
 
-	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resumes); err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
-		return
-	}
 }
 
 // SearchResumes godoc

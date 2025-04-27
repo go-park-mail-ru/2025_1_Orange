@@ -425,6 +425,7 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 			return
 		}
+<<<<<<< HEAD
 	}
 
 }
@@ -569,15 +570,10 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
+=======
+>>>>>>> 2c57745 (дополнил дто для списка резюме соискателя)
 	}
 
-	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resumes); err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
-		return
-	}
 }
 
 // SearchResumes godoc

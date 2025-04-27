@@ -1623,3 +1623,190 @@ func (r *VacancyRepository) SearchVacanciesByEmployerID(ctx context.Context, emp
 
 	return vacancies, nil
 }
+
+// FindSpecializationIDsByNames находит ID специализаций по их названиям
+func (r *VacancyRepository) FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"names":     specializationNames,
+	}).Info("sql-запрос в БД на поиск ID специализаций по названиям FindSpecializationIDsByNames")
+
+	if len(specializationNames) == 0 {
+		return []int{}, nil
+	}
+
+	// Создаем параметры для запроса
+	params := make([]interface{}, len(specializationNames))
+	placeholders := make([]string, len(specializationNames))
+	for i, name := range specializationNames {
+		params[i] = name
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	// Формируем запрос с использованием IN
+	query := fmt.Sprintf(`
+		SELECT id
+		FROM specialization
+		WHERE name IN (%s)
+	`, strings.Join(placeholders, ", "))
+
+	// Выполняем запрос
+	rows, err := r.DB.QueryContext(ctx, query, params...)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске ID специализаций по названиям")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске ID специализаций по названиям: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	// Собираем результаты
+	var specializationIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании ID специализации")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании ID специализации: %w", err),
+			)
+		}
+		specializationIDs = append(specializationIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по ID специализаций")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по ID специализаций: %w", err),
+		)
+	}
+
+	return specializationIDs, nil
+}
+
+// SearchVacanciesBySpecializations ищет вакансии по списку ID специализаций
+func (r *VacancyRepository) SearchVacanciesBySpecializations(ctx context.Context, specializationIDs []int, limit int, offset int) ([]*entity.Vacancy, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":         requestID,
+		"specializationIDs": specializationIDs,
+		"limit":             limit,
+		"offset":            offset,
+	}).Info("sql-запрос в БД на поиск вакансий по специализациям SearchVacanciesBySpecializations")
+
+	if len(specializationIDs) == 0 {
+		// Если список специализаций пуст, возвращаем пустой список вакансий
+		return []*entity.Vacancy{}, nil
+	}
+
+	// Создаем параметры для запроса
+	params := make([]interface{}, len(specializationIDs)+2) // +2 для limit и offset
+	placeholders := make([]string, len(specializationIDs))
+
+	for i, id := range specializationIDs {
+		params[i] = id
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	// Добавляем параметры limit и offset
+	params[len(specializationIDs)] = limit
+	params[len(specializationIDs)+1] = offset
+
+	// Формируем запрос с использованием IN
+	query := fmt.Sprintf(`
+		SELECT v.id, v.title, v.is_active, v.employer_id, v.specialization_id, v.work_format, 
+			v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
+			v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
+			v.optional_requirements, v.city, v.created_at, v.updated_at
+		FROM vacancy v
+		WHERE v.specialization_id IN (%s)
+		ORDER BY v.updated_at DESC
+		LIMIT $%d OFFSET $%d
+	`, strings.Join(placeholders, ", "), len(specializationIDs)+1, len(specializationIDs)+2)
+
+	// Выполняем запрос
+	rows, err := r.DB.QueryContext(ctx, query, params...)
+	if err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при поиске вакансий по специализациям")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при поиске вакансий по специализациям: %w", err),
+		)
+	}
+	defer rows.Close()
+
+	// Собираем результаты
+	vacancies := make([]*entity.Vacancy, 0)
+	for rows.Next() {
+		var vacancy entity.Vacancy
+		err := rows.Scan(
+			&vacancy.ID,
+			&vacancy.Title,
+			&vacancy.IsActive,
+			&vacancy.EmployerID,
+			&vacancy.SpecializationID,
+			&vacancy.WorkFormat,
+			&vacancy.Employment,
+			&vacancy.Schedule,
+			&vacancy.WorkingHours,
+			&vacancy.SalaryFrom,
+			&vacancy.SalaryTo,
+			&vacancy.TaxesIncluded,
+			&vacancy.Experience,
+			&vacancy.Description,
+			&vacancy.Tasks,
+			&vacancy.Requirements,
+			&vacancy.OptionalRequirements,
+			&vacancy.City,
+			&vacancy.CreatedAt,
+			&vacancy.UpdatedAt,
+		)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка сканирования вакансии")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка обработки данных вакансии: %w", err),
+			)
+		}
+		vacancies = append(vacancies, &vacancy)
+	}
+
+	if err := rows.Err(); err != nil {
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при обработке результатов запроса")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при обработке результатов запроса вакансий: %w", err),
+		)
+	}
+
+	return vacancies, nil
+}

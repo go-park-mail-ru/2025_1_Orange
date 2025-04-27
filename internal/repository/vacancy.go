@@ -30,4 +30,6 @@ type VacancyRepository interface {
 
 	SearchVacancies(ctx context.Context, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
 	SearchVacanciesByEmployerID(ctx context.Context, employerID int, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
+	SearchVacanciesBySpecializations(ctx context.Context, specializationIDs []int, limit int, offset int) ([]*entity.Vacancy, error)
+	FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error)
 }

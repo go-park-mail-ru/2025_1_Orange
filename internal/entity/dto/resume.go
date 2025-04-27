@@ -136,6 +136,19 @@ type ResumeApplicantShortResponse struct {
 	UpdatedAt      string                    `json:"updated_at"`
 }
 
+// Добавляем новое DTO для вывода списка резюме соискателя с навыками
+type ResumeApplicantShortResponse struct {
+	ID             int                       `json:"id"`
+	ApplicantID    int                       `json:"applicant_id,omitempty"`
+	Applicant      *ApplicantProfileResponse `json:"applicant"`
+	Skills         []string                  `json:"skills"` // Добавлено поле навыков
+	Specialization string                    `json:"specialization"`
+	Profession     string                    `json:"profession"`
+	WorkExperience WorkExperienceShort       `json:"work_experiences"`
+	CreatedAt      string                    `json:"created_at"`
+	UpdatedAt      string                    `json:"updated_at"`
+}
+
 type WorkExperienceShort struct {
 	ID           int    `json:"id"`
 	EmployerName string `json:"employer_name"`

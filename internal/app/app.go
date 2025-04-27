@@ -3,10 +3,8 @@ package app
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/repository/postgres"
-	"ResuMatch/internal/transport/grpc/auth"
-
-	//"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/server"
+	"ResuMatch/internal/transport/grpc/auth"
 	handler "ResuMatch/internal/transport/http"
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
@@ -56,12 +54,6 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Не удалось установить соединение соединение с employer postgres: %v", err)
 	}
 
-	// Redis Connection
-	//sessionConn, err := connector.NewRedisConnection(cfg.Redis)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с session redis: %v", err)
-	//}
-
 	// Repositories Init
 	resumeRepo, err := postgres.NewResumeRepository(resumeConn)
 	if err != nil {
@@ -103,15 +95,8 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Ошибка создания репозитория работодателя: %v", err)
 	}
 
-	//sessionRepo, err := redis.NewSessionRepository(sessionConn, cfg.Redis.TTL)
-	//if err != nil {
-	//	l.Log.Errorf("Failed to create session repository: %v", err)
-	//}
-
 	// Use Cases Init
 	staticService := service.NewStaticService(staticRepo)
-
-	//authService := service.NewAuthService(sessionRepo)
 	authService, err := auth.NewGateway(cfg.Microservices.Auth.Addr())
 	if err != nil {
 		l.Log.Errorf("Ошибка при подключении к сервису авторизации: %v", err)

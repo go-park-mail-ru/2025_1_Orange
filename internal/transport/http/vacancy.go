@@ -628,6 +628,7 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 		return
 	}
 }
+<<<<<<< HEAD
 
 func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -741,3 +742,5 @@ func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
+=======
+>>>>>>> 8e01a5d (сделал поиск вакансий по категориям)

@@ -103,7 +103,11 @@ type ApplyToVacancyRequest struct {
 	ResumeID int `json:"resume_id,omitempty"`
 }
 
+<<<<<<< HEAD
 // SearchBySpecializationsRequest для поиска вакансий по специализациям
+=======
+// SearchBySpecializationsRequest представляет запрос для поиска вакансий по специализациям
+>>>>>>> 8e01a5d (сделал поиск вакансий по категориям)
 type SearchBySpecializationsRequest struct {
 	Specializations []string `json:"specializations"`
 }

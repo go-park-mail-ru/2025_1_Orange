@@ -499,13 +499,6 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resumes); err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
-		return
-	}
 }
 
 // SearchResumes godoc

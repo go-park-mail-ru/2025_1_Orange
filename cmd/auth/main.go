@@ -5,6 +5,7 @@ import (
 	"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/transport/grpc/auth"
 	authPROTO "ResuMatch/internal/transport/grpc/auth/proto"
+	"ResuMatch/internal/transport/grpc/interceptors"
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
@@ -37,7 +38,9 @@ func main() {
 	authService := service.NewAuthService(sessionRepo)
 
 	// grpc
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptors.RequestIDServerInterceptor()),
+	)
 
 	authGRPC := auth.NewGRPC(authService)
 	authPROTO.RegisterAuthServiceServer(grpcServer, authGRPC)

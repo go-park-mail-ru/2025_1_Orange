@@ -37,7 +37,7 @@ func main() {
 
 	go func() {
 		sig := <-quit
-		l.Log.Info("Завершение работы сервера приложения... : %v", sig)
+		l.Log.Infof("Завершение работы сервера приложения... : %v", sig)
 		if err := srv.Stop(); err != nil {
 			l.Log.Fatalf("Не удалось остановить сервер приложения: %v", err)
 		}

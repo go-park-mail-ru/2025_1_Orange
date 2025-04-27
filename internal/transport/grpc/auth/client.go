@@ -2,6 +2,7 @@ package auth
 
 import (
 	authPROTO "ResuMatch/internal/transport/grpc/auth/proto"
+	"ResuMatch/internal/transport/grpc/interceptors"
 	"context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -15,6 +16,7 @@ func NewGateway(connectAddr string) (*Gateway, error) {
 	grpcConn, err := grpc.NewClient(
 		connectAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(interceptors.RequestIDClientInterceptor()),
 	)
 	if err != nil {
 		return nil, err

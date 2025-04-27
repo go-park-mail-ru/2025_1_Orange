@@ -1037,7 +1037,11 @@ func TestApplicantHandler_EmailExists(t *testing.T) {
 			handler.EmailExists(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 

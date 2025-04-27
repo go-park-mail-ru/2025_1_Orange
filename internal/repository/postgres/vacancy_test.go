@@ -24,7 +24,10 @@ func TestVacancyRepository_Create(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	now := time.Now()
 
@@ -523,7 +526,10 @@ func TestVacancyRepository_GetByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.id)
 
@@ -553,7 +559,10 @@ func TestVacancyRepository_AddCity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	repo := &VacancyRepository{DB: db}
 
@@ -724,7 +733,10 @@ func TestVacancyRepository_Update(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	repo := &VacancyRepository{DB: db}
 
@@ -905,7 +917,10 @@ func TestVacancyRepository_Delete(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.id)
 
@@ -932,7 +947,10 @@ func TestVacancyRepository_GetSkillsByVacancyID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	repo := &VacancyRepository{DB: db}
 
@@ -992,7 +1010,10 @@ func TestVacancyRepository_ResponseExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	repo := &VacancyRepository{DB: db}
 
@@ -1049,7 +1070,10 @@ func TestVacancyRepository_ResponseExists(t *testing.T) {
 func TestVacancyRepository_CreateResponse(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	repo := &VacancyRepository{DB: db}
 
@@ -1316,7 +1340,10 @@ func TestVacancyRepository_AddSkills(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.vacancyID, tc.skillIDs)
 
@@ -1425,7 +1452,10 @@ func TestVacancyRepository_FindSkillIDsByNames(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.skillNames)
 
@@ -1573,7 +1603,10 @@ func TestVacancyRepository_FindCityIDsByNames(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.cityNames)
 
@@ -1690,7 +1723,10 @@ func TestVacancyRepository_FindSpecializationIDByName(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.specializationName)
 
@@ -1895,7 +1931,10 @@ func TestVacancyRepository_CreateSpecializationIfNotExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.specializationName)
 
@@ -2082,7 +2121,10 @@ func TestVacancyRepository_GetVacanciesByApplicantID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.applicantID)
 
@@ -2303,7 +2345,10 @@ func TestVacancyRepository_CreateSkillIfNotExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.skillName)
 
@@ -2400,7 +2445,10 @@ func TestVacancyRepository_DeleteCity(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -2490,7 +2538,10 @@ func TestVacancyRepository_DeleteSkills(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -2529,7 +2580,10 @@ func TestVacancyRepository_GetCityByVacancyID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	repo := &VacancyRepository{DB: db}
 
@@ -2667,7 +2721,10 @@ func TestVacancyRepository_GetAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		require.NoError(t, err)
+	}()
 
 	repo := &VacancyRepository{DB: db}
 
@@ -2942,7 +2999,10 @@ func TestVacancyRepository_GetActiveVacanciesByEmployerID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.employerID)
 

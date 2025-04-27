@@ -154,7 +154,10 @@ func TestSkillRepository_GetByIDs(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.ids)
 

@@ -78,7 +78,15 @@ func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Special
 			fmt.Errorf("ошибка при получении списка специализаций: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var specializations []entity.Specialization
 	for rows.Next() {

@@ -7,7 +7,6 @@ import (
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"ResuMatch/pkg/sanitizer"
-	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -88,8 +87,6 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		vacancyCreate.Skills[i] = sanitizer.StrictPolicy.Sanitize(skill)
 	}
 
-	ctx = context.WithValue(ctx, "employerID", currentUserID)
-
 	vacancy, err := h.vacancy.CreateVacancy(ctx, currentUserID, &vacancyCreate)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -107,7 +104,7 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID int = 0
+	var userID = 0
 	var userRole string
 
 	cookie, err := r.Cookie("session_id")
@@ -198,9 +195,7 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 		vacancyUpdate.Skills[i] = sanitizer.StrictPolicy.Sanitize(skill)
 	}
 
-	ctx = context.WithValue(ctx, "employerID", currentUserID)
-
-	vacancy, err := h.vacancy.UpdateVacancy(ctx, vacancyID, &vacancyUpdate)
+	vacancy, err := h.vacancy.UpdateVacancy(ctx, vacancyID, currentUserID, &vacancyUpdate)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -336,7 +331,7 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID int = 0
+	var userID = 0
 	var userRole string
 
 	idStr := r.PathValue("id")

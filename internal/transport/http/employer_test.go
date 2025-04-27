@@ -174,7 +174,10 @@ func TestEmployerHandler_Register(t *testing.T) {
 			handler.Register(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -358,7 +361,10 @@ func TestEmployerHandler_Login(t *testing.T) {
 			handler.Login(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -497,7 +503,10 @@ func TestEmployerHandler_GetProfile(t *testing.T) {
 			handler.GetProfile(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -669,7 +678,10 @@ func TestEmployerHandler_UpdateProfile(t *testing.T) {
 			handler.UpdateProfile(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -709,8 +721,12 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 				part, _ := writer.CreateFormFile("logo", "logo.jpg")
-				part.Write([]byte("test image content"))
-				writer.Close()
+
+				_, err := part.Write([]byte("test image content"))
+				require.NoError(t, err)
+
+				err = writer.Close()
+				require.NoError(t, err)
 
 				req := httptest.NewRequest(http.MethodPost, "/employer/logo", body)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -787,8 +803,12 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 				part, _ := writer.CreateFormFile("logo", "logo.jpg")
-				part.Write([]byte("test image content"))
-				writer.Close()
+
+				_, err := part.Write([]byte("test image content"))
+				require.NoError(t, err)
+
+				err = writer.Close()
+				require.NoError(t, err)
 
 				req := httptest.NewRequest(http.MethodPost, "/employer/logo", body)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -819,8 +839,12 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				body := &bytes.Buffer{}
 				writer := multipart.NewWriter(body)
 				part, _ := writer.CreateFormFile("logo", "logo.jpg")
-				part.Write([]byte("test image content"))
-				writer.Close()
+
+				_, err := part.Write([]byte("test image content"))
+				require.NoError(t, err)
+
+				err = writer.Close()
+				require.NoError(t, err)
 
 				req := httptest.NewRequest(http.MethodPost, "/employer/logo", body)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -881,7 +905,10 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 			handler.UploadLogo(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 

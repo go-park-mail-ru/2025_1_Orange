@@ -102,3 +102,8 @@ type DeleteVacancy struct {
 type ApplyToVacancyRequest struct {
 	ResumeID int `json:"resume_id,omitempty"`
 }
+
+// SearchBySpecializationsRequest представляет запрос для поиска вакансий по специализациям
+type SearchBySpecializationsRequest struct {
+	Specializations []string `json:"specializations"`
+}

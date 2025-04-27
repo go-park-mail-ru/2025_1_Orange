@@ -96,15 +96,15 @@ type VacancyResponse struct {
 type VacancyResponses struct {
 	ID          int       `json:"id"`
 	VacancyID   int       `json:"vacancy_id"`
-	ApplicantID int       `json:applicant_id`
-	AppliedAt   time.Time `json:applied_at`
+	ApplicantID int       `json:"applicant_id"`
+	AppliedAt   time.Time `json:"applied_at"`
 }
 
 type VacancyLike struct {
 	ID          int       `json:"id"`
 	VacancyID   int       `json:"vacancy_id"`
-	ApplicantID int       `json:applicant_id`
-	LikedAt     time.Time `json:liked_at`
+	ApplicantID int       `json:"applicant_id"`
+	LikedAt     time.Time `json:"liked_at"`
 }
 
 type SupplementaryConditions struct {

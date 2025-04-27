@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
-	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"strings"
 )

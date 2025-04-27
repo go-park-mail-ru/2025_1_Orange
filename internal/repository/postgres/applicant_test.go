@@ -161,7 +161,11 @@ func TestApplicantRepository_CreateApplicant(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			repo := &ApplicantRepository{DB: db}
 
@@ -334,7 +338,11 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.id)
 
@@ -500,7 +508,11 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.email)
 
@@ -736,7 +748,11 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			repo := &ApplicantRepository{DB: db}
 			tc.setupMock(mock, tc.userID, tc.fields)

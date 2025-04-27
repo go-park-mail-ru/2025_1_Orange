@@ -125,7 +125,10 @@ func TestAuthHandler_IsAuth(t *testing.T) {
 			handler.IsAuth(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -235,7 +238,11 @@ func TestAuthHandler_EmailExists(t *testing.T) {
 			handler.EmailExists(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -338,7 +345,10 @@ func TestAuthHandler_Logout(t *testing.T) {
 			handler.Logout(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -501,7 +511,10 @@ func TestAuthHandler_LogoutAll(t *testing.T) {
 			handler.LogoutAll(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 

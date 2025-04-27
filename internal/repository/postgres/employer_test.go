@@ -150,7 +150,11 @@ func TestEmployerRepository_CreateEmployer(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			repo := &EmployerRepository{DB: db}
 
@@ -286,7 +290,11 @@ func TestEmployerRepository_GetEmployerByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.id)
 
@@ -415,7 +423,11 @@ func TestEmployerRepository_GetEmployerByEmail(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			tc.setupMock(mock, tc.email)
 
@@ -651,7 +663,11 @@ func TestEmployerRepository_UpdateEmployer(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+
+			defer func() {
+				err := db.Close()
+				require.NoError(t, err)
+			}()
 
 			repo := &EmployerRepository{DB: db}
 			tc.setupMock(mock, tc.userID, tc.fields)

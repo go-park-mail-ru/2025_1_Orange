@@ -175,7 +175,7 @@ func (e *EmployerService) EmailExists(ctx context.Context, email string) (*dto.E
 		return &dto.EmailExistsResponse{
 			Exists: true,
 			Role:   "employer",
-		}, err
+		}, nil
 	}
 
 	return nil, err

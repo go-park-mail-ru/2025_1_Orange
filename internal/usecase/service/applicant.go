@@ -209,7 +209,7 @@ func (a *ApplicantService) EmailExists(ctx context.Context, email string) (*dto.
 		return &dto.EmailExistsResponse{
 			Exists: true,
 			Role:   "applicant",
-		}, err
+		}, nil
 	}
 
 	return nil, err

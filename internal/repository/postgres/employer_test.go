@@ -60,7 +60,7 @@ func TestEmployerRepository_CreateEmployer(t *testing.T) {
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrAlreadyExists,
-				fmt.Errorf("работодатель с таким email уже зарегистрирован"),
+				fmt.Errorf("такой работодатель уже зарегистрирован"),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, employer *entity.Employer, query string) {
 				mock.ExpectQuery(regexp.QuoteMeta(query)).

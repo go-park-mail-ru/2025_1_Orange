@@ -2,7 +2,6 @@ package service
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository/mock"
 	"context"
 	"fmt"
@@ -62,7 +61,7 @@ func TestAuthService_CreateSession(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockSessRepo := mock.NewMockSessionRepository(ctrl)
-			service := NewAuthService(mockSessRepo, nil, nil)
+			service := NewAuthService(mockSessRepo)
 
 			tc.mockSetup(mockSessRepo)
 
@@ -133,7 +132,7 @@ func TestAuthService_GetUserIDBySession(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockSessRepo := mock.NewMockSessionRepository(ctrl)
-			service := NewAuthService(mockSessRepo, nil, nil)
+			service := NewAuthService(mockSessRepo)
 
 			tc.mockSetup(mockSessRepo)
 
@@ -199,7 +198,7 @@ func TestAuthService_Logout(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockSessRepo := mock.NewMockSessionRepository(ctrl)
-			service := NewAuthService(mockSessRepo, nil, nil)
+			service := NewAuthService(mockSessRepo)
 
 			tc.mockSetup(mockSessRepo)
 
@@ -266,7 +265,7 @@ func TestAuthService_LogoutAll(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockSessRepo := mock.NewMockSessionRepository(ctrl)
-			service := NewAuthService(mockSessRepo, nil, nil)
+			service := NewAuthService(mockSessRepo)
 
 			tc.mockSetup(mockSessRepo)
 
@@ -279,120 +278,6 @@ func TestAuthService_LogoutAll(t *testing.T) {
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
 			} else {
 				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestAuthService_EmailExists(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name           string
-		email          string
-		mockSetup      func(*mock.MockApplicantRepository, *mock.MockEmployerRepository)
-		expectedResult *dto.EmailExistsResponse
-		expectedErr    error
-	}{
-		{
-			name:  "Успешный поиск email для соискателя",
-			email: "applicant@example.com",
-			mockSetup: func(appRepo *mock.MockApplicantRepository, empRepo *mock.MockEmployerRepository) {
-				appRepo.EXPECT().
-					GetApplicantByEmail(gomock.Any(), "applicant@example.com").
-					Return(&entity.Applicant{ID: 1, Email: "applicant@example.com"}, nil)
-			},
-			expectedResult: &dto.EmailExistsResponse{
-				Exists: true,
-				Role:   "applicant",
-			},
-			expectedErr: nil,
-		},
-		{
-			name:  "Успешный поиск email для работодателя",
-			email: "employer@example.com",
-			mockSetup: func(appRepo *mock.MockApplicantRepository, empRepo *mock.MockEmployerRepository) {
-				appRepo.EXPECT().
-					GetApplicantByEmail(gomock.Any(), "employer@example.com").
-					Return(nil, entity.NewError(
-						entity.ErrNotFound,
-						fmt.Errorf("соискатель с email=nonexistent@example.com не найден")))
-
-				empRepo.EXPECT().
-					GetEmployerByEmail(gomock.Any(), "employer@example.com").
-					Return(&entity.Employer{ID: 1, Email: "employer@example.com"}, nil)
-			},
-			expectedResult: &dto.EmailExistsResponse{
-				Exists: true,
-				Role:   "employer",
-			},
-			expectedErr: nil,
-		},
-		{
-			name:  "Email не найден",
-			email: "nonexistent@example.com",
-			mockSetup: func(appRepo *mock.MockApplicantRepository, empRepo *mock.MockEmployerRepository) {
-				appRepo.EXPECT().
-					GetApplicantByEmail(gomock.Any(), "nonexistent@example.com").
-					Return(nil, entity.NewError(
-						entity.ErrNotFound,
-						fmt.Errorf("соискатель с email=nonexistent@example.com не найден"),
-					))
-
-				empRepo.EXPECT().
-					GetEmployerByEmail(gomock.Any(), "nonexistent@example.com").
-					Return(nil, entity.NewError(
-						entity.ErrNotFound,
-						fmt.Errorf("работодатель с email=nonexistent@example.com не найден"),
-					))
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrNotFound,
-				fmt.Errorf("работодатель с email=nonexistent@example.com не найден"),
-			),
-		},
-		{
-			name:  "Ошибка при поиске email у соискателя",
-			email: "error@example.com",
-			mockSetup: func(appRepo *mock.MockApplicantRepository, empRepo *mock.MockEmployerRepository) {
-				appRepo.EXPECT().
-					GetApplicantByEmail(gomock.Any(), "error@example.com").
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("не удалось найти соискателя с email=nonexistent@example.com"),
-					))
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("не удалось найти соискателя с email=nonexistent@example.com"),
-			),
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockAppRepo := mock.NewMockApplicantRepository(ctrl)
-			mockEmpRepo := mock.NewMockEmployerRepository(ctrl)
-			authService := NewAuthService(nil, mockAppRepo, mockEmpRepo)
-
-			tc.mockSetup(mockAppRepo, mockEmpRepo)
-
-			res, err := authService.EmailExists(context.Background(), tc.email)
-
-			if tc.expectedErr != nil {
-				require.Error(t, err)
-				require.Equal(t, tc.expectedErr.Error(), err.Error())
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedResult, res)
 			}
 		})
 	}

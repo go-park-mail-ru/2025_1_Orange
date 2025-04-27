@@ -265,6 +265,7 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 
 	if role != "applicant" {
 		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
 	}
 
 	file, _, err := r.FormFile("avatar")

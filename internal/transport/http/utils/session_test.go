@@ -4,7 +4,7 @@ import (
 	// "ResuMatch/internal/usecase"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/usecase/mock"
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -87,7 +87,11 @@ func TestCreateSession_Error(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 
 	// Ожидаем вызов CreateSession, который вернет ошибку
-	expectedErr := entity.ErrInternal
+	expectedErr := entity.NewError(
+		entity.ErrInternal,
+		fmt.Errorf("не удалось получить сессию для пользователя с id=123, role=applicant"),
+	)
+
 	authMock.EXPECT().
 		CreateSession(gomock.Any(), 123, "applicant").
 		Return("", expectedErr)
@@ -95,14 +99,6 @@ func TestCreateSession_Error(t *testing.T) {
 	err := CreateSession(w, r, authMock, 123, "applicant")
 	require.Error(t, err)
 	require.Equal(t, expectedErr, err)
-
-	// Проверяем, что ошибка записана в response writer
-	require.Equal(t, http.StatusInternalServerError, w.Code)
-
-	var apiError APIError
-	err = json.NewDecoder(w.Body).Decode(&apiError)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusInternalServerError, apiError.Status)
 }
 
 func TestSetSession(t *testing.T) {

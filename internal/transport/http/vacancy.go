@@ -39,7 +39,9 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("GET /employer/{id}/vacancies", h.GetActiveVacanciesByEmployer)
 	vacancyMux.HandleFunc("GET /applicant/{id}/vacancies", h.GetVacanciesByApplicant)
 	vacancyMux.HandleFunc("GET /search", h.SearchVacancies)
-	vacancyMux.HandleFunc("POST /search/specializations", h.SearchVacanciesBySpecializations) // Новый обработчик
+	vacancyMux.HandleFunc("POST /search/specializations", h.SearchVacanciesBySpecializations)
+	vacancyMux.HandleFunc("GET /applicant/{id}/liked", h.GetLikedVacancies)
+	vacancyMux.HandleFunc("POST /vacancy/{id}/like", h.LikeVacancy)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -630,4 +632,117 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
+}
+
+func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var userID int = 0
+	var userRole string
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil || cookie == nil {
+		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+			userRole = currentUserRole
+		}
+	}
+
+	// Получаем параметры пагинации из URL
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	if userRole != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	idStr := r.PathValue("id")
+	applicantID, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	if applicantID != userID {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	vacancies, err := h.vacancy.GetLikedVacancies(ctx, applicantID, limit, offset)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var userID int = 0
+	var userRole string
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil || cookie == nil {
+		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+			userRole = currentUserRole
+		}
+	}
+
+	// Получаем ID вакансии из URL
+	vacancyID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	if userRole != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	if r.ContentLength > 0 {
+		var application struct {
+			Message string `json:"message"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&application); err == nil {
+			application.Message = sanitizer.StrictPolicy.Sanitize(application.Message)
+		}
+	}
+
+	err = h.vacancy.LikeVacancy(ctx, vacancyID, userID)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }

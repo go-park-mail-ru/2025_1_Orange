@@ -30,4 +30,8 @@ type VacancyRepository interface {
 	SearchVacanciesByEmployerID(ctx context.Context, employerID int, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
 	SearchVacanciesBySpecializations(ctx context.Context, specializationIDs []int, limit int, offset int) ([]*entity.Vacancy, error)
 	FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error)
+	CreateLike(ctx context.Context, vacancyID, applicantID int) error
+	DeleteLike(ctx context.Context, vacancyID, applicantID int) error
+	GetlikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]*entity.Vacancy, error)
+	LikeExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
 }

@@ -1463,7 +1463,14 @@ func (r *VacancyRepository) SearchVacancies(ctx context.Context, searchQuery str
 			fmt.Errorf("ошибка при поиске вакансий: %w", err),
 		)
 	}
-	defer rows.Close()
+	// defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	vacancies := make([]*entity.Vacancy, 0)
 	for rows.Next() {
@@ -1554,7 +1561,14 @@ func (r *VacancyRepository) SearchVacanciesByEmployerID(ctx context.Context, emp
 			fmt.Errorf("ошибка при поиске вакансий работодателя: %w", err),
 		)
 	}
-	defer rows.Close()
+	// defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	vacancies := make([]*entity.Vacancy, 0)
 	for rows.Next() {

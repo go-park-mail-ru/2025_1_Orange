@@ -1774,7 +1774,14 @@ func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profes
 			fmt.Errorf("ошибка при поиске резюме по профессии: %w", err),
 		)
 	}
-	defer rows.Close()
+	// defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	var resumes []entity.Resume
 	for rows.Next() {
@@ -1851,7 +1858,14 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 			fmt.Errorf("ошибка при поиске резюме по профессии для соискателя: %w", err),
 		)
 	}
-	defer rows.Close()
+	// defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	var resumes []entity.Resume
 	for rows.Next() {

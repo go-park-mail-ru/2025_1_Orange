@@ -83,6 +83,7 @@ type VacancyResponse struct {
 	CreatedAt            string   `json:"created_at"`
 	UpdatedAt            string   `json:"updated_at"`
 	Responded            bool     `json:"responded"`
+	Liked                bool     `json:"liked"`
 }
 
 type VacancyResponsed struct {

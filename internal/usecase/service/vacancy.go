@@ -505,6 +505,14 @@ func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 			}
 		}
 
+		liked := false
+		if applicantID != 0 {
+			liked, err = vs.vacanciesRepository.LikeExists(ctx, vacancy.ID, applicantID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		employerDTO, err := vs.employerService.GetUser(ctx, vacancy.EmployerID)
 		if err != nil {
 			l.Log.WithFields(logrus.Fields{
@@ -531,6 +539,7 @@ func (vs *VacanciesService) GetVacanciesByApplicantID(ctx context.Context, appli
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
 			City:           vacancy.City,
 			Responded:      responded,
+			Liked:          liked,
 		}
 
 		response = append(response, shortVacancy)
@@ -592,14 +601,22 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 			}
 		}
 
+		liked := false
+		if userRole == "applicant" && userID != 0 {
+			liked, err = s.vacanciesRepository.LikeExists(ctx, vacancy.ID, userID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// Получаем информацию о соискателе
 		employerDTO, err := s.employerService.GetUser(ctx, vacancy.EmployerID)
 		if err != nil {
 			l.Log.WithFields(logrus.Fields{
-				"requestID":   requestID,
-				"resumeID":    vacancy.ID,
-				"applicantID": vacancy.EmployerID,
-				"error":       err,
+				"requestID":  requestID,
+				"resumeID":   vacancy.ID,
+				"employerID": vacancy.EmployerID,
+				"error":      err,
 			}).Error("ошибка при конвертации работодателя в DTO")
 			continue
 		}
@@ -619,6 +636,7 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 			UpdatedAt:      vacancy.UpdatedAt.Format(time.RFC3339),
 			City:           vacancy.City,
 			Responded:      responded,
+			Liked:          liked,
 		}
 
 		response = append(response, shortVacancy)

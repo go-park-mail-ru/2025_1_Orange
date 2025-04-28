@@ -61,12 +61,12 @@ CREATE TABLE IF NOT EXISTS vacancy_response (
 );
 
 -- Таблица лайков вакансий
-CREATE TABLE vacancy_like (
+CREATE TABLE IF NOT EXISTS vacancy_like (
     id SERIAL PRIMARY KEY,
     vacancy_id INTEGER NOT NULL REFERENCES vacancy(id) ON DELETE CASCADE,
     applicant_id INTEGER NOT NULL REFERENCES applicant(id) ON DELETE CASCADE,
     liked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE (vacancy_id, applicant_id) -- один лайк от соискателя на вакансию
+    UNIQUE (vacancy_id, applicant_id) 
 );
 
 -- Функция для автоматического обновления updated_at

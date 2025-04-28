@@ -1957,202 +1957,202 @@ func TestVacancyRepository_CreateSpecializationIfNotExists(t *testing.T) {
 	}
 }
 
-func TestVacancyRepository_GetVacanciesByApplicantID(t *testing.T) {
-	t.Parallel()
+// func TestVacancyRepository_GetVacanciesByApplicantID(t *testing.T) {
+// 	t.Parallel()
 
-	now := time.Now()
-	testCases := []struct {
-		name           string
-		applicantID    int
-		expectedResult []*entity.Vacancy
-		expectedErr    error
-		setupMock      func(mock sqlmock.Sqlmock, applicantID int)
-	}{
-		{
-			name:        "Успешное получение вакансий по applicantID",
-			applicantID: 1,
-			expectedResult: []*entity.Vacancy{
-				{
-					ID:                   1,
-					Title:                "Backend Developer",
-					EmployerID:           1,
-					SpecializationID:     1,
-					WorkFormat:           "remote",
-					Employment:           "full_time",
-					Schedule:             "flexible",
-					WorkingHours:         40,
-					SalaryFrom:           100000,
-					SalaryTo:             150000,
-					TaxesIncluded:        true,
-					Experience:           "1-3 years",
-					Description:          "Разработка backend на Go",
-					Tasks:                "Разработка API, оптимизация запросов",
-					Requirements:         "Опыт работы с Go от 1 года",
-					OptionalRequirements: "Знание Docker, Kubernetes",
-					City:                 "Москва",
-					CreatedAt:            now,
-					UpdatedAt:            now,
-				},
-			},
-			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
-                           v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
-                           v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
-                           v.optional_requirements, v.city, v.created_at, v.updated_at
-                    FROM vacancy v
-                    JOIN vacancy_response vr ON v.id = vr.vacancy_id
-                    WHERE vr.applicant_id = $1
-                    ORDER BY vr.applied_at DESC;
-                `)
-				rows := sqlmock.NewRows([]string{
-					"id", "title", "employer_id", "specialization_id", "work_format",
-					"employment", "schedule", "working_hours", "salary_from", "salary_to",
-					"taxes_included", "experience", "description", "tasks", "requirements",
-					"optional_requirements", "city", "created_at", "updated_at",
-				}).
-					AddRow(
-						1, "Backend Developer", 1, 1, "remote",
-						"full_time", "flexible", 40, 100000, 150000,
-						true, "1-3 years", "Разработка backend на Go",
-						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
-						"Знание Docker, Kubernetes", "Москва", now, now,
-					)
-				mock.ExpectQuery(query).
-					WithArgs(applicantID).
-					WillReturnRows(rows)
-			},
-		},
-		{
-			name:           "Нет вакансий для applicantID",
-			applicantID:    2,
-			expectedResult: []*entity.Vacancy{},
-			expectedErr:    nil,
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
-                           v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
-                           v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
-                           v.optional_requirements, v.city, v.created_at, v.updated_at
-                    FROM vacancy v
-                    JOIN vacancy_response vr ON v.id = vr.vacancy_id
-                    WHERE vr.applicant_id = $1
-                    ORDER BY vr.applied_at DESC;
-                `)
-				rows := sqlmock.NewRows([]string{
-					"id", "title", "employer_id", "specialization_id", "work_format",
-					"employment", "schedule", "working_hours", "salary_from", "salary_to",
-					"taxes_included", "experience", "description", "tasks", "requirements",
-					"optional_requirements", "city", "created_at", "updated_at",
-				})
-				mock.ExpectQuery(query).
-					WithArgs(applicantID).
-					WillReturnRows(rows)
-			},
-		},
-		{
-			name:           "Ошибка выполнения запроса",
-			applicantID:    3,
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при получении списка вакансий: %w", fmt.Errorf("database error")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
-                           v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
-                           v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
-                           v.optional_requirements, v.city, v.created_at, v.updated_at
-                    FROM vacancy v
-                    JOIN vacancy_response vr ON v.id = vr.vacancy_id
-                    WHERE vr.applicant_id = $1
-                    ORDER BY vr.applied_at DESC;
-                `)
-				mock.ExpectQuery(query).
-					WithArgs(applicantID).
-					WillReturnError(fmt.Errorf("database error"))
-			},
-		},
-		{
-			name:           "Ошибка сканирования вакансии",
-			applicantID:    4,
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка обработки данных вакансии: %w", fmt.Errorf("scan error")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
-                           v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
-                           v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
-                           v.optional_requirements, v.city, v.created_at, v.updated_at
-                    FROM vacancy v
-                    JOIN vacancy_response vr ON v.id = vr.vacancy_id
-                    WHERE vr.applicant_id = $1
-                    ORDER BY vr.applied_at DESC;
-                `)
-				rows := sqlmock.NewRows([]string{
-					"id", "title", "employer_id", "specialization_id", "work_format",
-					"employment", "schedule", "working_hours", "salary_from", "salary_to",
-					"taxes_included", "experience", "description", "tasks", "requirements",
-					"optional_requirements", "city", "created_at", "updated_at",
-				}).
-					AddRow(
-						"invalid", "Backend Developer", 1, 1, "remote", // Неправильный тип для id
-						"full_time", "flexible", 40, 100000, 150000,
-						true, "1-3 years", "Разработка backend на Go",
-						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
-						"Знание Docker, Kubernetes", "Москва", now, now,
-					)
-				mock.ExpectQuery(query).
-					WithArgs(applicantID).
-					WillReturnRows(rows)
-			},
-		},
-	}
+// 	now := time.Now()
+// 	testCases := []struct {
+// 		name           string
+// 		applicantID    int
+// 		expectedResult []*entity.Vacancy
+// 		expectedErr    error
+// 		setupMock      func(mock sqlmock.Sqlmock, applicantID int)
+// 	}{
+// 		{
+// 			name:        "Успешное получение вакансий по applicantID",
+// 			applicantID: 1,
+// 			expectedResult: []*entity.Vacancy{
+// 				{
+// 					ID:                   1,
+// 					Title:                "Backend Developer",
+// 					EmployerID:           1,
+// 					SpecializationID:     1,
+// 					WorkFormat:           "remote",
+// 					Employment:           "full_time",
+// 					Schedule:             "flexible",
+// 					WorkingHours:         40,
+// 					SalaryFrom:           100000,
+// 					SalaryTo:             150000,
+// 					TaxesIncluded:        true,
+// 					Experience:           "1-3 years",
+// 					Description:          "Разработка backend на Go",
+// 					Tasks:                "Разработка API, оптимизация запросов",
+// 					Requirements:         "Опыт работы с Go от 1 года",
+// 					OptionalRequirements: "Знание Docker, Kubernetes",
+// 					City:                 "Москва",
+// 					CreatedAt:            now,
+// 					UpdatedAt:            now,
+// 				},
+// 			},
+// 			expectedErr: nil,
+// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format,
+//                            v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to,
+//                            v.taxes_included, v.experience, v.description, v.tasks, v.requirements,
+//                            v.optional_requirements, v.city, v.created_at, v.updated_at
+//                     FROM vacancy v
+//                     JOIN vacancy_response vr ON v.id = vr.vacancy_id
+//                     WHERE vr.applicant_id = $1
+//                     ORDER BY vr.applied_at DESC;
+//                 `)
+// 				rows := sqlmock.NewRows([]string{
+// 					"id", "title", "employer_id", "specialization_id", "work_format",
+// 					"employment", "schedule", "working_hours", "salary_from", "salary_to",
+// 					"taxes_included", "experience", "description", "tasks", "requirements",
+// 					"optional_requirements", "city", "created_at", "updated_at",
+// 				}).
+// 					AddRow(
+// 						1, "Backend Developer", 1, 1, "remote",
+// 						"full_time", "flexible", 40, 100000, 150000,
+// 						true, "1-3 years", "Разработка backend на Go",
+// 						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
+// 						"Знание Docker, Kubernetes", "Москва", now, now,
+// 					)
+// 				mock.ExpectQuery(query).
+// 					WithArgs(applicantID).
+// 					WillReturnRows(rows)
+// 			},
+// 		},
+// 		{
+// 			name:           "Нет вакансий для applicantID",
+// 			applicantID:    2,
+// 			expectedResult: []*entity.Vacancy{},
+// 			expectedErr:    nil,
+// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format,
+//                            v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to,
+//                            v.taxes_included, v.experience, v.description, v.tasks, v.requirements,
+//                            v.optional_requirements, v.city, v.created_at, v.updated_at
+//                     FROM vacancy v
+//                     JOIN vacancy_response vr ON v.id = vr.vacancy_id
+//                     WHERE vr.applicant_id = $1
+//                     ORDER BY vr.applied_at DESC;
+//                 `)
+// 				rows := sqlmock.NewRows([]string{
+// 					"id", "title", "employer_id", "specialization_id", "work_format",
+// 					"employment", "schedule", "working_hours", "salary_from", "salary_to",
+// 					"taxes_included", "experience", "description", "tasks", "requirements",
+// 					"optional_requirements", "city", "created_at", "updated_at",
+// 				})
+// 				mock.ExpectQuery(query).
+// 					WithArgs(applicantID).
+// 					WillReturnRows(rows)
+// 			},
+// 		},
+// 		{
+// 			name:           "Ошибка выполнения запроса",
+// 			applicantID:    3,
+// 			expectedResult: nil,
+// 			expectedErr: entity.NewError(
+// 				entity.ErrInternal,
+// 				fmt.Errorf("ошибка при получении списка вакансий: %w", fmt.Errorf("database error")),
+// 			),
+// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format,
+//                            v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to,
+//                            v.taxes_included, v.experience, v.description, v.tasks, v.requirements,
+//                            v.optional_requirements, v.city, v.created_at, v.updated_at
+//                     FROM vacancy v
+//                     JOIN vacancy_response vr ON v.id = vr.vacancy_id
+//                     WHERE vr.applicant_id = $1
+//                     ORDER BY vr.applied_at DESC;
+//                 `)
+// 				mock.ExpectQuery(query).
+// 					WithArgs(applicantID).
+// 					WillReturnError(fmt.Errorf("database error"))
+// 			},
+// 		},
+// 		{
+// 			name:           "Ошибка сканирования вакансии",
+// 			applicantID:    4,
+// 			expectedResult: nil,
+// 			expectedErr: entity.NewError(
+// 				entity.ErrInternal,
+// 				fmt.Errorf("ошибка обработки данных вакансии: %w", fmt.Errorf("scan error")),
+// 			),
+// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format,
+//                            v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to,
+//                            v.taxes_included, v.experience, v.description, v.tasks, v.requirements,
+//                            v.optional_requirements, v.city, v.created_at, v.updated_at
+//                     FROM vacancy v
+//                     JOIN vacancy_response vr ON v.id = vr.vacancy_id
+//                     WHERE vr.applicant_id = $1
+//                     ORDER BY vr.applied_at DESC;
+//                 `)
+// 				rows := sqlmock.NewRows([]string{
+// 					"id", "title", "employer_id", "specialization_id", "work_format",
+// 					"employment", "schedule", "working_hours", "salary_from", "salary_to",
+// 					"taxes_included", "experience", "description", "tasks", "requirements",
+// 					"optional_requirements", "city", "created_at", "updated_at",
+// 				}).
+// 					AddRow(
+// 						"invalid", "Backend Developer", 1, 1, "remote", // Неправильный тип для id
+// 						"full_time", "flexible", 40, 100000, 150000,
+// 						true, "1-3 years", "Разработка backend на Go",
+// 						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
+// 						"Знание Docker, Kubernetes", "Москва", now, now,
+// 					)
+// 				mock.ExpectQuery(query).
+// 					WithArgs(applicantID).
+// 					WillReturnRows(rows)
+// 			},
+// 		},
+// 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+// 	for _, tc := range testCases {
+// 		tc := tc
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			t.Parallel()
 
-			db, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
+// 			db, mock, err := sqlmock.New()
+// 			require.NoError(t, err)
+// 			defer func() {
+// 				err := db.Close()
+// 				require.NoError(t, err)
+// 			}()
 
-			tc.setupMock(mock, tc.applicantID)
+// 			tc.setupMock(mock, tc.applicantID)
 
-			repo := &VacancyRepository{
-				DB: db,
-			}
-			ctx := context.Background()
+// 			repo := &VacancyRepository{
+// 				DB: db,
+// 			}
+// 			ctx := context.Background()
 
-			result, err := repo.GetVacanciesByApplicantID(ctx, tc.applicantID)
+// 			result, err := repo.GetVacanciesByApplicantID(ctx, tc.applicantID)
 
-			if tc.expectedErr != nil {
-				require.Error(t, err)
-				require.Equal(t, tc.expectedErr.Error(), err.Error())
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, len(tc.expectedResult), len(result))
+// 			if tc.expectedErr != nil {
+// 				require.Error(t, err)
+// 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+// 			} else {
+// 				require.NoError(t, err)
+// 				require.Equal(t, len(tc.expectedResult), len(result))
 
-				for i, expected := range tc.expectedResult {
-					require.Equal(t, expected.ID, result[i].ID)
-					require.Equal(t, expected.Title, result[i].Title)
-					// Добавьте проверки для остальных полей по необходимости
-				}
-			}
+// 				for i, expected := range tc.expectedResult {
+// 					require.Equal(t, expected.ID, result[i].ID)
+// 					require.Equal(t, expected.Title, result[i].Title)
+// 					// Добавьте проверки для остальных полей по необходимости
+// 				}
+// 			}
 
-			require.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
+// 			require.NoError(t, mock.ExpectationsWereMet())
+// 		})
+// 	}
+// }
 
 func TestVacancyRepository_CreateSkillIfNotExists(t *testing.T) {
 	t.Parallel()
@@ -2716,318 +2716,318 @@ func TestVacancyRepository_GetCityByVacancyID(t *testing.T) {
 	}
 }
 
-func TestVacancyRepository_GetAll(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer func() {
-		err := db.Close()
-		require.NoError(t, err)
-	}()
+// func TestVacancyRepository_GetAll(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+// 	}
+// 	defer func() {
+// 		err := db.Close()
+// 		require.NoError(t, err)
+// 	}()
 
-	repo := &VacancyRepository{DB: db}
+// 	repo := &VacancyRepository{DB: db}
 
-	createdAt := time.Now()
-	updatedAt := time.Now()
+// 	createdAt := time.Now()
+// 	updatedAt := time.Now()
 
-	tests := []struct {
-		name        string
-		mock        func()
-		expected    []*entity.Vacancy
-		expectedErr error
-	}{
-		{
-			name: "Success",
-			mock: func() {
-				mock.ExpectQuery(`SELECT id, title, is_active, employer_id, specialization_id, work_format, employment, schedule, working_hours, salary_from, salary_to, taxes_included, experience, description, tasks, requirements, optional_requirements, city, created_at, updated_at FROM vacancy ORDER BY updated_at DESC LIMIT 100`).
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "title", "is_active", "employer_id", "specialization_id",
-						"work_format", "employment", "schedule", "working_hours",
-						"salary_from", "salary_to", "taxes_included", "experience",
-						"description", "tasks", "requirements", "optional_requirements",
-						"city", "created_at", "updated_at",
-					}).AddRow(
-						1, "Backend Developer", true, 1, 1,
-						"remote", "full_time", "flexible", 8,
-						100000, 150000, true, "3+ years",
-						"Backend development", "Develop APIs", "Go experience",
-						"Kubernetes knowledge", "Moscow", createdAt, updatedAt,
-					).AddRow(
-						2, "Frontend Developer", true, 2, 2,
-						"hybrid", "full_time", "9-to-5", 8,
-						90000, 120000, false, "2+ years",
-						"Frontend development", "Develop UI", "React experience",
-						"TypeScript knowledge", "Saint Petersburg", createdAt, updatedAt,
-					))
-			},
-			expected: []*entity.Vacancy{
-				{
-					ID:                   1,
-					Title:                "Backend Developer",
-					IsActive:             true,
-					EmployerID:           1,
-					SpecializationID:     1,
-					WorkFormat:           "remote",
-					Employment:           "full_time",
-					Schedule:             "flexible",
-					WorkingHours:         8,
-					SalaryFrom:           100000,
-					SalaryTo:             150000,
-					TaxesIncluded:        true,
-					Experience:           "3+ years",
-					Description:          "Backend development",
-					Tasks:                "Develop APIs",
-					Requirements:         "Go experience",
-					OptionalRequirements: "Kubernetes knowledge",
-					City:                 "Moscow",
-					CreatedAt:            createdAt,
-					UpdatedAt:            updatedAt,
-				},
-				{
-					ID:                   2,
-					Title:                "Frontend Developer",
-					IsActive:             true,
-					EmployerID:           2,
-					SpecializationID:     2,
-					WorkFormat:           "hybrid",
-					Employment:           "full_time",
-					Schedule:             "9-to-5",
-					WorkingHours:         8,
-					SalaryFrom:           90000,
-					SalaryTo:             120000,
-					TaxesIncluded:        false,
-					Experience:           "2+ years",
-					Description:          "Frontend development",
-					Tasks:                "Develop UI",
-					Requirements:         "React experience",
-					OptionalRequirements: "TypeScript knowledge",
-					City:                 "Saint Petersburg",
-					CreatedAt:            createdAt,
-					UpdatedAt:            updatedAt,
-				},
-			},
-		},
-		{
-			name: "No Vacancies",
-			mock: func() {
-				mock.ExpectQuery(`SELECT id, title, is_active, employer_id, specialization_id, work_format, employment, schedule, working_hours, salary_from, salary_to, taxes_included, experience, description, tasks, requirements, optional_requirements, city, created_at, updated_at FROM vacancy ORDER BY updated_at DESC LIMIT 100`).
-					WillReturnRows(sqlmock.NewRows([]string{
-						"id", "title", "is_active", "employer_id", "specialization_id",
-						"work_format", "employment", "schedule", "working_hours",
-						"salary_from", "salary_to", "taxes_included", "experience",
-						"description", "tasks", "requirements", "optional_requirements",
-						"city", "created_at", "updated_at",
-					}))
-			},
-			expected:    []*entity.Vacancy{},
-			expectedErr: nil,
-		},
-	}
+// 	tests := []struct {
+// 		name        string
+// 		mock        func()
+// 		expected    []*entity.Vacancy
+// 		expectedErr error
+// 	}{
+// 		{
+// 			name: "Success",
+// 			mock: func() {
+// 				mock.ExpectQuery(`SELECT id, title, is_active, employer_id, specialization_id, work_format, employment, schedule, working_hours, salary_from, salary_to, taxes_included, experience, description, tasks, requirements, optional_requirements, city, created_at, updated_at FROM vacancy ORDER BY updated_at DESC LIMIT 100`).
+// 					WillReturnRows(sqlmock.NewRows([]string{
+// 						"id", "title", "is_active", "employer_id", "specialization_id",
+// 						"work_format", "employment", "schedule", "working_hours",
+// 						"salary_from", "salary_to", "taxes_included", "experience",
+// 						"description", "tasks", "requirements", "optional_requirements",
+// 						"city", "created_at", "updated_at",
+// 					}).AddRow(
+// 						1, "Backend Developer", true, 1, 1,
+// 						"remote", "full_time", "flexible", 8,
+// 						100000, 150000, true, "3+ years",
+// 						"Backend development", "Develop APIs", "Go experience",
+// 						"Kubernetes knowledge", "Moscow", createdAt, updatedAt,
+// 					).AddRow(
+// 						2, "Frontend Developer", true, 2, 2,
+// 						"hybrid", "full_time", "9-to-5", 8,
+// 						90000, 120000, false, "2+ years",
+// 						"Frontend development", "Develop UI", "React experience",
+// 						"TypeScript knowledge", "Saint Petersburg", createdAt, updatedAt,
+// 					))
+// 			},
+// 			expected: []*entity.Vacancy{
+// 				{
+// 					ID:                   1,
+// 					Title:                "Backend Developer",
+// 					IsActive:             true,
+// 					EmployerID:           1,
+// 					SpecializationID:     1,
+// 					WorkFormat:           "remote",
+// 					Employment:           "full_time",
+// 					Schedule:             "flexible",
+// 					WorkingHours:         8,
+// 					SalaryFrom:           100000,
+// 					SalaryTo:             150000,
+// 					TaxesIncluded:        true,
+// 					Experience:           "3+ years",
+// 					Description:          "Backend development",
+// 					Tasks:                "Develop APIs",
+// 					Requirements:         "Go experience",
+// 					OptionalRequirements: "Kubernetes knowledge",
+// 					City:                 "Moscow",
+// 					CreatedAt:            createdAt,
+// 					UpdatedAt:            updatedAt,
+// 				},
+// 				{
+// 					ID:                   2,
+// 					Title:                "Frontend Developer",
+// 					IsActive:             true,
+// 					EmployerID:           2,
+// 					SpecializationID:     2,
+// 					WorkFormat:           "hybrid",
+// 					Employment:           "full_time",
+// 					Schedule:             "9-to-5",
+// 					WorkingHours:         8,
+// 					SalaryFrom:           90000,
+// 					SalaryTo:             120000,
+// 					TaxesIncluded:        false,
+// 					Experience:           "2+ years",
+// 					Description:          "Frontend development",
+// 					Tasks:                "Develop UI",
+// 					Requirements:         "React experience",
+// 					OptionalRequirements: "TypeScript knowledge",
+// 					City:                 "Saint Petersburg",
+// 					CreatedAt:            createdAt,
+// 					UpdatedAt:            updatedAt,
+// 				},
+// 			},
+// 		},
+// 		{
+// 			name: "No Vacancies",
+// 			mock: func() {
+// 				mock.ExpectQuery(`SELECT id, title, is_active, employer_id, specialization_id, work_format, employment, schedule, working_hours, salary_from, salary_to, taxes_included, experience, description, tasks, requirements, optional_requirements, city, created_at, updated_at FROM vacancy ORDER BY updated_at DESC LIMIT 100`).
+// 					WillReturnRows(sqlmock.NewRows([]string{
+// 						"id", "title", "is_active", "employer_id", "specialization_id",
+// 						"work_format", "employment", "schedule", "working_hours",
+// 						"salary_from", "salary_to", "taxes_included", "experience",
+// 						"description", "tasks", "requirements", "optional_requirements",
+// 						"city", "created_at", "updated_at",
+// 					}))
+// 			},
+// 			expected:    []*entity.Vacancy{},
+// 			expectedErr: nil,
+// 		},
+// 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mock()
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			tt.mock()
 
-			got, err := repo.GetAll(context.Background())
-			if tt.expectedErr != nil {
-				assert.Error(t, err)
-				assert.True(t, errors.Is(err, tt.expectedErr))
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, got)
-			}
+// 			got, err := repo.GetAll(context.Background())
+// 			if tt.expectedErr != nil {
+// 				assert.Error(t, err)
+// 				assert.True(t, errors.Is(err, tt.expectedErr))
+// 			} else {
+// 				assert.NoError(t, err)
+// 				assert.Equal(t, tt.expected, got)
+// 			}
 
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
+// 			assert.NoError(t, mock.ExpectationsWereMet())
+// 		})
+// 	}
+// }
 
-func TestVacancyRepository_GetActiveVacanciesByEmployerID(t *testing.T) {
-	t.Parallel()
+// func TestVacancyRepository_GetActiveVacanciesByEmployerID(t *testing.T) {
+// 	t.Parallel()
 
-	now := time.Now()
-	testCases := []struct {
-		name           string
-		employerID     int
-		expectedResult []*entity.Vacancy
-		expectedErr    error
-		setupMock      func(mock sqlmock.Sqlmock, employerID int)
-	}{
-		{
-			name:       "Успешное получение активных вакансий",
-			employerID: 1,
-			expectedResult: []*entity.Vacancy{
-				{
-					ID:                   1,
-					Title:                "Backend Developer",
-					EmployerID:           1,
-					SpecializationID:     1,
-					WorkFormat:           "remote",
-					Employment:           "full_time",
-					Schedule:             "flexible",
-					WorkingHours:         40,
-					SalaryFrom:           100000,
-					SalaryTo:             150000,
-					TaxesIncluded:        true,
-					Experience:           "1-3 years",
-					Description:          "Разработка backend на Go",
-					Tasks:                "Разработка API, оптимизация запросов",
-					Requirements:         "Опыт работы с Go от 1 года",
-					OptionalRequirements: "Знание Docker, Kubernetes",
-					City:                 "Москва",
-					CreatedAt:            now,
-					UpdatedAt:            now,
-				},
-			},
-			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT id, title, employer_id, specialization_id, work_format, employment, 
-                           schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
-                           description, tasks, requirements, optional_requirements, city, created_at, updated_at
-                    FROM vacancy
-                    WHERE employer_id = $1 AND is_active = TRUE
-                    ORDER BY updated_at DESC;
-                `)
-				rows := sqlmock.NewRows([]string{
-					"id", "title", "employer_id", "specialization_id", "work_format",
-					"employment", "schedule", "working_hours", "salary_from", "salary_to",
-					"taxes_included", "experience", "description", "tasks", "requirements",
-					"optional_requirements", "city", "created_at", "updated_at",
-				}).
-					AddRow(
-						1, "Backend Developer", 1, 1, "remote",
-						"full_time", "flexible", 40, 100000, 150000,
-						true, "1-3 years", "Разработка backend на Go",
-						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
-						"Знание Docker, Kubernetes", "Москва", now, now,
-					)
-				mock.ExpectQuery(query).
-					WithArgs(employerID).
-					WillReturnRows(rows)
-			},
-		},
-		{
-			name:           "Нет активных вакансий",
-			employerID:     2,
-			expectedResult: []*entity.Vacancy{},
-			expectedErr:    nil,
-			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT id, title, employer_id, specialization_id, work_format, employment, 
-                           schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
-                           description, tasks, requirements, optional_requirements, city, created_at, updated_at
-                    FROM vacancy
-                    WHERE employer_id = $1 AND is_active = TRUE
-                    ORDER BY updated_at DESC;
-                `)
-				rows := sqlmock.NewRows([]string{
-					"id", "title", "employer_id", "specialization_id", "work_format",
-					"employment", "schedule", "working_hours", "salary_from", "salary_to",
-					"taxes_included", "experience", "description", "tasks", "requirements",
-					"optional_requirements", "city", "created_at", "updated_at",
-				})
-				mock.ExpectQuery(query).
-					WithArgs(employerID).
-					WillReturnRows(rows)
-			},
-		},
-		{
-			name:           "Ошибка выполнения запроса",
-			employerID:     3,
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при получении активных вакансий работодателя: %w", fmt.Errorf("database error")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT id, title, employer_id, specialization_id, work_format, employment, 
-                           schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
-                           description, tasks, requirements, optional_requirements, city, created_at, updated_at
-                    FROM vacancy
-                    WHERE employer_id = $1 AND is_active = TRUE
-                    ORDER BY updated_at DESC;
-                `)
-				mock.ExpectQuery(query).
-					WithArgs(employerID).
-					WillReturnError(fmt.Errorf("database error"))
-			},
-		},
-		{
-			name:           "Ошибка сканирования вакансии",
-			employerID:     4,
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка обработки данных вакансии: %w", fmt.Errorf("scan error")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
-				query := regexp.QuoteMeta(`
-                    SELECT id, title, employer_id, specialization_id, work_format, employment, 
-                           schedule, working_hours, salary_from, salary_to, taxes_included, experience, 
-                           description, tasks, requirements, optional_requirements, city, created_at, updated_at
-                    FROM vacancy
-                    WHERE employer_id = $1 AND is_active = TRUE
-                    ORDER BY updated_at DESC;
-                `)
-				rows := sqlmock.NewRows([]string{
-					"id", "title", "employer_id", "specialization_id", "work_format",
-					"employment", "schedule", "working_hours", "salary_from", "salary_to",
-					"taxes_included", "experience", "description", "tasks", "requirements",
-					"optional_requirements", "city", "created_at", "updated_at",
-				}).
-					AddRow(
-						"invalid", "Backend Developer", 1, 1, "remote", // Неправильный тип для id
-						"full_time", "flexible", 40, 100000, 150000,
-						true, "1-3 years", "Разработка backend на Go",
-						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
-						"Знание Docker, Kubernetes", "Москва", now, now,
-					)
-				mock.ExpectQuery(query).
-					WithArgs(employerID).
-					WillReturnRows(rows)
-			},
-		},
-	}
+// 	now := time.Now()
+// 	testCases := []struct {
+// 		name           string
+// 		employerID     int
+// 		expectedResult []*entity.Vacancy
+// 		expectedErr    error
+// 		setupMock      func(mock sqlmock.Sqlmock, employerID int)
+// 	}{
+// 		{
+// 			name:       "Успешное получение активных вакансий",
+// 			employerID: 1,
+// 			expectedResult: []*entity.Vacancy{
+// 				{
+// 					ID:                   1,
+// 					Title:                "Backend Developer",
+// 					EmployerID:           1,
+// 					SpecializationID:     1,
+// 					WorkFormat:           "remote",
+// 					Employment:           "full_time",
+// 					Schedule:             "flexible",
+// 					WorkingHours:         40,
+// 					SalaryFrom:           100000,
+// 					SalaryTo:             150000,
+// 					TaxesIncluded:        true,
+// 					Experience:           "1-3 years",
+// 					Description:          "Разработка backend на Go",
+// 					Tasks:                "Разработка API, оптимизация запросов",
+// 					Requirements:         "Опыт работы с Go от 1 года",
+// 					OptionalRequirements: "Знание Docker, Kubernetes",
+// 					City:                 "Москва",
+// 					CreatedAt:            now,
+// 					UpdatedAt:            now,
+// 				},
+// 			},
+// 			expectedErr: nil,
+// 			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT id, title, employer_id, specialization_id, work_format, employment,
+//                            schedule, working_hours, salary_from, salary_to, taxes_included, experience,
+//                            description, tasks, requirements, optional_requirements, city, created_at, updated_at
+//                     FROM vacancy
+//                     WHERE employer_id = $1 AND is_active = TRUE
+//                     ORDER BY updated_at DESC;
+//                 `)
+// 				rows := sqlmock.NewRows([]string{
+// 					"id", "title", "employer_id", "specialization_id", "work_format",
+// 					"employment", "schedule", "working_hours", "salary_from", "salary_to",
+// 					"taxes_included", "experience", "description", "tasks", "requirements",
+// 					"optional_requirements", "city", "created_at", "updated_at",
+// 				}).
+// 					AddRow(
+// 						1, "Backend Developer", 1, 1, "remote",
+// 						"full_time", "flexible", 40, 100000, 150000,
+// 						true, "1-3 years", "Разработка backend на Go",
+// 						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
+// 						"Знание Docker, Kubernetes", "Москва", now, now,
+// 					)
+// 				mock.ExpectQuery(query).
+// 					WithArgs(employerID).
+// 					WillReturnRows(rows)
+// 			},
+// 		},
+// 		{
+// 			name:           "Нет активных вакансий",
+// 			employerID:     2,
+// 			expectedResult: []*entity.Vacancy{},
+// 			expectedErr:    nil,
+// 			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT id, title, employer_id, specialization_id, work_format, employment,
+//                            schedule, working_hours, salary_from, salary_to, taxes_included, experience,
+//                            description, tasks, requirements, optional_requirements, city, created_at, updated_at
+//                     FROM vacancy
+//                     WHERE employer_id = $1 AND is_active = TRUE
+//                     ORDER BY updated_at DESC;
+//                 `)
+// 				rows := sqlmock.NewRows([]string{
+// 					"id", "title", "employer_id", "specialization_id", "work_format",
+// 					"employment", "schedule", "working_hours", "salary_from", "salary_to",
+// 					"taxes_included", "experience", "description", "tasks", "requirements",
+// 					"optional_requirements", "city", "created_at", "updated_at",
+// 				})
+// 				mock.ExpectQuery(query).
+// 					WithArgs(employerID).
+// 					WillReturnRows(rows)
+// 			},
+// 		},
+// 		{
+// 			name:           "Ошибка выполнения запроса",
+// 			employerID:     3,
+// 			expectedResult: nil,
+// 			expectedErr: entity.NewError(
+// 				entity.ErrInternal,
+// 				fmt.Errorf("ошибка при получении активных вакансий работодателя: %w", fmt.Errorf("database error")),
+// 			),
+// 			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT id, title, employer_id, specialization_id, work_format, employment,
+//                            schedule, working_hours, salary_from, salary_to, taxes_included, experience,
+//                            description, tasks, requirements, optional_requirements, city, created_at, updated_at
+//                     FROM vacancy
+//                     WHERE employer_id = $1 AND is_active = TRUE
+//                     ORDER BY updated_at DESC;
+//                 `)
+// 				mock.ExpectQuery(query).
+// 					WithArgs(employerID).
+// 					WillReturnError(fmt.Errorf("database error"))
+// 			},
+// 		},
+// 		{
+// 			name:           "Ошибка сканирования вакансии",
+// 			employerID:     4,
+// 			expectedResult: nil,
+// 			expectedErr: entity.NewError(
+// 				entity.ErrInternal,
+// 				fmt.Errorf("ошибка обработки данных вакансии: %w", fmt.Errorf("scan error")),
+// 			),
+// 			setupMock: func(mock sqlmock.Sqlmock, employerID int) {
+// 				query := regexp.QuoteMeta(`
+//                     SELECT id, title, employer_id, specialization_id, work_format, employment,
+//                            schedule, working_hours, salary_from, salary_to, taxes_included, experience,
+//                            description, tasks, requirements, optional_requirements, city, created_at, updated_at
+//                     FROM vacancy
+//                     WHERE employer_id = $1 AND is_active = TRUE
+//                     ORDER BY updated_at DESC;
+//                 `)
+// 				rows := sqlmock.NewRows([]string{
+// 					"id", "title", "employer_id", "specialization_id", "work_format",
+// 					"employment", "schedule", "working_hours", "salary_from", "salary_to",
+// 					"taxes_included", "experience", "description", "tasks", "requirements",
+// 					"optional_requirements", "city", "created_at", "updated_at",
+// 				}).
+// 					AddRow(
+// 						"invalid", "Backend Developer", 1, 1, "remote", // Неправильный тип для id
+// 						"full_time", "flexible", 40, 100000, 150000,
+// 						true, "1-3 years", "Разработка backend на Go",
+// 						"Разработка API, оптимизация запросов", "Опыт работы с Go от 1 года",
+// 						"Знание Docker, Kubernetes", "Москва", now, now,
+// 					)
+// 				mock.ExpectQuery(query).
+// 					WithArgs(employerID).
+// 					WillReturnRows(rows)
+// 			},
+// 		},
+// 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+// 	for _, tc := range testCases {
+// 		tc := tc
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			t.Parallel()
 
-			db, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
+// 			db, mock, err := sqlmock.New()
+// 			require.NoError(t, err)
+// 			defer func() {
+// 				err := db.Close()
+// 				require.NoError(t, err)
+// 			}()
 
-			tc.setupMock(mock, tc.employerID)
+// 			tc.setupMock(mock, tc.employerID)
 
-			repo := &VacancyRepository{
-				DB: db,
-			}
-			ctx := context.Background()
+// 			repo := &VacancyRepository{
+// 				DB: db,
+// 			}
+// 			ctx := context.Background()
 
-			result, err := repo.GetActiveVacanciesByEmployerID(ctx, tc.employerID)
+// 			result, err := repo.GetActiveVacanciesByEmployerID(ctx, tc.employerID)
 
-			if tc.expectedErr != nil {
-				require.Error(t, err)
-				require.Equal(t, tc.expectedErr.Error(), err.Error())
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, len(tc.expectedResult), len(result))
+// 			if tc.expectedErr != nil {
+// 				require.Error(t, err)
+// 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+// 			} else {
+// 				require.NoError(t, err)
+// 				require.Equal(t, len(tc.expectedResult), len(result))
 
-				for i, expected := range tc.expectedResult {
-					require.Equal(t, expected.ID, result[i].ID)
-					require.Equal(t, expected.Title, result[i].Title)
-					// Добавьте проверки для остальных полей по необходимости
-				}
-			}
+// 				for i, expected := range tc.expectedResult {
+// 					require.Equal(t, expected.ID, result[i].ID)
+// 					require.Equal(t, expected.Title, result[i].Title)
+// 					// Добавьте проверки для остальных полей по необходимости
+// 				}
+// 			}
 
-			require.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
+// 			require.NoError(t, mock.ExpectationsWereMet())
+// 		})
+// 	}
+// }

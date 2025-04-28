@@ -1,9 +1,7 @@
 services:
   resumatch:
     container_name: app
-    build:
-      context: .
-      dockerfile: docker/app.dockerfile
+    build: .
     env_file: .env
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
@@ -12,8 +10,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      auth:
-        condition: service_started
     restart: unless-stopped
     command: >
       sh -c "
@@ -24,20 +20,6 @@ services:
       - resumatch-network
     volumes:
       - ./assets:/app/assets
-
-  auth:
-    container_name: auth
-    build:
-      context: .
-      dockerfile: docker/auth.dockerfile
-    env_file: .env
-    ports:
-      - "${AUTH_PORT}:${AUTH_PORT}"
-    depends_on:
-      - redis
-    restart: unless-stopped
-    networks:
-      - resumatch-network
 
   postgres:
     container_name: postgres
@@ -77,9 +59,34 @@ services:
     networks:
       - resumatch-network
 
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.55.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    networks:
+      - resumatch-network
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:11.3.0
+    volumes:
+      - ./grafana.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - grafana-data:/var/lib/grafana
+    ports:
+      - 3000:3000
+    networks:
+      - resumatch-network
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password
+
 volumes:
   postgres_data:
   redis_data:
+  grafana-data:
 
 networks:
   resumatch-network:

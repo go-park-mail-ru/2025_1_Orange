@@ -6,7 +6,7 @@ import (
 
 // VacancyShort представляет сокращенную информацию о вакансии
 type VacancyShortResponse struct {
-	ID             int    `json:"id" validate:"required,email"`
+	ID             int    `json:"id"`
 	Title          string `json:"title"`
 	EmployerID     int    `json:"employer_id"`
 	Specialization string `json:"specialization"`
@@ -20,25 +20,26 @@ type VacancyShortResponse struct {
 	UpdatedAt      string `json:"updated_at"`
 	City           string `json:"city"`
 	Responded      bool   `json:"responded"`
+	Liked          bool   `json:"liked"`
 }
 
 type VacancyCreate struct {
 	Title                string   `json:"title"`
 	Specialization       string   `json:"specialization"`
-	WorkFormat           string   `json:"work_format"`
+	City                 string   `json:"city"`
 	Employment           string   `json:"employment"`
 	Schedule             string   `json:"schedule"`
 	WorkingHours         int      `json:"working_hours"`
+	WorkFormat           string   `json:"work_format"`
 	SalaryFrom           int      `json:"salary_from"`
 	SalaryTo             int      `json:"salary_to"`
 	TaxesIncluded        bool     `json:"taxes_included"`
 	Experience           string   `json:"experience"`
-	City                 string   `json:"city"`
-	Skills               []string `json:"skills"`
 	Description          string   `json:"description"`
 	Tasks                string   `json:"tasks"`
 	Requirements         string   `json:"requirements"`
 	OptionalRequirements string   `json:"optional_requirements"`
+	Skills               []string `json:"skills"`
 }
 
 type VacancyUpdate struct {
@@ -82,6 +83,7 @@ type VacancyResponse struct {
 	CreatedAt            string   `json:"created_at"`
 	UpdatedAt            string   `json:"updated_at"`
 	Responded            bool     `json:"responded"`
+	Liked                bool     `json:"liked"`
 }
 
 type VacancyResponsed struct {

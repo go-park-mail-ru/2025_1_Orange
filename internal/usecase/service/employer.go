@@ -164,3 +164,19 @@ func (e *EmployerService) UpdateLogo(ctx context.Context, userID, logoID int) er
 	}
 	return nil
 }
+
+func (e *EmployerService) EmailExists(ctx context.Context, email string) (*dto.EmailExistsResponse, error) {
+	if err := entity.ValidateEmail(email); err != nil {
+		return nil, err
+	}
+
+	employer, err := e.employerRepository.GetEmployerByEmail(ctx, email)
+	if err == nil && employer != nil {
+		return &dto.EmailExistsResponse{
+			Exists: true,
+			Role:   "employer",
+		}, nil
+	}
+
+	return nil, err
+}

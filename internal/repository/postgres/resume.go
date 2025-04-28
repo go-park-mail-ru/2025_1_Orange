@@ -150,7 +150,14 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 			fmt.Errorf("ошибка при подготовке запроса для добавления навыков: %w", err),
 		)
 	}
-	defer stmt.Close()
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть statement: %v", err)
+		}
+	}(stmt)
 
 	for _, skillID := range skillIDs {
 		_, err = stmt.ExecContext(ctx, resumeID, skillID)
@@ -379,7 +386,15 @@ func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int
 			fmt.Errorf("ошибка при получении навыков резюме: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var skills []entity.Skill
 	for rows.Next() {
@@ -443,7 +458,15 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 			fmt.Errorf("ошибка при получении опыта работы: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var experiences []entity.WorkExperience
 	for rows.Next() {
@@ -542,7 +565,15 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 			fmt.Errorf("ошибка при подготовке запроса для добавления специализаций: %w", err),
 		)
 	}
-	defer stmt.Close()
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть statement: %v", err)
+		}
+	}(stmt)
 
 	for _, specializationID := range specializationIDs {
 		_, err = stmt.ExecContext(ctx, resumeID, specializationID)
@@ -626,7 +657,15 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 			fmt.Errorf("ошибка при получении специализаций резюме: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var specializations []entity.Specialization
 	for rows.Next() {
@@ -1114,7 +1153,15 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 			fmt.Errorf("ошибка при получении списка резюме: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var resumes []entity.Resume
 	for rows.Next() {
@@ -1190,7 +1237,15 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 			fmt.Errorf("ошибка при получении списка резюме: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var resumes []entity.Resume
 	for rows.Next() {

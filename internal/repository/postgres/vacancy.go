@@ -188,7 +188,15 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 			fmt.Errorf("ошибка при подготовке запроса для добавления навыков: %w", err),
 		)
 	}
-	defer stmt.Close()
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть statement: %v", err)
+		}
+	}(stmt)
 
 	for _, skillID := range skillIDs {
 		_, err = stmt.ExecContext(ctx, vacancyID, skillID)
@@ -290,7 +298,15 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 			fmt.Errorf("ошибка при подготовке запроса для добавления городов: %w", err),
 		)
 	}
-	defer stmt.Close()
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть statement: %v", err)
+		}
+	}(stmt)
 
 	for _, cityID := range cityIDs {
 		_, err = stmt.ExecContext(ctx, vacancyID, cityID)
@@ -692,7 +708,15 @@ func (r *VacancyRepository) GetAll(ctx context.Context, limit int, offset int) (
 			fmt.Errorf("не удалось получить список вакансий: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	vacancies := make([]*entity.Vacancy, 0)
 	for rows.Next() {
@@ -835,7 +859,15 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 			fmt.Errorf("ошибка при получении навыков резюме: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var skills []entity.Skill
 	for rows.Next() {
@@ -898,7 +930,15 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 			fmt.Errorf("ошибка при получении городов резюме: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var cities []entity.City
 	for rows.Next() {
@@ -1053,7 +1093,15 @@ func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []
 			fmt.Errorf("ошибка при поиске ID городов по названиям: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var cityIDs []int
 	for rows.Next() {
@@ -1285,7 +1333,15 @@ func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, 
 			fmt.Errorf("ошибка при получении активных вакансий работодателя: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var vacancies []*entity.Vacancy
 	for rows.Next() {
@@ -1338,7 +1394,15 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
 
 		return nil, entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка при получении списка вакансий: %w", err))
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var vacancies []*entity.Vacancy
 	for rows.Next() {

@@ -8,7 +8,7 @@ import (
 type Vacancy interface {
 	CreateVacancy(ctx context.Context, employerID int, createReq *dto.VacancyCreate) (*dto.VacancyResponse, error)
 	GetVacancy(ctx context.Context, id, currentUserID int, userRole string) (*dto.VacancyResponse, error)
-	UpdateVacancy(ctx context.Context, id int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error)
+	UpdateVacancy(ctx context.Context, id int, employerID int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error)
 	DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error)
 	GetAll(ctx context.Context, currentUserID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error

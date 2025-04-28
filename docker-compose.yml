@@ -79,7 +79,6 @@ services:
     networks:
       - resumatch-network
 
-<<<<<<< HEAD
   minio:
     container_name: minio
     image: minio/minio:latest
@@ -101,8 +100,6 @@ services:
     networks:
       - resumatch-network
 
-=======
->>>>>>> 6fe69bb (Add prometheus metrics)
   prometheus:
     container_name: prometheus
     image: prom/prometheus:v2.55.0

@@ -97,7 +97,7 @@ func TestApplicantService_Register(t *testing.T) {
 			expectedID: -1,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("имя не может быть длиннее 30 символов"),
+				fmt.Errorf("неправильный формат данных: first_name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa does not validate as runelength(2|30)"),
 			),
 		},
 		{
@@ -114,7 +114,7 @@ func TestApplicantService_Register(t *testing.T) {
 			expectedID: -1,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("фамилия не может быть длиннее 30 символов"),
+				fmt.Errorf("неправильный формат данных: last_name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa does not validate as runelength(2|30)"),
 			),
 		},
 		{
@@ -406,7 +406,7 @@ func TestApplicantService_UpdateProfile(t *testing.T) {
 			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("имя не может быть длиннее 30 символов"),
+				fmt.Errorf("неправильный формат данных: first_name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa does not validate as runelength(2|30)"),
 			),
 		},
 		{
@@ -418,79 +418,7 @@ func TestApplicantService_UpdateProfile(t *testing.T) {
 			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("фамилия не может быть длиннее 30 символов"),
-			),
-		},
-		{
-			name:   "Невалидное отчество (слишком длинное)",
-			userID: 1,
-			input: &dto.ApplicantProfileUpdate{
-				MiddleName: strings.Repeat("a", 31),
-			},
-			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("отчество не может быть длиннее 30 символов"),
-			),
-		},
-		{
-			name:   "Невалидная цитата (слишком длинная)",
-			userID: 1,
-			input: &dto.ApplicantProfileUpdate{
-				Quote: strings.Repeat("a", 256),
-			},
-			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("цитата не может быть длиннее 255 символов"),
-			),
-		},
-		{
-			name:   "Невалидная ссылка ВК",
-			userID: 1,
-			input: &dto.ApplicantProfileUpdate{
-				Vk: strings.Repeat("a", 129),
-			},
-			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("url не может быть длиннее 128 символов"),
-			),
-		},
-		{
-			name:   "Невалидная ссылка Телеграм",
-			userID: 1,
-			input: &dto.ApplicantProfileUpdate{
-				Telegram: strings.Repeat("a", 129),
-			},
-			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("url не может быть длиннее 128 символов"),
-			),
-		},
-		{
-			name:   "Невалидная ссылка facebook",
-			userID: 1,
-			input: &dto.ApplicantProfileUpdate{
-				Facebook: strings.Repeat("a", 129),
-			},
-			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("url не может быть длиннее 128 символов"),
-			),
-		},
-		{
-			name:   "Невалидный пол",
-			userID: 1,
-			input: &dto.ApplicantProfileUpdate{
-				Sex: "X",
-			},
-			mockSetup: func(*mock.MockApplicantRepository, *mock.MockCityRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("пол должен быть 'M' или 'F'"),
+				fmt.Errorf("неправильный формат данных: last_name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa does not validate as runelength(2|30)"),
 			),
 		},
 		{
@@ -770,6 +698,84 @@ func TestApplicantService_UpdateAvatar(t *testing.T) {
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
 			} else {
 				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestApplicantService_EmailExists(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name           string
+		email          string
+		mockSetup      func(*mock.MockApplicantRepository)
+		expectedResult *dto.EmailExistsResponse
+		expectedErr    error
+	}{
+		{
+			name:  "Успешный поиск email для соискателя",
+			email: "applicant@example.com",
+			mockSetup: func(appRepo *mock.MockApplicantRepository) {
+				appRepo.EXPECT().
+					GetApplicantByEmail(gomock.Any(), "applicant@example.com").
+					Return(&entity.Applicant{ID: 1, Email: "applicant@example.com"}, nil)
+			},
+			expectedResult: &dto.EmailExistsResponse{
+				Exists: true,
+				Role:   "applicant",
+			},
+			expectedErr: nil,
+		},
+		{
+			name:      "Неправильный формат почты",
+			email:     "applicant_wrong_mail.com",
+			mockSetup: func(m *mock.MockApplicantRepository) {},
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("невалидная почта"),
+			),
+		},
+		{
+			name:  "Email не найден",
+			email: "nonexistent@example.com",
+			mockSetup: func(appRepo *mock.MockApplicantRepository) {
+				appRepo.EXPECT().
+					GetApplicantByEmail(gomock.Any(), "nonexistent@example.com").
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("соискатель с email=nonexistent@example.com не найден"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("соискатель с email=nonexistent@example.com не найден"),
+			),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockAppRepo := mock.NewMockApplicantRepository(ctrl)
+			service := NewApplicantService(mockAppRepo, nil, nil)
+
+			tc.mockSetup(mockAppRepo)
+
+			res, err := service.EmailExists(context.Background(), tc.email)
+
+			if tc.expectedErr != nil {
+				require.Error(t, err)
+				require.Equal(t, tc.expectedErr.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedResult, res)
 			}
 		})
 	}

@@ -25,7 +25,6 @@ func (h *AuthHandler) Configure(r *http.ServeMux) {
 	authMux.HandleFunc("GET /isAuth", h.IsAuth)
 	authMux.HandleFunc("POST /logout", h.Logout)
 	authMux.HandleFunc("POST /logoutAll", h.LogoutAll)
-	authMux.HandleFunc("POST /emailExists", h.EmailExists)
 
 	r.Handle("/auth/", http.StripPrefix("/auth", authMux))
 }
@@ -57,43 +56,6 @@ func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: userID, Role: role}); err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
-		return
-	}
-}
-
-// EmailExists godoc
-// @Tags Auth
-// @Summary Проверка email
-// @Description Проверяет, зарегистрирован ли email в системе
-// @Accept json
-// @Produce json
-// @Param input body dto.EmailExistsRequest true "Email для проверки"
-// @Success 200 {object} dto.EmailExistsResponse
-// @Failure 400 {object} utils.APIError
-// @Failure 403 {object} utils.APIError
-// @Failure 404 {object} utils.APIError
-// @Failure 500 {object} utils.APIError
-// @Router /auth/emailExists [post]
-// @Security csrf_token
-func (h *AuthHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var emailDTO dto.EmailExistsRequest
-	err := json.NewDecoder(r.Body).Decode(&emailDTO)
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
-		return
-	}
-
-	response, err := h.auth.EmailExists(ctx, emailDTO.Email)
-	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(response); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package auth;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "./;auth";
+
+
+message LogoutRequest {
+  string session = 1;
+}
+
+message LogoutAllRequest {
+  uint64 user_id = 1;
+  string role = 2;
+}
+
+message GetUserIDBySessionRequest {
+  string session = 1;
+}
+
+message GetUserIDBySessionResponse {
+  uint64 user_id = 1;
+  string role = 2;
+}
+
+message CreateSessionRequest {
+  uint64 user_id = 1;
+  string role = 2;
+}
+
+message CreateSessionResponse {
+  string session = 1;
+}
+
+
+service AuthService {
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
+  rpc LogoutAll(LogoutAllRequest) returns (google.protobuf.Empty);
+  rpc GetUserIDBySession(GetUserIDBySessionRequest) returns (GetUserIDBySessionResponse);
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+}

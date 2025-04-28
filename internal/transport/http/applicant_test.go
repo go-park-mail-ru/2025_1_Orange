@@ -952,3 +952,110 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 		})
 	}
 }
+
+func TestApplicantHandler_EmailExists(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name             string
+		requestBody      interface{}
+		mockSetup        func(applicant *mock.MockApplicant)
+		expectedStatus   int
+		expectedResponse interface{}
+	}{
+		{
+			name: "email существует",
+			requestBody: dto.EmailExistsRequest{
+				Email: "applicant@example.com",
+			},
+			mockSetup: func(applicant *mock.MockApplicant) {
+				applicant.EXPECT().
+					EmailExists(gomock.Any(), "applicant@example.com").
+					Return(&dto.EmailExistsResponse{
+						Exists: true,
+						Role:   "applicant",
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedResponse: dto.EmailExistsResponse{
+				Exists: true,
+				Role:   "applicant",
+			},
+		},
+		{
+			name: "email не существует",
+			requestBody: dto.EmailExistsRequest{
+				Email: "nonexistent@example.com",
+			},
+			mockSetup: func(applicant *mock.MockApplicant) {
+				applicant.EXPECT().
+					EmailExists(gomock.Any(), "nonexistent@example.com").
+					Return(nil, entity.NewError(entity.ErrNotFound, fmt.Errorf("почта не найдена")))
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedResponse: utils.APIError{
+				Status:  http.StatusNotFound,
+				Message: "почта не найдена",
+			},
+		},
+		{
+			name:           "невалидный JSON",
+			requestBody:    "{invalid}",
+			mockSetup:      func(applicant *mock.MockApplicant) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedResponse: utils.APIError{
+				Status:  http.StatusBadRequest,
+				Message: entity.ErrBadRequest.Error(),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			MockApplicant := mock.NewMockApplicant(ctrl)
+			tc.mockSetup(MockApplicant)
+
+			cfg := config.CSRFConfig{}
+			handler := NewApplicantHandler(nil, MockApplicant, nil, cfg)
+
+			var reqBody []byte
+			if body, ok := tc.requestBody.(string); ok {
+				reqBody = []byte(body)
+			} else {
+				reqBody, _ = json.Marshal(tc.requestBody)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/applicant/emailExists", bytes.NewReader(reqBody))
+			w := httptest.NewRecorder()
+
+			handler.EmailExists(w, req)
+
+			res := w.Result()
+
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
+
+			require.Equal(t, tc.expectedStatus, res.StatusCode)
+
+			if res.StatusCode == http.StatusOK {
+				var response dto.EmailExistsResponse
+				err := json.NewDecoder(res.Body).Decode(&response)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedResponse, response)
+			} else {
+				var apiErr utils.APIError
+				err := json.NewDecoder(res.Body).Decode(&apiErr)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedResponse, apiErr)
+			}
+		})
+	}
+}

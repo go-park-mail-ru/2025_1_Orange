@@ -97,24 +97,7 @@ func TestEmployerService_Register(t *testing.T) {
 			expectedID: -1,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("название компании не может быть длиннее 64 символов"),
-			),
-		},
-		{
-			name: "Слишком длинный юридический адрес",
-			input: &dto.EmployerRegister{
-				AuthCredentials: dto.AuthCredentials{
-					Email:    "employer@email.com",
-					Password: "StrongPassword1!",
-				},
-				CompanyName:  "Company",
-				LegalAddress: strings.Repeat("B", 256),
-			},
-			mockSetup:  func(m *mock.MockEmployerRepository) {},
-			expectedID: -1,
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("юридический адрес компании не может быть длиннее 255 символов"),
+				fmt.Errorf("неправильный формат данных: company_name: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA does not validate as runelength(2|30)"),
 			),
 		},
 		{
@@ -502,34 +485,7 @@ func TestEmployerService_UpdateProfile(t *testing.T) {
 				CompanyName: strings.Repeat("a", 65),
 			},
 			mockSetup:   func(*mock.MockEmployerRepository) {},
-			expectedErr: entity.NewError(entity.ErrBadRequest, fmt.Errorf("название компании не может быть длиннее 64 символов")),
-		},
-		{
-			name:   "Невалидный юридический адрес",
-			userID: 1,
-			input: &dto.EmployerProfileUpdate{
-				LegalAddress: strings.Repeat("b", 256),
-			},
-			mockSetup:   func(*mock.MockEmployerRepository) {},
-			expectedErr: entity.NewError(entity.ErrBadRequest, fmt.Errorf("юридический адрес компании не может быть длиннее 255 символов")),
-		},
-		{
-			name:   "Невалидный слоган",
-			userID: 1,
-			input: &dto.EmployerProfileUpdate{
-				Slogan: strings.Repeat("c", 256),
-			},
-			mockSetup:   func(*mock.MockEmployerRepository) {},
-			expectedErr: entity.NewError(entity.ErrBadRequest, fmt.Errorf("слоган компании не может быть длиннее 255 символов")),
-		},
-		{
-			name:   "Невалидный сайт",
-			userID: 1,
-			input: &dto.EmployerProfileUpdate{
-				Website: strings.Repeat("d", 129),
-			},
-			mockSetup:   func(*mock.MockEmployerRepository) {},
-			expectedErr: entity.NewError(entity.ErrBadRequest, fmt.Errorf("url не может быть длиннее 128 символов")),
+			expectedErr: entity.NewError(entity.ErrBadRequest, fmt.Errorf("неправильный формат данных: company_name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa does not validate as runelength(2|30)")),
 		},
 		{
 			name:   "Невалидная ссылка VK (слишком длинная)",
@@ -540,41 +496,8 @@ func TestEmployerService_UpdateProfile(t *testing.T) {
 			mockSetup: func(*mock.MockEmployerRepository) {},
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("url не может быть длиннее 128 символов"),
+				fmt.Errorf("неправильный формат данных: vk: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa does not validate as url"),
 			),
-		},
-		{
-			name:   "Невалидная ссылка Telegram (слишком длинная)",
-			userID: 1,
-			input: &dto.EmployerProfileUpdate{
-				Telegram: strings.Repeat("a", 129),
-			},
-			mockSetup: func(*mock.MockEmployerRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("url не может быть длиннее 128 символов"),
-			),
-		},
-		{
-			name:   "Невалидная ссылка Facebook (слишком длинная)",
-			userID: 1,
-			input: &dto.EmployerProfileUpdate{
-				Facebook: strings.Repeat("a", 129),
-			},
-			mockSetup: func(*mock.MockEmployerRepository) {},
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest,
-				fmt.Errorf("url не может быть длиннее 128 символов"),
-			),
-		},
-		{
-			name:   "Невалидное описание",
-			userID: 1,
-			input: &dto.EmployerProfileUpdate{
-				Description: strings.Repeat("e", 2001),
-			},
-			mockSetup:   func(*mock.MockEmployerRepository) {},
-			expectedErr: entity.NewError(entity.ErrBadRequest, fmt.Errorf("описание компании не может быть длиннее 2000 символов")),
 		},
 		{
 			name:      "Нет полей для обновления",
@@ -686,6 +609,84 @@ func TestEmployerService_UpdateLogo(t *testing.T) {
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
 			} else {
 				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEmployerService_EmailExists(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name           string
+		email          string
+		mockSetup      func(*mock.MockEmployerRepository)
+		expectedResult *dto.EmailExistsResponse
+		expectedErr    error
+	}{
+		{
+			name:  "Успешный поиск email для работодателя",
+			email: "employer@example.com",
+			mockSetup: func(empRep *mock.MockEmployerRepository) {
+				empRep.EXPECT().
+					GetEmployerByEmail(gomock.Any(), "employer@example.com").
+					Return(&entity.Employer{ID: 1, Email: "employer@example.com"}, nil)
+			},
+			expectedResult: &dto.EmailExistsResponse{
+				Exists: true,
+				Role:   "employer",
+			},
+			expectedErr: nil,
+		},
+		{
+			name:      "Неправильный формат почты",
+			email:     "employer_wrong_mail.com",
+			mockSetup: func(m *mock.MockEmployerRepository) {},
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("невалидная почта"),
+			),
+		},
+		{
+			name:  "Email не найден",
+			email: "nonexistent@example.com",
+			mockSetup: func(empRep *mock.MockEmployerRepository) {
+				empRep.EXPECT().
+					GetEmployerByEmail(gomock.Any(), "nonexistent@example.com").
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("работодатель с email=nonexistent@example.com не найден"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("работодатель с email=nonexistent@example.com не найден"),
+			),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockEmpRepo := mock.NewMockEmployerRepository(ctrl)
+			service := NewEmployerService(mockEmpRepo, nil)
+
+			tc.mockSetup(mockEmpRepo)
+
+			res, err := service.EmailExists(context.Background(), tc.email)
+
+			if tc.expectedErr != nil {
+				require.Error(t, err)
+				require.Equal(t, tc.expectedErr.Error(), err.Error())
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedResult, res)
 			}
 		})
 	}

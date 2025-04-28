@@ -1,7 +1,9 @@
 services:
   resumatch:
     container_name: app
-    build: .
+    build:
+      context: .
+      dockerfile: docker/app.dockerfile
     env_file: .env
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
@@ -10,6 +12,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      auth:
+        condition: service_started
     restart: unless-stopped
     command: >
       sh -c "
@@ -20,6 +24,20 @@ services:
       - resumatch-network
     volumes:
       - ./assets:/app/assets
+
+  auth:
+    container_name: auth
+    build:
+      context: .
+      dockerfile: docker/auth.dockerfile
+    env_file: .env
+    ports:
+      - "${AUTH_PORT}:${AUTH_PORT}"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - resumatch-network
 
   postgres:
     container_name: postgres

@@ -24,7 +24,7 @@ type Resume struct {
 	Education                 EducationType    `json:"education,omitempty"`
 	EducationalInstitution    string           `json:"educational_institution,omitempty"`
 	GraduationYear            time.Time        `json:"graduation_year,omitempty"`
-	Profession                string           `json:"profession,omitempty"` // Дополнение - добавлено поле профессии
+	Profession                string           `json:"profession,omitempty"`
 	CreatedAt                 time.Time        `json:"created_at"`
 	UpdatedAt                 time.Time        `json:"updated_at"`
 	Skills                    []int            `json:"-"`

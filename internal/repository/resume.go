@@ -21,8 +21,8 @@ type ResumeRepository interface {
 	DeleteWorkExperiences(ctx context.Context, resumeID int) error
 	UpdateWorkExperience(ctx context.Context, workExperience *entity.WorkExperience) (*entity.WorkExperience, error)
 	DeleteWorkExperience(ctx context.Context, id int) error
-	GetAll(ctx context.Context, limit, offset int) ([]entity.Resume, error)                                          // Дополнение - добавлена пагинация
-	GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]entity.Resume, error) // Дополнение - добавлена пагинация
+	GetAll(ctx context.Context, limit, offset int) ([]entity.Resume, error)
+	GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]entity.Resume, error)
 	FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error)
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error)

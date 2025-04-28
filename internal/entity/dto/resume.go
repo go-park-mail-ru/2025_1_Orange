@@ -45,7 +45,7 @@ func init() {
 type CreateResumeRequest struct {
 	AboutMe                   string               `json:"about_me" valid:"stringlength(10|500),optional"`
 	Specialization            string               `json:"specialization" valid:"required,stringlength(3|30)"`
-	Profession                string               `json:"profession" valid:"required,stringlength(3|50)"` // Дополнение - добавлено поле профессии
+	Profession                string               `json:"profession" valid:"required,stringlength(3|50)"`
 	Education                 entity.EducationType `json:"education" valid:"required,in(secondary_school|incomplete_higher|higher|bachelor|master|phd)"`
 	EducationalInstitution    string               `json:"educational_institution" valid:"required,stringlength(3|50)"`
 	GraduationYear            string               `json:"graduation_year" valid:"required,customYearValidation"`
@@ -70,7 +70,7 @@ type ResumeResponse struct {
 	ApplicantID               int                      `json:"applicant_id"`
 	AboutMe                   string                   `json:"about_me,omitempty"`
 	Specialization            string                   `json:"specialization,omitempty"`
-	Profession                string                   `json:"profession,omitempty"` // Дополнение - добавлено поле профессии
+	Profession                string                   `json:"profession,omitempty"`
 	Education                 entity.EducationType     `json:"education,omitempty"`
 	EducationalInstitution    string                   `json:"educational_institution,omitempty"`
 	GraduationYear            string                   `json:"graduation_year,omitempty"`
@@ -97,7 +97,7 @@ type WorkExperienceResponse struct {
 type UpdateResumeRequest struct {
 	AboutMe                   string               `json:"about_me" valid:"stringlength(10|500), optional"`
 	Specialization            string               `json:"specialization" valid:"required,stringlength(3|30)"`
-	Profession                string               `json:"profession" valid:"required,stringlength(3|50)"` // Дополнение - добавлено поле профессии
+	Profession                string               `json:"profession" valid:"required,stringlength(3|50)"`
 	Education                 entity.EducationType `json:"education" valid:"required,in(secondary_school|incomplete_higher|higher|bachelor|master|phd)"`
 	EducationalInstitution    string               `json:"educational_institution" valid:"required,stringlength(3|50)"`
 	GraduationYear            string               `json:"graduation_year" valid:"required,customYearValidation"`
@@ -117,7 +117,7 @@ type ResumeShortResponse struct {
 	ApplicantID    int                       `json:"applicant_id,omitempty"` // Keep for backward compatibility
 	Applicant      *ApplicantProfileResponse `json:"applicant"`              // Add applicant information
 	Specialization string                    `json:"specialization"`
-	Profession     string                    `json:"profession"` // Дополнение - добавлено поле профессии
+	Profession     string                    `json:"profession"`
 	WorkExperience WorkExperienceShort       `json:"work_experiences"`
 	CreatedAt      string                    `json:"created_at"`
 	UpdatedAt      string                    `json:"updated_at"`

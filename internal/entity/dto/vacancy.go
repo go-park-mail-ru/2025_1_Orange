@@ -8,7 +8,7 @@ import (
 type VacancyShortResponse struct {
 	ID             int                      `json:"id" validate:"required,email"`
 	Title          string                   `json:"title"`
-	Employer       *EmployerProfileResponse `json:"employer_id"`
+	Employer       *EmployerProfileResponse `json:"employer"`
 	Specialization string                   `json:"specialization"`
 	WorkFormat     string                   `json:"work_format"`
 	Employment     string                   `json:"employment"`
@@ -20,6 +20,7 @@ type VacancyShortResponse struct {
 	UpdatedAt      string                   `json:"updated_at"`
 	City           string                   `json:"city"`
 	Responded      bool                     `json:"responded"`
+	Liked          bool                     `json:"liked"`
 }
 
 type VacancyCreate struct {

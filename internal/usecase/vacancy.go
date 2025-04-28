@@ -16,4 +16,6 @@ type Vacancy interface {
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	SearchVacancies(ctx context.Context, userID int, userRole string, searchQuery string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	SearchVacanciesBySpecializations(ctx context.Context, userID int, userRole string, specializations []string, limit int, offset int) ([]dto.VacancyShortResponse, error)
+	LikeVacancy(ctx context.Context, vacancyID, applicantID int) error
+	GetLikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]dto.VacancyShortResponse, error)
 }

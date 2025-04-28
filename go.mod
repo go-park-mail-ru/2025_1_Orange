@@ -6,14 +6,7 @@ toolchain go1.24.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-<<<<<<< HEAD
-<<<<<<< HEAD
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-=======
->>>>>>> c0c68f9 (Fix unauthorized user get vacancy)
-=======
-	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
->>>>>>> f98a6e6c99a4cf30465608c958ef0689cc1cd217
 	github.com/gomodule/redigo v1.9.2
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1

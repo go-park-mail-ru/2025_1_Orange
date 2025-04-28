@@ -8,6 +8,7 @@ import (
 	"ResuMatch/pkg/sanitizer"
 	"context"
 	"fmt"
+	"github.com/asaskevich/govalidator"
 )
 
 type EmployerService struct {
@@ -50,6 +51,13 @@ func (e *EmployerService) employerEntityToDTO(ctx context.Context, employer *ent
 }
 
 func (e *EmployerService) Register(ctx context.Context, registerDTO *dto.EmployerRegister) (int, error) {
+	if isValid, err := govalidator.ValidateStruct(registerDTO); !isValid {
+		return -1, entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("неправильный формат данных: %w", err),
+		)
+	}
+
 	employer := new(entity.Employer)
 
 	if err := entity.ValidateEmail(registerDTO.Email); err != nil {
@@ -57,14 +65,6 @@ func (e *EmployerService) Register(ctx context.Context, registerDTO *dto.Employe
 	}
 
 	if err := entity.ValidatePassword(registerDTO.Password); err != nil {
-		return -1, err
-	}
-
-	if err := entity.ValidateCompanyName(registerDTO.CompanyName); err != nil {
-		return -1, err
-	}
-
-	if err := entity.ValidateLegalAddress(registerDTO.LegalAddress); err != nil {
 		return -1, err
 	}
 
@@ -113,54 +113,37 @@ func (e *EmployerService) GetUser(ctx context.Context, employerID int) (*dto.Emp
 }
 
 func (e *EmployerService) UpdateProfile(ctx context.Context, userID int, employerDTO *dto.EmployerProfileUpdate) error {
+	if isValid, err := govalidator.ValidateStruct(employerDTO); !isValid {
+		return entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("неправильный формат данных: %w", err),
+		)
+	}
+
 	updateFields := make(map[string]interface{})
 
 	if employerDTO.CompanyName != "" {
-		if err := entity.ValidateCompanyName(employerDTO.CompanyName); err != nil {
-			return err
-		}
 		updateFields["company_name"] = sanitizer.StrictPolicy.Sanitize(employerDTO.CompanyName)
 	}
 	if employerDTO.LegalAddress != "" {
-		if err := entity.ValidateLegalAddress(employerDTO.LegalAddress); err != nil {
-			return err
-		}
 		updateFields["legal_address"] = sanitizer.StrictPolicy.Sanitize(employerDTO.LegalAddress)
 	}
 	if employerDTO.Slogan != "" {
-		if err := entity.ValidateSlogan(employerDTO.Slogan); err != nil {
-			return err
-		}
 		updateFields["slogan"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Slogan)
 	}
 	if employerDTO.Website != "" {
-		if err := entity.ValidateURL(employerDTO.Website); err != nil {
-			return err
-		}
 		updateFields["website"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Website)
 	}
 	if employerDTO.Description != "" {
-		if err := entity.ValidateDescription(employerDTO.Description); err != nil {
-			return err
-		}
 		updateFields["description"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Description)
 	}
 	if employerDTO.Vk != "" {
-		if err := entity.ValidateURL(employerDTO.Vk); err != nil {
-			return err
-		}
 		updateFields["vk"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Vk)
 	}
 	if employerDTO.Telegram != "" {
-		if err := entity.ValidateURL(employerDTO.Telegram); err != nil {
-			return err
-		}
 		updateFields["telegram"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Telegram)
 	}
 	if employerDTO.Facebook != "" {
-		if err := entity.ValidateURL(employerDTO.Facebook); err != nil {
-			return err
-		}
 		updateFields["facebook"] = sanitizer.StrictPolicy.Sanitize(employerDTO.Facebook)
 	}
 
@@ -180,4 +163,20 @@ func (e *EmployerService) UpdateLogo(ctx context.Context, userID, logoID int) er
 		return err
 	}
 	return nil
+}
+
+func (e *EmployerService) EmailExists(ctx context.Context, email string) (*dto.EmailExistsResponse, error) {
+	if err := entity.ValidateEmail(email); err != nil {
+		return nil, err
+	}
+
+	employer, err := e.employerRepository.GetEmployerByEmail(ctx, email)
+	if err == nil && employer != nil {
+		return &dto.EmailExistsResponse{
+			Exists: true,
+			Role:   "employer",
+		}, nil
+	}
+
+	return nil, err
 }

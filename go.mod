@@ -6,6 +6,10 @@ toolchain go1.24.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+<<<<<<< HEAD
+=======
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
+>>>>>>> dc0350063338f11f8a1cfc223a0a6e8fea572e1d
 	github.com/gomodule/redigo v1.9.2
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
@@ -17,6 +21,8 @@ require (
 	github.com/swaggo/swag v1.16.4
 	go.uber.org/mock v0.5.1
 	golang.org/x/crypto v0.37.0
+	google.golang.org/grpc v1.72.0
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -35,6 +41,8 @@ require (
 	github.com/swaggo/files v1.0.1 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

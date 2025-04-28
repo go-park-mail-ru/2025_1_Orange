@@ -54,15 +54,39 @@ type RedisConfig struct {
 	TTL      int    `yaml:"ttl"`
 }
 
-type Config struct {
-	HTTP     HTTPConfig     `yaml:"http"`
-	Session  SessionConfig  `yaml:"session_id"`
-	CSRF     CSRFConfig     `yaml:"csrf"`
-	Postgres PostgresConfig `yaml:"postgres"`
-	Redis    RedisConfig    `yaml:"redis"`
+type MicroservicesConfig struct {
+	Auth AuthClientConfig `yaml:"auth_service"`
 }
 
-func Load() (*Config, error) {
+type AuthConfig struct {
+	Host  string      `yaml:"host"`
+	Port  string      `yaml:"port"`
+	Redis RedisConfig `yaml:"redis"`
+}
+
+func (a *AuthConfig) Addr() string {
+	return fmt.Sprintf("%s:%s", a.Host, a.Port)
+}
+
+type AuthClientConfig struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
+}
+
+func (a *AuthClientConfig) Addr() string {
+	return fmt.Sprintf("%s:%s", a.Host, a.Port)
+}
+
+type Config struct {
+	HTTP          HTTPConfig          `yaml:"http"`
+	Session       SessionConfig       `yaml:"session_id"`
+	CSRF          CSRFConfig          `yaml:"csrf"`
+	Postgres      PostgresConfig      `yaml:"postgres"`
+	Redis         RedisConfig         `yaml:"redis"`
+	Microservices MicroservicesConfig `yaml:"microservices"`
+}
+
+func LoadAppConfig() (*Config, error) {
 	// Загрузка .env
 	if err := godotenv.Load(); err != nil {
 		return nil, fmt.Errorf("error loading .env: %w", err)
@@ -101,6 +125,32 @@ func Load() (*Config, error) {
 	}
 
 	// Настройка Redis
+	cfg.Redis = RedisConfig{
+		Host:     os.Getenv("REDIS_HOST"),
+		Port:     os.Getenv("REDIS_CONTAINER_PORT"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       cfg.Redis.DB,
+		TTL:      cfg.Redis.TTL,
+	}
+
+	return &cfg, nil
+}
+
+func LoadAuthConfig() (*AuthConfig, error) {
+	if err := godotenv.Load(); err != nil {
+		return nil, fmt.Errorf("error loading .env: %w", err)
+	}
+
+	yamlFile, err := os.ReadFile("configs/auth.yml")
+	if err != nil {
+		return nil, fmt.Errorf("error reading auth config file: %w", err)
+	}
+
+	var cfg AuthConfig
+	if err := yaml.Unmarshal(yamlFile, &cfg); err != nil {
+		return nil, fmt.Errorf("error parsing auth YAML: %w", err)
+	}
+
 	cfg.Redis = RedisConfig{
 		Host:     os.Getenv("REDIS_HOST"),
 		Port:     os.Getenv("REDIS_CONTAINER_PORT"),

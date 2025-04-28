@@ -6,7 +6,6 @@ import (
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase/mock"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/require"
@@ -125,7 +124,10 @@ func TestAuthHandler_IsAuth(t *testing.T) {
 			handler.IsAuth(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -134,116 +136,6 @@ func TestAuthHandler_IsAuth(t *testing.T) {
 				err := json.NewDecoder(res.Body).Decode(&authResponse)
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResponse, authResponse)
-			} else {
-				var apiErr utils.APIError
-				err := json.NewDecoder(res.Body).Decode(&apiErr)
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedResponse, apiErr)
-			}
-		})
-	}
-}
-
-func TestAuthHandler_EmailExists(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name             string
-		requestBody      interface{}
-		mockSetup        func(auth *mock.MockAuth)
-		expectedStatus   int
-		expectedResponse interface{}
-	}{
-		{
-			name: "email существует",
-			requestBody: dto.EmailExistsRequest{
-				Email: "applicant@example.com",
-			},
-			mockSetup: func(auth *mock.MockAuth) {
-				auth.EXPECT().
-					EmailExists(gomock.Any(), "applicant@example.com").
-					Return(&dto.EmailExistsResponse{
-						Exists: true,
-						Role:   "applicant",
-					}, nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedResponse: dto.EmailExistsResponse{
-				Exists: true,
-				Role:   "applicant",
-			},
-		},
-		{
-			name: "email не существует",
-			requestBody: dto.EmailExistsRequest{
-				Email: "nonexistent@example.com",
-			},
-			mockSetup: func(auth *mock.MockAuth) {
-				auth.EXPECT().
-					EmailExists(gomock.Any(), "nonexistent@example.com").
-					Return(nil, entity.NewError(entity.ErrNotFound, fmt.Errorf("почта не найдена")))
-			},
-			expectedStatus: http.StatusNotFound,
-			expectedResponse: utils.APIError{
-				Status:  http.StatusNotFound,
-				Message: "почта не найдена",
-			},
-		},
-		{
-			name:           "невалидный JSON",
-			requestBody:    "{invalid}",
-			mockSetup:      func(auth *mock.MockAuth) {},
-			expectedStatus: http.StatusBadRequest,
-			expectedResponse: utils.APIError{
-				Status:  http.StatusBadRequest,
-				Message: entity.ErrBadRequest.Error(),
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockAuth := mock.NewMockAuth(ctrl)
-			tc.mockSetup(mockAuth)
-
-			cfg := config.CSRFConfig{
-				CookieName: "csrf_token",
-				Lifetime:   3600,
-				Secret:     "secret",
-				HttpOnly:   true,
-				Secure:     false,
-				SameSite:   "Strict",
-			}
-			handler := NewAuthHandler(mockAuth, cfg)
-
-			var reqBody []byte
-			if body, ok := tc.requestBody.(string); ok {
-				reqBody = []byte(body)
-			} else {
-				reqBody, _ = json.Marshal(tc.requestBody)
-			}
-
-			req := httptest.NewRequest(http.MethodPost, "/auth/emailExists", bytes.NewReader(reqBody))
-			w := httptest.NewRecorder()
-
-			handler.EmailExists(w, req)
-
-			res := w.Result()
-			defer res.Body.Close()
-
-			require.Equal(t, tc.expectedStatus, res.StatusCode)
-
-			if res.StatusCode == http.StatusOK {
-				var response dto.EmailExistsResponse
-				err := json.NewDecoder(res.Body).Decode(&response)
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedResponse, response)
 			} else {
 				var apiErr utils.APIError
 				err := json.NewDecoder(res.Body).Decode(&apiErr)
@@ -338,7 +230,10 @@ func TestAuthHandler_Logout(t *testing.T) {
 			handler.Logout(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
@@ -501,7 +396,10 @@ func TestAuthHandler_LogoutAll(t *testing.T) {
 			handler.LogoutAll(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 

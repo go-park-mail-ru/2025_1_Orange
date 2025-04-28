@@ -32,7 +32,6 @@ func CreateSession(w http.ResponseWriter, r *http.Request, auth usecase.Auth, us
 	ctx := r.Context()
 	session, err := auth.CreateSession(ctx, userID, role)
 	if err != nil {
-		WriteAPIError(w, ToAPIError(err))
 		return err
 	}
 	expirationTime := time.Now().Add(time.Duration(86400) * time.Second)

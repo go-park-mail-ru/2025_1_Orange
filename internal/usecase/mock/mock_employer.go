@@ -41,6 +41,21 @@ func (m *MockEmployer) EXPECT() *MockEmployerMockRecorder {
 	return m.recorder
 }
 
+// EmailExists mocks base method.
+func (m *MockEmployer) EmailExists(arg0 context.Context, arg1 string) (*dto.EmailExistsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EmailExists", arg0, arg1)
+	ret0, _ := ret[0].(*dto.EmailExistsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EmailExists indicates an expected call of EmailExists.
+func (mr *MockEmployerMockRecorder) EmailExists(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmailExists", reflect.TypeOf((*MockEmployer)(nil).EmailExists), arg0, arg1)
+}
+
 // GetUser mocks base method.
 func (m *MockEmployer) GetUser(arg0 context.Context, arg1 int) (*dto.EmployerProfileResponse, error) {
 	m.ctrl.T.Helper()

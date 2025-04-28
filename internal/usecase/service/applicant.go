@@ -8,6 +8,7 @@ import (
 	"ResuMatch/pkg/sanitizer"
 	"context"
 	"fmt"
+	"github.com/asaskevich/govalidator"
 )
 
 type ApplicantService struct {
@@ -66,20 +67,18 @@ func (a *ApplicantService) applicantEntityToDTO(ctx context.Context, applicantEn
 }
 
 func (a *ApplicantService) Register(ctx context.Context, registerDTO *dto.ApplicantRegister) (int, error) {
+	if isValid, err := govalidator.ValidateStruct(registerDTO); !isValid {
+		return -1, entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("неправильный формат данных: %w", err),
+		)
+	}
 
 	if err := entity.ValidateEmail(registerDTO.Email); err != nil {
 		return -1, err
 	}
 
 	if err := entity.ValidatePassword(registerDTO.Password); err != nil {
-		return -1, err
-	}
-
-	if err := entity.ValidateFirstName(registerDTO.FirstName); err != nil {
-		return -1, err
-	}
-
-	if err := entity.ValidateLastName(registerDTO.LastName); err != nil {
 		return -1, err
 	}
 
@@ -129,24 +128,22 @@ func (a *ApplicantService) GetUser(ctx context.Context, applicantID int) (*dto.A
 }
 
 func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applicantDTO *dto.ApplicantProfileUpdate) error {
+	if isValid, err := govalidator.ValidateStruct(applicantDTO); !isValid {
+		return entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("неправильный формат данных: %w", err),
+		)
+	}
+
 	updateFields := make(map[string]interface{})
 
 	if applicantDTO.FirstName != "" {
-		if err := entity.ValidateFirstName(applicantDTO.FirstName); err != nil {
-			return err
-		}
 		updateFields["first_name"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.FirstName)
 	}
 	if applicantDTO.LastName != "" {
-		if err := entity.ValidateLastName(applicantDTO.LastName); err != nil {
-			return err
-		}
 		updateFields["last_name"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.LastName)
 	}
 	if applicantDTO.MiddleName != "" {
-		if err := entity.ValidateMiddleName(applicantDTO.MiddleName); err != nil {
-			return err
-		}
 		updateFields["middle_name"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.MiddleName)
 	}
 	if !applicantDTO.BirthDate.IsZero() {
@@ -156,9 +153,6 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 		updateFields["birth_date"] = applicantDTO.BirthDate
 	}
 	if applicantDTO.Sex != "" {
-		if err := entity.ValidateSex(applicantDTO.Sex); err != nil {
-			return err
-		}
 		updateFields["sex"] = applicantDTO.Sex
 	}
 	if applicantDTO.Status != "" {
@@ -168,27 +162,15 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 		updateFields["status"] = applicantDTO.Status
 	}
 	if applicantDTO.Quote != "" {
-		if err := entity.ValidateQuote(applicantDTO.Quote); err != nil {
-			return err
-		}
 		updateFields["quote"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Quote)
 	}
 	if applicantDTO.Vk != "" {
-		if err := entity.ValidateURL(applicantDTO.Vk); err != nil {
-			return err
-		}
 		updateFields["vk"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Vk)
 	}
 	if applicantDTO.Telegram != "" {
-		if err := entity.ValidateURL(applicantDTO.Telegram); err != nil {
-			return err
-		}
 		updateFields["telegram"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Telegram)
 	}
 	if applicantDTO.Facebook != "" {
-		if err := entity.ValidateURL(applicantDTO.Facebook); err != nil {
-			return err
-		}
 		updateFields["facebook"] = sanitizer.StrictPolicy.Sanitize(applicantDTO.Facebook)
 	}
 	if applicantDTO.City != "" {
@@ -215,4 +197,20 @@ func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID, avatarID in
 		return err
 	}
 	return nil
+}
+
+func (a *ApplicantService) EmailExists(ctx context.Context, email string) (*dto.EmailExistsResponse, error) {
+	if err := entity.ValidateEmail(email); err != nil {
+		return nil, err
+	}
+
+	applicant, err := a.applicantRepository.GetApplicantByEmail(ctx, email)
+	if err == nil && applicant != nil {
+		return &dto.EmailExistsResponse{
+			Exists: true,
+			Role:   "applicant",
+		}, nil
+	}
+
+	return nil, err
 }

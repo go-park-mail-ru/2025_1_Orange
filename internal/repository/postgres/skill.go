@@ -54,7 +54,15 @@ func (r *SkillRepository) GetByIDs(ctx context.Context, ids []int) ([]entity.Ski
 			fmt.Errorf("ошибка при получении навыков по ID: %w", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var skills []entity.Skill
 	for rows.Next() {

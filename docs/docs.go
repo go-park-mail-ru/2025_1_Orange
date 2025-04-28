@@ -85,6 +85,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/applicant/emailExists": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Проверяет, есть ли работодатель с таким email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Applicant"
+                ],
+                "summary": "Проверка email",
+                "parameters": [
+                    {
+                        "description": "Email для проверки",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmailExistsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmailExistsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/applicant/login": {
             "post": {
                 "security": [
@@ -334,69 +397,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/emailExists": {
-            "post": {
-                "security": [
-                    {
-                        "csrf_token": []
-                    }
-                ],
-                "description": "Проверяет, зарегистрирован ли email в системе",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Проверка email",
-                "parameters": [
-                    {
-                        "description": "Email для проверки",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.EmailExistsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.EmailExistsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.APIError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/utils.APIError"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.APIError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.APIError"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/isAuth": {
             "get": {
                 "security": [
@@ -480,6 +480,69 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/employer/emailExists": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Проверяет, есть ли работодатель с таким email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employer"
+                ],
+                "summary": "Проверка email",
+                "parameters": [
+                    {
+                        "description": "Email для проверки",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmailExistsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmailExistsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
                     },
                     "404": {
                         "description": "Not Found",
@@ -1202,27 +1265,18 @@ const docTemplate = `{
         },
         "dto.ApplicantRegister": {
             "type": "object",
-            "required": [
-                "email",
-                "first_name",
-                "last_name",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "first_name": {
-                    "type": "string",
-                    "maxLength": 30
+                    "type": "string"
                 },
                 "last_name": {
-                    "type": "string",
-                    "maxLength": 30
+                    "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 8
+                    "type": "string"
                 }
             }
         },
@@ -1288,9 +1342,6 @@ const docTemplate = `{
         },
         "dto.EmailExistsRequest": {
             "type": "object",
-            "required": [
-                "email"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -1383,35 +1434,23 @@ const docTemplate = `{
         },
         "dto.EmployerRegister": {
             "type": "object",
-            "required": [
-                "company_name",
-                "email",
-                "password"
-            ],
             "properties": {
                 "company_name": {
-                    "type": "string",
-                    "maxLength": 64
+                    "type": "string"
                 },
                 "email": {
                     "type": "string"
                 },
                 "legal_address": {
-                    "type": "string",
-                    "maxLength": 255
+                    "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 8
+                    "type": "string"
                 }
             }
         },
         "dto.Login": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -1474,7 +1513,16 @@ const docTemplate = `{
         "dto.ResumeShortResponse": {
             "type": "object",
             "properties": {
+                "applicant": {
+                    "description": "Add applicant information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ApplicantProfileResponse"
+                        }
+                    ]
+                },
                 "applicant_id": {
+                    "description": "Keep for backward compatibility",
                     "type": "integer"
                 },
                 "created_at": {
@@ -1489,7 +1537,7 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string"
                 },
-                "work_experiences": {
+                "work_experience": {
                     "$ref": "#/definitions/dto.WorkExperienceShort"
                 }
             }
@@ -1551,11 +1599,6 @@ const docTemplate = `{
         },
         "dto.WorkExperienceDTO": {
             "type": "object",
-            "required": [
-                "employer_name",
-                "position",
-                "start_date"
-            ],
             "properties": {
                 "achievements": {
                     "type": "string"
@@ -1564,15 +1607,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "employer_name": {
-                    "type": "string",
-                    "maxLength": 64
+                    "type": "string"
                 },
                 "end_date": {
                     "type": "string"
                 },
                 "position": {
-                    "type": "string",
-                    "maxLength": 64
+                    "type": "string"
                 },
                 "start_date": {
                     "type": "string"

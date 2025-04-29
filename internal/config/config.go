@@ -49,8 +49,8 @@ type PostgresConfig struct {
 type MinioConfig struct {
 	InternalEndpoint string `yaml:"internal_endpoint"`
 	PublicEndpoint   string `yaml:"public_endpoint"`
-	RootUser         string `yaml:"root_user"`
-	RootPassword     string `yaml:"root_password"`
+	RootUser         string `yaml:"-"`
+	RootPassword     string `yaml:"-"`
 	UseSSL           bool   `yaml:"use_ssl"`
 	Scheme           string `yaml:"scheme"`
 }
@@ -152,6 +152,10 @@ func LoadAppConfig() (*Config, error) {
 		DB:       cfg.Redis.DB,
 		TTL:      cfg.Redis.TTL,
 	}
+
+	// Настройка Minio
+	cfg.Minio.Config.RootUser = os.Getenv("MINIO_ROOT_USER")
+	cfg.Minio.Config.RootPassword = os.Getenv("MINIO_ROOT_PASSWORD")
 
 	return &cfg, nil
 }

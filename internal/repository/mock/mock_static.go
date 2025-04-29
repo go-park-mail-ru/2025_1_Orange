@@ -10,7 +10,6 @@
 package mock
 
 import (
-	entity "ResuMatch/internal/entity"
 	context "context"
 	reflect "reflect"
 
@@ -41,6 +40,20 @@ func (m *MockStaticRepository) EXPECT() *MockStaticRepositoryMockRecorder {
 	return m.recorder
 }
 
+// DeleteStatic mocks base method.
+func (m *MockStaticRepository) DeleteStatic(ctx context.Context, id int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteStatic", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteStatic indicates an expected call of DeleteStatic.
+func (mr *MockStaticRepositoryMockRecorder) DeleteStatic(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStatic", reflect.TypeOf((*MockStaticRepository)(nil).DeleteStatic), ctx, id)
+}
+
 // GetStatic mocks base method.
 func (m *MockStaticRepository) GetStatic(ctx context.Context, id int) (string, error) {
 	m.ctrl.T.Helper()
@@ -57,16 +70,17 @@ func (mr *MockStaticRepositoryMockRecorder) GetStatic(ctx, id any) *gomock.Call 
 }
 
 // UploadStatic mocks base method.
-func (m *MockStaticRepository) UploadStatic(ctx context.Context, filePath, fileName string, data []byte) (*entity.Static, error) {
+func (m *MockStaticRepository) UploadStatic(ctx context.Context, fileName, contentType string, data []byte) (int, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UploadStatic", ctx, filePath, fileName, data)
-	ret0, _ := ret[0].(*entity.Static)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "UploadStatic", ctx, fileName, contentType, data)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // UploadStatic indicates an expected call of UploadStatic.
-func (mr *MockStaticRepositoryMockRecorder) UploadStatic(ctx, filePath, fileName, data any) *gomock.Call {
+func (mr *MockStaticRepositoryMockRecorder) UploadStatic(ctx, fileName, contentType, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadStatic", reflect.TypeOf((*MockStaticRepository)(nil).UploadStatic), ctx, filePath, fileName, data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadStatic", reflect.TypeOf((*MockStaticRepository)(nil).UploadStatic), ctx, fileName, contentType, data)
 }

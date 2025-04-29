@@ -9,7 +9,6 @@ import (
 	"go.uber.org/mock/gomock"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestStaticService_UploadAvatar(t *testing.T) {
@@ -35,14 +34,6 @@ func TestStaticService_UploadAvatar(t *testing.T) {
 			},
 			ExpectedErr: nil,
 			SetupStaticRepoMock: func(repo *mock.MockStaticRepository) {
-				expectedStatic := &entity.Static{
-					ID:        1,
-					FilePath:  "assets",
-					FileName:  "generated_filename.png",
-					CreatedAt: time.Date(2025, 4, 2, 12, 0, 0, 0, time.UTC),
-					UpdatedAt: time.Date(2025, 4, 2, 12, 0, 0, 0, time.UTC),
-				}
-
 				repo.EXPECT().
 					UploadStatic(
 						gomock.Any(),
@@ -50,7 +41,11 @@ func TestStaticService_UploadAvatar(t *testing.T) {
 						gomock.Any(),
 						gomock.Any(),
 					).
-					Return(expectedStatic, nil)
+					Return(
+						1,
+						"http://example.com/bucket/filename.png",
+						nil,
+					)
 			},
 		},
 		{

@@ -37,8 +37,6 @@ minio:
   config:
     internal_endpoint: "minio:9000"
     public_endpoint: "localhost:9000"
-    root_user: "minioadmin"
-    root_password: "miniopassword"
     use_ssl: false
     scheme: "http"
   buckets:

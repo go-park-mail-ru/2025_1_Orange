@@ -72,33 +72,33 @@ func (mr *MockResumeUsecaseMockRecorder) Delete(ctx, id, applicantID any) *gomoc
 }
 
 // GetAll mocks base method.
-func (m *MockResumeUsecase) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, error) {
+func (m *MockResumeUsecase) GetAll(ctx context.Context, limit, offset int) ([]dto.ResumeShortResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx)
+	ret := m.ctrl.Call(m, "GetAll", ctx, limit, offset)
 	ret0, _ := ret[0].([]dto.ResumeShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAll indicates an expected call of GetAll.
-func (mr *MockResumeUsecaseMockRecorder) GetAll(ctx any) *gomock.Call {
+func (mr *MockResumeUsecaseMockRecorder) GetAll(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockResumeUsecase)(nil).GetAll), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockResumeUsecase)(nil).GetAll), ctx, limit, offset)
 }
 
 // GetAllResumesByApplicantID mocks base method.
-func (m *MockResumeUsecase) GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]dto.ResumeShortResponse, error) {
+func (m *MockResumeUsecase) GetAllResumesByApplicantID(ctx context.Context, applicantID, limit, offset int) ([]dto.ResumeShortResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllResumesByApplicantID", ctx, applicantID)
+	ret := m.ctrl.Call(m, "GetAllResumesByApplicantID", ctx, applicantID, limit, offset)
 	ret0, _ := ret[0].([]dto.ResumeShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllResumesByApplicantID indicates an expected call of GetAllResumesByApplicantID.
-func (mr *MockResumeUsecaseMockRecorder) GetAllResumesByApplicantID(ctx, applicantID any) *gomock.Call {
+func (mr *MockResumeUsecaseMockRecorder) GetAllResumesByApplicantID(ctx, applicantID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResumesByApplicantID", reflect.TypeOf((*MockResumeUsecase)(nil).GetAllResumesByApplicantID), ctx, applicantID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResumesByApplicantID", reflect.TypeOf((*MockResumeUsecase)(nil).GetAllResumesByApplicantID), ctx, applicantID, limit, offset)
 }
 
 // GetByID mocks base method.

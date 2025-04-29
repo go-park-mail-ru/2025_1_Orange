@@ -158,7 +158,19 @@ func (e *EmployerService) UpdateProfile(ctx context.Context, userID int, employe
 }
 
 func (e *EmployerService) UpdateLogo(ctx context.Context, userID, logoID int) error {
-	err := e.employerRepository.UpdateEmployer(ctx, userID, map[string]interface{}{"logo_id": logoID})
+	employer, err := e.employerRepository.GetEmployerByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if employer.LogoID != 0 {
+		err = e.staticRepository.DeleteStatic(ctx, employer.LogoID)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = e.employerRepository.UpdateEmployer(ctx, userID, map[string]interface{}{"logo_id": logoID})
 	if err != nil {
 		return err
 	}

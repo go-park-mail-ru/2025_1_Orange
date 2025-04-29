@@ -4,9 +4,15 @@ WORKDIR /auth
 
 COPY go.mod ./
 COPY go.sum ./
-RUN go mod tidy
 
-COPY . .
+#COPY . .
+COPY .env ./
+COPY cmd/auth/main.go ./cmd/auth/main.go
+COPY internal ./internal
+COPY pkg ./pkg
+COPY configs/auth.yml ./configs/auth.yml
+
+RUN go mod download
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./.bin ./cmd/auth/main.go
 

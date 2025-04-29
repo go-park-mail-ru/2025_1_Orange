@@ -80,9 +80,14 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Ошибка создания репозитория города: %v", err)
 	}
 
-	staticRepo, err := postgres.NewStaticRepository(staticConn)
+	applicantStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.ApplicantBucket, cfg.Minio.Config)
 	if err != nil {
-		l.Log.Errorf("Ошибка создания репозитория статики: %v", err)
+		l.Log.Errorf("Ошибка создания репозитория статики для соискателя: %v", err)
+	}
+
+	employerStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.EmployerBucket, cfg.Minio.Config)
+	if err != nil {
+		l.Log.Errorf("Ошибка создания репозитория статики для работодателя: %v", err)
 	}
 
 	applicantRepo, err := postgres.NewApplicantRepository(applicantConn)
@@ -96,14 +101,16 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-	staticService := service.NewStaticService(staticRepo)
+	applicantStaticService := service.NewStaticService(applicantStaticRepo)
+	employerStaticService := service.NewStaticService(employerStaticRepo)
+
 	authService, err := auth.NewGateway(cfg.Microservices.Auth.Addr())
 	if err != nil {
 		l.Log.Errorf("Ошибка при подключении к сервису авторизации: %v", err)
 	}
 
-	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticRepo)
-	employerService := service.NewEmployerService(employerRepo, staticRepo)
+	applicantService := service.NewApplicantService(applicantRepo, cityRepo, applicantStaticRepo)
+	employerService := service.NewEmployerService(employerRepo, employerStaticRepo)
 
 	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
@@ -111,8 +118,8 @@ func Init(cfg *config.Config) *server.Server {
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
-	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
-	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
+	applicantHandler := handler.NewApplicantHandler(authService, applicantService, applicantStaticService, cfg.CSRF)
+	employmentHandler := handler.NewEmployerHandler(authService, employerService, employerStaticService, cfg.CSRF)
 	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 

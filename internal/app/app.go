@@ -97,10 +97,15 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Ошибка при подключении к сервису авторизации: %v", err)
 	}
 
+<<<<<<< HEAD
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticService)
 	employerService := service.NewEmployerService(employerRepo, staticService)
 	
 	specializationService := service.NewSpecializationService(specializationRepo)
+=======
+	applicantService := service.NewApplicantService(applicantRepo, cityRepo, applicantStaticService)
+	employerService := service.NewEmployerService(employerRepo, employerStaticService)
+>>>>>>> e2e5e0f (Working on static microservice)
 
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService)

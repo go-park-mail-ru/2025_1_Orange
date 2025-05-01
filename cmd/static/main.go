@@ -9,11 +9,12 @@ import (
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
-	"google.golang.org/grpc"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"google.golang.org/grpc"
 )
 
 func main() {

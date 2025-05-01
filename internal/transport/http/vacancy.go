@@ -38,6 +38,8 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("GET /employer/{id}/vacancies", h.GetActiveVacanciesByEmployer)
 	vacancyMux.HandleFunc("GET /applicant/{id}/vacancies", h.GetVacanciesByApplicant)
 	vacancyMux.HandleFunc("GET /search", h.SearchVacancies)
+	vacancyMux.HandleFunc("POST /search/specializations", h.SearchVacanciesBySpecializations)
+	vacancyMux.HandleFunc("POST /search/combined", h.SearchVacanciesByQueryAndSpecializations)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -539,6 +541,159 @@ func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request)
 
 	// Ищем вакансии
 	vacancies, err := h.vacancy.SearchVacancies(ctx, userID, userRole, searchQuery, limit, offset)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Отправляем ответ
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+// SearchVacanciesBySpecializations обрабатывает запрос на поиск вакансий по специализациям
+func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var userID int = 0
+	var userRole string
+
+	// Проверяем авторизацию (если есть)
+	cookie, err := r.Cookie("session_id")
+	if err == nil && cookie != nil {
+		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+			userRole = currentUserRole
+		}
+	}
+
+	// Получаем параметры пагинации из URL
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	// Декодируем тело запроса
+	var searchRequest dto.SearchBySpecializationsRequest
+	if err := json.NewDecoder(r.Body).Decode(&searchRequest); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Санитизация входных данных
+	for i, spec := range searchRequest.Specializations {
+		searchRequest.Specializations[i] = sanitizer.StrictPolicy.Sanitize(spec)
+	}
+
+	// Если список специализаций пуст, возвращаем ошибку
+	if len(searchRequest.Specializations) == 0 {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("список специализаций не может быть пустым"))
+		return
+	}
+
+	// Ищем вакансии по специализациям
+	vacancies, err := h.vacancy.SearchVacanciesBySpecializations(ctx, userID, userRole, searchRequest.Specializations, limit, offset)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Отправляем ответ
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+// SearchVacanciesByQueryAndSpecializations обрабатывает запрос на комбинированный поиск вакансий
+func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var userID int = 0
+	var userRole string
+
+	// Проверяем авторизацию (если есть)
+	cookie, err := r.Cookie("session_id")
+	if err == nil && cookie != nil {
+		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+			userRole = currentUserRole
+		}
+	}
+
+	// Получаем параметр поиска из URL
+	searchQuery := r.URL.Query().Get("query")
+	if searchQuery == "" {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("параметр query обязателен"))
+		return
+	}
+
+	// Получаем параметры пагинации из URL
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	// Декодируем тело запроса для получения списка специализаций
+	var searchRequest dto.SearchByQueryAndSpecializationsRequest
+	if err := json.NewDecoder(r.Body).Decode(&searchRequest); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	// Санитизация входных данных
+	for i, spec := range searchRequest.Specializations {
+		searchRequest.Specializations[i] = sanitizer.StrictPolicy.Sanitize(spec)
+	}
+
+	// Если список специализаций пуст, возвращаем ошибку
+	if len(searchRequest.Specializations) == 0 {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("список специализаций не может быть пустым"))
+		return
+	}
+
+	// Выполняем комбинированный поиск вакансий
+	vacancies, err := h.vacancy.SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, searchRequest.Specializations, limit, offset)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

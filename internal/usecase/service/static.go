@@ -74,3 +74,11 @@ func (s *StaticService) validateImageContent(data []byte, contentType string) er
 	}
 	return nil
 }
+
+func (s *StaticService) GetStatic(ctx context.Context, id int) (string, error) {
+	return s.staticRepository.GetStatic(ctx, id)
+}
+
+func (s *StaticService) DeleteStatic(ctx context.Context, id int) error {
+	return s.staticRepository.DeleteStatic(ctx, id)
+}

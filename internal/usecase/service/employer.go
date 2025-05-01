@@ -13,13 +13,13 @@ import (
 
 type EmployerService struct {
 	employerRepository repository.EmployerRepository
-	staticRepository   repository.StaticRepository
+	staticGateway      usecase.Static
 }
 
-func NewEmployerService(employerRepository repository.EmployerRepository, staticRepository repository.StaticRepository) usecase.Employer {
+func NewEmployerService(employerRepository repository.EmployerRepository, staticGateway usecase.Static) usecase.Employer {
 	return &EmployerService{
 		employerRepository: employerRepository,
-		staticRepository:   staticRepository,
+		staticGateway:      staticGateway,
 	}
 }
 
@@ -40,7 +40,7 @@ func (e *EmployerService) employerEntityToDTO(ctx context.Context, employer *ent
 	}
 
 	if employer.LogoID > 0 {
-		logo, err := e.staticRepository.GetStatic(ctx, employer.LogoID)
+		logo, err := e.staticGateway.GetStatic(ctx, employer.LogoID)
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +164,7 @@ func (e *EmployerService) UpdateLogo(ctx context.Context, userID, logoID int) er
 	}
 
 	if employer.LogoID != 0 {
-		err = e.staticRepository.DeleteStatic(ctx, employer.LogoID)
+		err = e.staticGateway.DeleteStatic(ctx, employer.LogoID)
 		if err != nil {
 			return err
 		}

@@ -66,11 +66,6 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Ошибка создания репозитория вакансии: %v", err)
 	}
 
-	vacancyRepo, err := postgres.NewVacancyRepository(vacancyConn)
-	if err != nil {
-		l.Log.Errorf("Failed to create vacancy repository: %v", err)
-	}
-
 	skillRepo, err := postgres.NewSkillRepository(skillConn)
 	if err != nil {
 		l.Log.Errorf("Ошибка создания репозитория навыка: %v", err)

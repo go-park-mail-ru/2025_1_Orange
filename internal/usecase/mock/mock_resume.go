@@ -87,10 +87,10 @@ func (mr *MockResumeUsecaseMockRecorder) GetAll(ctx, limit, offset any) *gomock.
 }
 
 // GetAllResumesByApplicantID mocks base method.
-func (m *MockResumeUsecase) GetAllResumesByApplicantID(ctx context.Context, applicantID, limit, offset int) ([]dto.ResumeShortResponse, error) {
+func (m *MockResumeUsecase) GetAllResumesByApplicantID(ctx context.Context, applicantID, limit, offset int) ([]dto.ResumeApplicantShortResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllResumesByApplicantID", ctx, applicantID, limit, offset)
-	ret0, _ := ret[0].([]dto.ResumeShortResponse)
+	ret0, _ := ret[0].([]dto.ResumeApplicantShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

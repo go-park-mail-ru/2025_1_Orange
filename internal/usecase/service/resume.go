@@ -736,7 +736,7 @@ func (s *ResumeService) GetAll(ctx context.Context, limit int, offset int) ([]dt
 }
 
 // GetAll returns a list of all resumes (for applicants)
-func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.ResumeShortResponse, error) {
+func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.ResumeApplicantShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -762,7 +762,7 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 	// }
 
 	// Build response
-	response := make([]dto.ResumeShortResponse, 0, len(resumes))
+	response := make([]dto.ResumeApplicantShortResponse, 0, len(resumes))
 	for _, resume := range resumes {
 		// Get specialization name
 		var specializationName string
@@ -803,10 +803,28 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 			continue
 		}
 
+		// Получаем навыки для резюме - добавлено для нового DTO
+		skills, err := s.resumeRepository.GetSkillsByResumeID(ctx, resume.ID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"resumeID":  resume.ID,
+				"error":     err,
+			}).Error("ошибка при получении навыков резюме")
+			continue
+		}
+
+		// Преобразуем навыки в массив строк
+		skillNames := make([]string, 0, len(skills))
+		for _, skill := range skills {
+			skillNames = append(skillNames, skill.Name)
+		}
+
 		// Create short resume response
-		shortResume := dto.ResumeShortResponse{
+		shortResume := dto.ResumeApplicantShortResponse{
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
+			Skills:         skillNames,
 			Specialization: specializationName,
 			Profession:     resume.Profession,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),

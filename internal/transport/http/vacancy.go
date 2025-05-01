@@ -8,6 +8,7 @@ import (
 	"ResuMatch/internal/usecase"
 	"ResuMatch/pkg/sanitizer"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -36,6 +37,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
 	vacancyMux.HandleFunc("GET /employer/{id}/vacancies", h.GetActiveVacanciesByEmployer)
 	vacancyMux.HandleFunc("GET /applicant/{id}/vacancies", h.GetVacanciesByApplicant)
+	vacancyMux.HandleFunc("GET /search", h.SearchVacancies)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -271,7 +273,29 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	vacancies, err := h.vacancy.GetAll(ctx, userID, userRole)
+	// Получаем параметры пагинации из URL
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	vacancies, err := h.vacancy.GetAll(ctx, userID, userRole, limit, offset)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -350,7 +374,29 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 		}
 	}
 
-	vacancies, err := h.vacancy.GetActiveVacanciesByEmployerID(ctx, employerID, userID, userRole)
+	// Получаем параметры пагинации из URL
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	vacancies, err := h.vacancy.GetActiveVacanciesByEmployerID(ctx, employerID, userID, userRole, limit, offset)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -398,13 +444,107 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Получаем параметры пагинации из URL
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
 	// Получаем список вакансий, на которые откликнулся соискатель
-	vacancies, err := h.vacancy.GetVacanciesByApplicantID(ctx, applicantID)
+	vacancies, err := h.vacancy.GetVacanciesByApplicantID(ctx, applicantID, limit, offset)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+// SearchVacancies godoc
+// @Tags Vacancy
+// @Summary Поиск вакансий
+// @Description Ищет вакансии по заданному запросу. Поиск выполняется по названию должности, специализации и названию компании. Для работодателей возвращает только их собственные вакансии. Для других ролей - все вакансии.
+// @Produce json
+// @Param query query string true "Строка поиска"
+// @Param limit query int false "Количество вакансий на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Success 200 {array} dto.VacancyShortResponse "Список найденных вакансий"
+// @Failure 400 {object} utils.APIError "Неверные параметры запроса"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/search [get]
+func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var userID = 0
+	var userRole string
+
+	// Проверяем авторизацию (если есть)
+	cookie, err := r.Cookie("session_id")
+	if err == nil && cookie != nil {
+		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+			userRole = currentUserRole
+		}
+	}
+
+	// Получаем параметры из URL
+	searchQuery := r.URL.Query().Get("query")
+	if searchQuery == "" {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("параметр query обязателен"))
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10 // Значение по умолчанию
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0 // Значение по умолчанию
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	// Ищем вакансии
+	vacancies, err := h.vacancy.SearchVacancies(ctx, userID, userRole, searchQuery, limit, offset)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	// Отправляем ответ
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(vacancies); err != nil {

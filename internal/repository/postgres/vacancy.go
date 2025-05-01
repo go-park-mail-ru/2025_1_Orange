@@ -1665,7 +1665,13 @@ func (r *VacancyRepository) FindSpecializationIDsByNames(ctx context.Context, sp
 			fmt.Errorf("ошибка при поиске ID специализаций по названиям: %w", err),
 		)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	// Собираем результаты
 	var specializationIDs []int
@@ -1754,7 +1760,13 @@ func (r *VacancyRepository) SearchVacanciesBySpecializations(ctx context.Context
 			fmt.Errorf("ошибка при поиске вакансий по специализациям: %w", err),
 		)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	// Собираем результаты
 	vacancies := make([]*entity.Vacancy, 0)
@@ -1873,7 +1885,13 @@ func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context
 			fmt.Errorf("ошибка при комбинированном поиске вакансий: %w", err),
 		)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	// Собираем результаты
 	vacancies := make([]*entity.Vacancy, 0)

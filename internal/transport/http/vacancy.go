@@ -559,7 +559,7 @@ func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request)
 func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID int = 0
+	var userID = 0
 	var userRole string
 
 	// Проверяем авторизацию (если есть)
@@ -632,7 +632,7 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID int = 0
+	var userID = 0
 	var userRole string
 
 	// Проверяем авторизацию (если есть)

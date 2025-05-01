@@ -78,6 +78,7 @@ func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dt
 		Education:              request.Education,
 		EducationalInstitution: request.EducationalInstitution,
 		GraduationYear:         graduationYear,
+		Profession:             request.Profession,
 	}
 
 	// Validate resume
@@ -192,6 +193,7 @@ func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dt
 		ApplicantID:               createdResume.ApplicantID,
 		AboutMe:                   createdResume.AboutMe,
 		Specialization:            specializationName,
+		Profession:                createdResume.Profession,
 		Skills:                    make([]string, 0, len(skills)),
 		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
@@ -295,6 +297,7 @@ func (s *ResumeService) GetByID(ctx context.Context, id int) (*dto.ResumeRespons
 		ApplicantID:               resume.ApplicantID,
 		AboutMe:                   resume.AboutMe,
 		Specialization:            specializationName,
+		Profession:                resume.Profession,
 		Skills:                    make([]string, 0, len(skills)),
 		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
@@ -403,6 +406,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, req
 		Education:              request.Education,
 		EducationalInstitution: request.EducationalInstitution,
 		GraduationYear:         graduationYear,
+		Profession:             request.Profession,
 	}
 
 	// Validate resume
@@ -525,6 +529,7 @@ func (s *ResumeService) Update(ctx context.Context, id int, applicantID int, req
 		ApplicantID:               updatedResume.ApplicantID,
 		AboutMe:                   updatedResume.AboutMe,
 		Specialization:            specializationName,
+		Profession:                updatedResume.Profession,
 		Skills:                    make([]string, 0, len(skills)),
 		AdditionalSpecializations: make([]string, 0, len(additionalSpecializations)),
 		WorkExperiences:           make([]dto.WorkExperienceResponse, 0, len(workExperiences)),
@@ -628,7 +633,7 @@ func (s *ResumeService) Delete(ctx context.Context, id int, applicantID int) (*d
 }
 
 // GetAll returns a list of all resumes (for employers)
-func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, error) {
+func (s *ResumeService) GetAll(ctx context.Context, limit int, offset int) ([]dto.ResumeShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -636,7 +641,7 @@ func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, 
 	}).Info("Получение списка всех резюме")
 
 	// Get all resumes with limit
-	resumes, err := s.resumeRepository.GetAll(ctx)
+	resumes, err := s.resumeRepository.GetAll(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -699,6 +704,7 @@ func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, 
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
 			Specialization: specializationName,
+			Profession:     resume.Profession,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
 		}
@@ -730,7 +736,7 @@ func (s *ResumeService) GetAll(ctx context.Context) ([]dto.ResumeShortResponse, 
 }
 
 // GetAll returns a list of all resumes (for applicants)
-func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]dto.ResumeShortResponse, error) {
+func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.ResumeShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -739,21 +745,21 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 	}).Info("Получение списка всех резюме соискателя")
 
 	// Get all resumes with limit
-	resumes, err := s.resumeRepository.GetAllResumesByApplicantID(ctx, applicantID)
+	resumes, err := s.resumeRepository.GetAllResumesByApplicantID(ctx, applicantID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get applicant information once since all resumes belong to the same applicant
-	applicantDTO, err := s.applicantService.GetUser(ctx, applicantID)
-	if err != nil {
-		l.Log.WithFields(logrus.Fields{
-			"requestID":   requestID,
-			"applicantID": applicantID,
-			"error":       err,
-		}).Error("ошибка при получении информации о соискателе")
-		return nil, err
-	}
+	// // Get applicant information once since all resumes belong to the same applicant
+	// applicantDTO, err := s.applicantService.GetUser(ctx, applicantID)
+	// if err != nil {
+	// 	l.Log.WithFields(logrus.Fields{
+	// 		"requestID":   requestID,
+	// 		"applicantID": applicantID,
+	// 		"error":       err,
+	// 	}).Error("ошибка при получении информации о соискателе")
+	// 	return nil, err
+	// }
 
 	// Build response
 	response := make([]dto.ResumeShortResponse, 0, len(resumes))
@@ -785,11 +791,24 @@ func (s *ResumeService) GetAllResumesByApplicantID(ctx context.Context, applican
 			continue
 		}
 
+		// Convert applicant entity to DTO
+		applicantDTO, err := s.applicantService.GetUser(ctx, resume.ApplicantID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    resume.ID,
+				"applicantID": resume.ApplicantID,
+				"error":       err,
+			}).Error("ошибка при конвертации соискателя в DTO")
+			continue
+		}
+
 		// Create short resume response
 		shortResume := dto.ResumeShortResponse{
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
 			Specialization: specializationName,
+			Profession:     resume.Profession,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
 		}

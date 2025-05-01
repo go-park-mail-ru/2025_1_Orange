@@ -245,33 +245,33 @@ func (mr *MockResumeRepositoryMockRecorder) FindSpecializationIDsByNames(ctx, sp
 }
 
 // GetAll mocks base method.
-func (m *MockResumeRepository) GetAll(ctx context.Context) ([]entity.Resume, error) {
+func (m *MockResumeRepository) GetAll(ctx context.Context, limit, offset int) ([]entity.Resume, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx)
+	ret := m.ctrl.Call(m, "GetAll", ctx, limit, offset)
 	ret0, _ := ret[0].([]entity.Resume)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAll indicates an expected call of GetAll.
-func (mr *MockResumeRepositoryMockRecorder) GetAll(ctx any) *gomock.Call {
+func (mr *MockResumeRepositoryMockRecorder) GetAll(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockResumeRepository)(nil).GetAll), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockResumeRepository)(nil).GetAll), ctx, limit, offset)
 }
 
 // GetAllResumesByApplicantID mocks base method.
-func (m *MockResumeRepository) GetAllResumesByApplicantID(ctx context.Context, applicantID int) ([]entity.Resume, error) {
+func (m *MockResumeRepository) GetAllResumesByApplicantID(ctx context.Context, applicantID, limit, offset int) ([]entity.Resume, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllResumesByApplicantID", ctx, applicantID)
+	ret := m.ctrl.Call(m, "GetAllResumesByApplicantID", ctx, applicantID, limit, offset)
 	ret0, _ := ret[0].([]entity.Resume)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllResumesByApplicantID indicates an expected call of GetAllResumesByApplicantID.
-func (mr *MockResumeRepositoryMockRecorder) GetAllResumesByApplicantID(ctx, applicantID any) *gomock.Call {
+func (mr *MockResumeRepositoryMockRecorder) GetAllResumesByApplicantID(ctx, applicantID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResumesByApplicantID", reflect.TypeOf((*MockResumeRepository)(nil).GetAllResumesByApplicantID), ctx, applicantID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResumesByApplicantID", reflect.TypeOf((*MockResumeRepository)(nil).GetAllResumesByApplicantID), ctx, applicantID, limit, offset)
 }
 
 // GetByID mocks base method.

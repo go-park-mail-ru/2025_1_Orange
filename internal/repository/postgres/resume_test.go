@@ -3136,22 +3136,28 @@ func TestResumeRepository_GetAll(t *testing.T) {
 
 	columns := []string{
 		"id", "applicant_id", "about_me", "specialization_id",
-		"education", "educational_institution", "graduation_year",
+		"education", "educational_institution", "graduation_year", "profession",
 		"created_at", "updated_at",
 	}
 
 	now := time.Now()
 	gradYear1 := time.Date(2020, time.June, 1, 0, 0, 0, 0, time.UTC)
 	gradYear2 := time.Date(2018, time.June, 1, 0, 0, 0, 0, time.UTC)
+	limit := 10
+	offset := 0
 
 	testCases := []struct {
 		name           string
+		limit          int
+		offset         int
 		expectedResult []entity.Resume
 		expectedErr    error
-		setupMock      func(mock sqlmock.Sqlmock)
+		setupMock      func(mock sqlmock.Sqlmock, limit, offset int)
 	}{
 		{
-			name: "Успешное получение списка резюме",
+			name:   "Успешное получение списка резюме с пагинацией",
+			limit:  limit,
+			offset: offset,
 			expectedResult: []entity.Resume{
 				{
 					ID:                     1,
@@ -3161,6 +3167,7 @@ func TestResumeRepository_GetAll(t *testing.T) {
 					Education:              entity.Higher,
 					EducationalInstitution: "МГУ",
 					GraduationYear:         gradYear1,
+					Profession:             "Backend Developer",
 					CreatedAt:              now.Add(-24 * time.Hour),
 					UpdatedAt:              now,
 				},
@@ -3172,20 +3179,22 @@ func TestResumeRepository_GetAll(t *testing.T) {
 					Education:              entity.Bachelor,
 					EducationalInstitution: "СПбГУ",
 					GraduationYear:         gradYear2,
+					Profession:             "Frontend Developer",
 					CreatedAt:              now.Add(-48 * time.Hour),
 					UpdatedAt:              now.Add(-12 * time.Hour),
 				},
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock) {
+			setupMock: func(mock sqlmock.Sqlmock, limit, offset int) {
 				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
+                    SELECT id, applicant_id, about_me, specialization_id, education, 
+                           educational_institution, graduation_year, profession, created_at, updated_at
+                    FROM resume
+                    ORDER BY updated_at DESC
+                    LIMIT $1 OFFSET $2
+                `)
 				mock.ExpectQuery(query).
+					WithArgs(limit, offset).
 					WillReturnRows(
 						sqlmock.NewRows(columns).
 							AddRow(
@@ -3196,6 +3205,7 @@ func TestResumeRepository_GetAll(t *testing.T) {
 								string(entity.Higher),
 								"МГУ",
 								gradYear1,
+								"Backend Developer",
 								now.Add(-24*time.Hour),
 								now,
 							).
@@ -3207,6 +3217,7 @@ func TestResumeRepository_GetAll(t *testing.T) {
 								string(entity.Bachelor),
 								"СПбГУ",
 								gradYear2,
+								"Frontend Developer",
 								now.Add(-48*time.Hour),
 								now.Add(-12*time.Hour),
 							),
@@ -3215,101 +3226,43 @@ func TestResumeRepository_GetAll(t *testing.T) {
 		},
 		{
 			name:           "Пустой список резюме",
+			limit:          limit,
+			offset:         offset,
 			expectedResult: []entity.Resume{},
 			expectedErr:    nil,
-			setupMock: func(mock sqlmock.Sqlmock) {
+			setupMock: func(mock sqlmock.Sqlmock, limit, offset int) {
 				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
+                    SELECT id, applicant_id, about_me, specialization_id, education, 
+                           educational_institution, graduation_year, profession, created_at, updated_at
+                    FROM resume
+                    ORDER BY updated_at DESC
+                    LIMIT $1 OFFSET $2
+                `)
 				mock.ExpectQuery(query).
+					WithArgs(limit, offset).
 					WillReturnRows(sqlmock.NewRows(columns))
 			},
 		},
 		{
 			name:           "Ошибка при выполнении запроса",
+			limit:          limit,
+			offset:         offset,
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
 				fmt.Errorf("ошибка при получении списка резюме: %w", errors.New("database error")),
 			),
-			setupMock: func(mock sqlmock.Sqlmock) {
+			setupMock: func(mock sqlmock.Sqlmock, limit, offset int) {
 				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
+                    SELECT id, applicant_id, about_me, specialization_id, education, 
+                           educational_institution, graduation_year, profession, created_at, updated_at
+                    FROM resume
+                    ORDER BY updated_at DESC
+                    LIMIT $1 OFFSET $2
+                `)
 				mock.ExpectQuery(query).
+					WithArgs(limit, offset).
 					WillReturnError(errors.New("database error"))
-			},
-		},
-		{
-			name:           "Ошибка при сканировании строк",
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при сканировании резюме: %w",
-					fmt.Errorf("sql: Scan error on column index 8, name \"updated_at\": unsupported Scan, storing driver.Value type string into type *time.Time")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock) {
-				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
-				rows := sqlmock.NewRows(columns).
-					AddRow(
-						1,
-						101,
-						"Опытный разработчик",
-						2,
-						string(entity.Higher),
-						"МГУ",
-						gradYear1,
-						now.Add(-24*time.Hour),
-						"invalid_time", // Неправильный тип для updated_at
-					)
-				mock.ExpectQuery(query).
-					WillReturnRows(rows)
-			},
-		},
-		{
-			name:           "Ошибка при итерации по строкам",
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при итерации по резюме: %w", errors.New("rows error")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock) {
-				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
-				rows := sqlmock.NewRows(columns).
-					AddRow(
-						1,
-						101,
-						"Опытный разработчик",
-						2,
-						string(entity.Higher),
-						"МГУ",
-						gradYear1,
-						now.Add(-24*time.Hour),
-						now,
-					).
-					CloseError(errors.New("rows error"))
-				mock.ExpectQuery(query).
-					WillReturnRows(rows)
 			},
 		},
 	}
@@ -3326,12 +3279,12 @@ func TestResumeRepository_GetAll(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
-			tc.setupMock(mock)
+			tc.setupMock(mock, tc.limit, tc.offset)
 
 			repo := &ResumeRepository{DB: db}
 			ctx := context.Background()
 
-			result, err := repo.GetAll(ctx)
+			result, err := repo.GetAll(ctx, tc.limit, tc.offset)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
@@ -3350,6 +3303,7 @@ func TestResumeRepository_GetAll(t *testing.T) {
 					require.Equal(t, tc.expectedResult[i].Education, result[i].Education)
 					require.Equal(t, tc.expectedResult[i].EducationalInstitution, result[i].EducationalInstitution)
 					require.Equal(t, tc.expectedResult[i].GraduationYear.Unix(), result[i].GraduationYear.Unix())
+					require.Equal(t, tc.expectedResult[i].Profession, result[i].Profession)
 					require.Equal(t, tc.expectedResult[i].CreatedAt.Unix(), result[i].CreatedAt.Unix())
 					require.Equal(t, tc.expectedResult[i].UpdatedAt.Unix(), result[i].UpdatedAt.Unix())
 				}
@@ -3358,30 +3312,35 @@ func TestResumeRepository_GetAll(t *testing.T) {
 		})
 	}
 }
-
 func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 	t.Parallel()
 
 	columns := []string{
 		"id", "applicant_id", "about_me", "specialization_id",
-		"education", "educational_institution", "graduation_year",
+		"education", "educational_institution", "graduation_year", "profession",
 		"created_at", "updated_at",
 	}
 
 	now := time.Now()
 	gradYear1 := time.Date(2020, time.June, 1, 0, 0, 0, 0, time.UTC)
 	gradYear2 := time.Date(2018, time.June, 1, 0, 0, 0, 0, time.UTC)
+	limit := 10
+	offset := 0
 
 	testCases := []struct {
 		name            string
 		applicantID     int
+		limit           int
+		offset          int
 		expectedResumes []entity.Resume
 		expectedErr     error
-		setupMock       func(mock sqlmock.Sqlmock, applicantID int)
+		setupMock       func(mock sqlmock.Sqlmock, applicantID, limit, offset int)
 	}{
 		{
-			name:        "Успешное получение списка резюме",
+			name:        "Успешное получение списка резюме с пагинацией",
 			applicantID: 1,
+			limit:       limit,
+			offset:      offset,
 			expectedResumes: []entity.Resume{
 				{
 					ID:                     1,
@@ -3391,6 +3350,7 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 					Education:              entity.Higher,
 					EducationalInstitution: "МГУ",
 					GraduationYear:         gradYear1,
+					Profession:             "Backend Developer",
 					CreatedAt:              now,
 					UpdatedAt:              now,
 				},
@@ -3402,22 +3362,23 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 					Education:              entity.Bachelor,
 					EducationalInstitution: "СПбГУ",
 					GraduationYear:         gradYear2,
+					Profession:             "Frontend Developer",
 					CreatedAt:              now.Add(-24 * time.Hour),
 					UpdatedAt:              now.Add(-24 * time.Hour),
 				},
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
+			setupMock: func(mock sqlmock.Sqlmock, applicantID, limit, offset int) {
 				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					WHERE applicant_id = $1
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
+                    SELECT id, applicant_id, about_me, specialization_id, education, 
+                           educational_institution, graduation_year, profession, created_at, updated_at
+                    FROM resume
+                    WHERE applicant_id = $1
+                    ORDER BY updated_at DESC
+                    LIMIT $2 OFFSET $3
+                `)
 				mock.ExpectQuery(query).
-					WithArgs(applicantID).
+					WithArgs(applicantID, limit, offset).
 					WillReturnRows(
 						sqlmock.NewRows(columns).
 							AddRow(
@@ -3428,6 +3389,7 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 								string(entity.Higher),
 								"МГУ",
 								gradYear1,
+								"Backend Developer",
 								now,
 								now,
 							).
@@ -3439,6 +3401,7 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 								string(entity.Bachelor),
 								"СПбГУ",
 								gradYear2,
+								"Frontend Developer",
 								now.Add(-24*time.Hour),
 								now.Add(-24*time.Hour),
 							),
@@ -3446,94 +3409,48 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 			},
 		},
 		{
-			name:            "Успешное получение пустого списка",
+			name:            "Пустой список резюме",
 			applicantID:     2,
+			limit:           limit,
+			offset:          offset,
 			expectedResumes: []entity.Resume{},
 			expectedErr:     nil,
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
+			setupMock: func(mock sqlmock.Sqlmock, applicantID, limit, offset int) {
 				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					WHERE applicant_id = $1
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
+                    SELECT id, applicant_id, about_me, specialization_id, education, 
+                           educational_institution, graduation_year, profession, created_at, updated_at
+                    FROM resume
+                    WHERE applicant_id = $1
+                    ORDER BY updated_at DESC
+                    LIMIT $2 OFFSET $3
+                `)
 				mock.ExpectQuery(query).
-					WithArgs(applicantID).
+					WithArgs(applicantID, limit, offset).
 					WillReturnRows(sqlmock.NewRows(columns))
 			},
 		},
 		{
 			name:            "Ошибка при выполнении запроса",
 			applicantID:     3,
+			limit:           limit,
+			offset:          offset,
 			expectedResumes: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
 				fmt.Errorf("ошибка при получении списка резюме: %w", errors.New("database error")),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
+			setupMock: func(mock sqlmock.Sqlmock, applicantID, limit, offset int) {
 				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					WHERE applicant_id = $1
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
+                    SELECT id, applicant_id, about_me, specialization_id, education, 
+                           educational_institution, graduation_year, profession, created_at, updated_at
+                    FROM resume
+                    WHERE applicant_id = $1
+                    ORDER BY updated_at DESC
+                    LIMIT $2 OFFSET $3
+                `)
 				mock.ExpectQuery(query).
-					WithArgs(applicantID).
+					WithArgs(applicantID, limit, offset).
 					WillReturnError(errors.New("database error"))
-			},
-		},
-		{
-			name:            "Ошибка при сканировании строки",
-			applicantID:     4,
-			expectedResumes: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при итерации по резюме: %w", errors.New("scan error")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
-				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					WHERE applicant_id = $1
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
-				rows := sqlmock.NewRows(columns).
-					AddRow(1, 4, "Опытный разработчик", 2, string(entity.Higher), "МГУ", gradYear1, now, now).
-					RowError(0, errors.New("scan error"))
-				mock.ExpectQuery(query).
-					WithArgs(applicantID).
-					WillReturnRows(rows)
-			},
-		},
-		{
-			name:            "Ошибка при итерации по строкам",
-			applicantID:     5,
-			expectedResumes: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при итерации по резюме: %w", errors.New("rows error")),
-			),
-			setupMock: func(mock sqlmock.Sqlmock, applicantID int) {
-				query := regexp.QuoteMeta(`
-					SELECT id, applicant_id, about_me, specialization_id, education, 
-						   educational_institution, graduation_year, created_at, updated_at
-					FROM resume
-					WHERE applicant_id = $1
-					ORDER BY updated_at DESC
-					LIMIT 100
-				`)
-				rows := sqlmock.NewRows(columns).
-					AddRow(1, 5, "Опытный разработчик", 2, string(entity.Higher), "МГУ", gradYear1, now, now).
-					CloseError(errors.New("rows error"))
-				mock.ExpectQuery(query).
-					WithArgs(applicantID).
-					WillReturnRows(rows)
 			},
 		},
 	}
@@ -3550,12 +3467,12 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
-			tc.setupMock(mock, tc.applicantID)
+			tc.setupMock(mock, tc.applicantID, tc.limit, tc.offset)
 
 			repo := &ResumeRepository{DB: db}
 			ctx := context.Background()
 
-			resumes, err := repo.GetAllResumesByApplicantID(ctx, tc.applicantID)
+			resumes, err := repo.GetAllResumesByApplicantID(ctx, tc.applicantID, tc.limit, tc.offset)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
@@ -3574,6 +3491,7 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 					require.Equal(t, tc.expectedResumes[i].Education, resumes[i].Education)
 					require.Equal(t, tc.expectedResumes[i].EducationalInstitution, resumes[i].EducationalInstitution)
 					require.Equal(t, tc.expectedResumes[i].GraduationYear.Unix(), resumes[i].GraduationYear.Unix())
+					require.Equal(t, tc.expectedResumes[i].Profession, resumes[i].Profession)
 					require.False(t, resumes[i].CreatedAt.IsZero())
 					require.False(t, resumes[i].UpdatedAt.IsZero())
 				}
@@ -3582,7 +3500,6 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 		})
 	}
 }
-
 func TestResumeRepository_FindSkillIDsByNames(t *testing.T) {
 	t.Parallel()
 

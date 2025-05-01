@@ -18,3 +18,5 @@ type Vacancy interface {
 	SearchVacanciesBySpecializations(ctx context.Context, userID int, userRole string, specializations []string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole string, searchQuery string, specializations []string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 }
+
+// copy

@@ -127,7 +127,10 @@ services:
 volumes:
   postgres_data:
   redis_data:
+<<<<<<< HEAD
   minio_data:
+=======
+>>>>>>> 88d7a6e108b4763da678ecb7b8f7c71a9af1c0e4
   grafana-data:
 
 networks:

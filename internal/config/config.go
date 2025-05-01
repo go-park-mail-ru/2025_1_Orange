@@ -46,6 +46,25 @@ type PostgresConfig struct {
 	DSN      string `yaml:"-"`
 }
 
+type MinioConfig struct {
+	InternalEndpoint string `yaml:"internal_endpoint"`
+	PublicEndpoint   string `yaml:"public_endpoint"`
+	RootUser         string `yaml:"-"`
+	RootPassword     string `yaml:"-"`
+	UseSSL           bool   `yaml:"use_ssl"`
+	Scheme           string `yaml:"scheme"`
+}
+
+type MinioBucketsConfig struct {
+	ApplicantBucket string `yaml:"applicant_bucket"`
+	EmployerBucket  string `yaml:"employer_bucket"`
+}
+
+type MinioClientConfig struct {
+	Config  MinioConfig        `yaml:"config"`
+	Buckets MinioBucketsConfig `yaml:"buckets"`
+}
+
 type RedisConfig struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
@@ -82,6 +101,7 @@ type Config struct {
 	Session       SessionConfig       `yaml:"session_id"`
 	CSRF          CSRFConfig          `yaml:"csrf"`
 	Postgres      PostgresConfig      `yaml:"postgres"`
+	Minio         MinioClientConfig   `yaml:"minio"`
 	Redis         RedisConfig         `yaml:"redis"`
 	Microservices MicroservicesConfig `yaml:"microservices"`
 }
@@ -132,6 +152,10 @@ func LoadAppConfig() (*Config, error) {
 		DB:       cfg.Redis.DB,
 		TTL:      cfg.Redis.TTL,
 	}
+
+	// Настройка Minio
+	cfg.Minio.Config.RootUser = os.Getenv("MINIO_ROOT_USER")
+	cfg.Minio.Config.RootPassword = os.Getenv("MINIO_ROOT_PASSWORD")
 
 	return &cfg, nil
 }

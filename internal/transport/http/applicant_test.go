@@ -726,12 +726,9 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 func TestApplicantHandler_UploadAvatar(t *testing.T) {
 	t.Parallel()
 
-	fixedTime := time.Date(2025, 4, 16, 12, 0, 0, 0, time.UTC)
 	testAvatar := &dto.UploadStaticResponse{
-		ID:        1,
-		Path:      "/assets/avatar.jpg",
-		CreatedAt: fixedTime,
-		UpdatedAt: fixedTime,
+		ID:   1,
+		Path: "/assets/avatar.jpg",
 	}
 
 	testCases := []struct {

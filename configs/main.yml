@@ -33,3 +33,13 @@ postgres:
   dbname: "mydb"
   sslmode: "disable"
 
+minio:
+  config:
+    internal_endpoint: "minio:9000"
+    public_endpoint: "localhost:9000"
+    use_ssl: false
+    scheme: "http"
+  buckets:
+    applicant_bucket: "applicant"
+    employer_bucket: "employer"
+

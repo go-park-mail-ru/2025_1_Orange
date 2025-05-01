@@ -36,7 +36,7 @@ func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	mainRouter.HandleFunc("/swagger/", swagger.WrapHandler)
 	routeConfig(subrouter)
 
-	subrouter.Handle("/static/assets/", http.StripPrefix("/static/assets/", http.FileServer(http.Dir("/app/assets"))))
+	// subrouter.Handle("/static/assets/", http.StripPrefix("/static/assets/", http.FileServer(http.Dir("/app/assets"))))
 
 	handler := middleware.CreateMiddlewareChain(
 		middleware.RecoveryMiddleware(),

@@ -47,16 +47,13 @@ func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (*dto.Upl
 	}
 
 	fileName := uuid.New().String() + ext
-	filePath := "assets"
-	static, err := s.staticRepository.UploadStatic(ctx, filePath, fileName, data)
+	id, path, err := s.staticRepository.UploadStatic(ctx, fileName, contentType, data)
 	if err != nil {
 		return nil, err
 	}
 	return &dto.UploadStaticResponse{
-		ID:        static.ID,
-		Path:      fmt.Sprintf("%s/%s", static.FilePath, static.FileName),
-		CreatedAt: static.CreatedAt,
-		UpdatedAt: static.UpdatedAt,
+		ID:   id,
+		Path: path,
 	}, nil
 }
 

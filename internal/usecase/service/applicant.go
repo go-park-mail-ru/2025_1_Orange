@@ -192,7 +192,19 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 }
 
 func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID, avatarID int) error {
-	err := a.applicantRepository.UpdateApplicant(ctx, userID, map[string]interface{}{"avatar_id": avatarID})
+	applicant, err := a.applicantRepository.GetApplicantByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if applicant.AvatarID != 0 {
+		err = a.staticRepository.DeleteStatic(ctx, applicant.AvatarID)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = a.applicantRepository.UpdateApplicant(ctx, userID, map[string]interface{}{"avatar_id": avatarID})
 	if err != nil {
 		return err
 	}

@@ -116,6 +116,21 @@ func (mr *MockResumeUsecaseMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockResumeUsecase)(nil).GetByID), ctx, id)
 }
 
+// SearchResumesByProfession mocks base method.
+func (m *MockResumeUsecase) SearchResumesByProfession(ctx context.Context, userID int, role, profession string, limit, offset int) ([]dto.ResumeShortResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchResumesByProfession", ctx, userID, role, profession, limit, offset)
+	ret0, _ := ret[0].([]dto.ResumeShortResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchResumesByProfession indicates an expected call of SearchResumesByProfession.
+func (mr *MockResumeUsecaseMockRecorder) SearchResumesByProfession(ctx, userID, role, profession, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchResumesByProfession", reflect.TypeOf((*MockResumeUsecase)(nil).SearchResumesByProfession), ctx, userID, role, profession, limit, offset)
+}
+
 // Update mocks base method.
 func (m *MockResumeUsecase) Update(ctx context.Context, id, applicantID int, request *dto.UpdateResumeRequest) (*dto.ResumeResponse, error) {
 	m.ctrl.T.Helper()

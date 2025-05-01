@@ -28,4 +28,6 @@ type ResumeRepository interface {
 	FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error)
 	CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error)
 	CreateSpecializationIfNotExists(ctx context.Context, specializationName string) (int, error)
+	SearchResumesByProfession(ctx context.Context, profession string, limit int, offset int) ([]entity.Resume, error)
+	SearchResumesByProfessionForApplicant(ctx context.Context, applicantID int, profession string, limit int, offset int) ([]entity.Resume, error)
 }

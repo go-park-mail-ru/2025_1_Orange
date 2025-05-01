@@ -334,6 +334,36 @@ func (mr *MockResumeRepositoryMockRecorder) GetWorkExperienceByResumeID(ctx, res
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkExperienceByResumeID", reflect.TypeOf((*MockResumeRepository)(nil).GetWorkExperienceByResumeID), ctx, resumeID)
 }
 
+// SearchResumesByProfession mocks base method.
+func (m *MockResumeRepository) SearchResumesByProfession(ctx context.Context, profession string, limit, offset int) ([]entity.Resume, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchResumesByProfession", ctx, profession, limit, offset)
+	ret0, _ := ret[0].([]entity.Resume)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchResumesByProfession indicates an expected call of SearchResumesByProfession.
+func (mr *MockResumeRepositoryMockRecorder) SearchResumesByProfession(ctx, profession, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchResumesByProfession", reflect.TypeOf((*MockResumeRepository)(nil).SearchResumesByProfession), ctx, profession, limit, offset)
+}
+
+// SearchResumesByProfessionForApplicant mocks base method.
+func (m *MockResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Context, applicantID int, profession string, limit, offset int) ([]entity.Resume, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchResumesByProfessionForApplicant", ctx, applicantID, profession, limit, offset)
+	ret0, _ := ret[0].([]entity.Resume)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchResumesByProfessionForApplicant indicates an expected call of SearchResumesByProfessionForApplicant.
+func (mr *MockResumeRepositoryMockRecorder) SearchResumesByProfessionForApplicant(ctx, applicantID, profession, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchResumesByProfessionForApplicant", reflect.TypeOf((*MockResumeRepository)(nil).SearchResumesByProfessionForApplicant), ctx, applicantID, profession, limit, offset)
+}
+
 // Update mocks base method.
 func (m *MockResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*entity.Resume, error) {
 	m.ctrl.T.Helper()

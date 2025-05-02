@@ -13,11 +13,7 @@ microservices:
     port: "8081"
   static_service:
     host: "static"
-<<<<<<< HEAD
     port: "8083"
-=======
-    port: "9000"
->>>>>>> e2e5e0f (Working on static microservice)
 
 session:
   cookieName: "session_id"

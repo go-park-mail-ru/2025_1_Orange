@@ -125,8 +125,8 @@ func Init(cfg *config.Config) *server.Server {
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
-	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
-	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
+	applicantHandler := handler.NewApplicantHandler(authService, applicantService, cfg.CSRF)
+	employmentHandler := handler.NewEmployerHandler(authService, employerService, cfg.CSRF)
 	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 	specializationHandler := handler.NewSpecializationHandler(specializationService)

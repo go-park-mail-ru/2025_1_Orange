@@ -41,6 +41,35 @@ func (m *MockStatic) EXPECT() *MockStaticMockRecorder {
 	return m.recorder
 }
 
+// DeleteStatic mocks base method.
+func (m *MockStatic) DeleteStatic(ctx context.Context, id int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteStatic", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteStatic indicates an expected call of DeleteStatic.
+func (mr *MockStaticMockRecorder) DeleteStatic(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStatic", reflect.TypeOf((*MockStatic)(nil).DeleteStatic), ctx, id)
+}
+
+// GetStatic mocks base method.
+func (m *MockStatic) GetStatic(ctx context.Context, id int) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStatic", ctx, id)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStatic indicates an expected call of GetStatic.
+func (mr *MockStaticMockRecorder) GetStatic(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatic", reflect.TypeOf((*MockStatic)(nil).GetStatic), ctx, id)
+}
+
 // UploadStatic mocks base method.
 func (m *MockStatic) UploadStatic(ctx context.Context, data []byte) (*dto.UploadStaticResponse, error) {
 	m.ctrl.T.Helper()

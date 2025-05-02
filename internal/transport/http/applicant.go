@@ -16,12 +16,11 @@ import (
 type ApplicantHandler struct {
 	auth      usecase.Auth
 	applicant usecase.Applicant
-	static    usecase.Static
 	cfg       config.CSRFConfig
 }
 
-func NewApplicantHandler(auth usecase.Auth, applicant usecase.Applicant, static usecase.Static, cfg config.CSRFConfig) ApplicantHandler {
-	return ApplicantHandler{auth: auth, applicant: applicant, static: static, cfg: cfg}
+func NewApplicantHandler(auth usecase.Auth, applicant usecase.Applicant, cfg config.CSRFConfig) ApplicantHandler {
+	return ApplicantHandler{auth: auth, applicant: applicant, cfg: cfg}
 }
 
 func (h *ApplicantHandler) Configure(r *http.ServeMux) {

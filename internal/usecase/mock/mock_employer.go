@@ -102,11 +102,12 @@ func (mr *MockEmployerMockRecorder) Register(arg0, arg1 any) *gomock.Call {
 }
 
 // UpdateLogo mocks base method.
-func (m *MockEmployer) UpdateLogo(arg0 context.Context, arg1, arg2 int) error {
+func (m *MockEmployer) UpdateLogo(arg0 context.Context, arg1 int, arg2 []byte) (*dto.UploadStaticResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateLogo", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*dto.UploadStaticResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdateLogo indicates an expected call of UpdateLogo.

@@ -17,12 +17,11 @@ import (
 type EmployerHandler struct {
 	auth     usecase.Auth
 	employer usecase.Employer
-	static   usecase.Static
 	cfg      config.CSRFConfig
 }
 
-func NewEmployerHandler(auth usecase.Auth, employer usecase.Employer, static usecase.Static, cfg config.CSRFConfig) EmployerHandler {
-	return EmployerHandler{auth: auth, employer: employer, static: static, cfg: cfg}
+func NewEmployerHandler(auth usecase.Auth, employer usecase.Employer, cfg config.CSRFConfig) EmployerHandler {
+	return EmployerHandler{auth: auth, employer: employer, cfg: cfg}
 }
 
 func (h *EmployerHandler) Configure(r *http.ServeMux) {

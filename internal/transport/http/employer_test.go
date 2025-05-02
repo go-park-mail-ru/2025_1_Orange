@@ -159,7 +159,7 @@ func TestEmployerHandler_Register(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewEmployerHandler(mockAuth, mockEmployer, nil, cfg)
+			handler := NewEmployerHandler(mockAuth, mockEmployer, cfg)
 
 			var reqBody []byte
 			if body, ok := tc.requestBody.(string); ok {
@@ -346,7 +346,7 @@ func TestEmployerHandler_Login(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewEmployerHandler(mockAuth, mockEmployer, nil, cfg)
+			handler := NewEmployerHandler(mockAuth, mockEmployer, cfg)
 
 			var reqBody []byte
 			if body, ok := tc.requestBody.(string); ok {
@@ -494,7 +494,7 @@ func TestEmployerHandler_GetProfile(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewEmployerHandler(nil, mockEmployer, nil, cfg)
+			handler := NewEmployerHandler(nil, mockEmployer, cfg)
 
 			req := tc.setupRequest()
 			req.SetPathValue("id", tc.pathID)
@@ -670,7 +670,7 @@ func TestEmployerHandler_UpdateProfile(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewEmployerHandler(mockAuth, mockEmployer, nil, cfg)
+			handler := NewEmployerHandler(mockAuth, mockEmployer, cfg)
 
 			req := tc.setupRequest()
 			w := httptest.NewRecorder()
@@ -708,7 +708,7 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 	testCases := []struct {
 		name             string
 		setupRequest     func() *http.Request
-		mockSetup        func(employer *mock.MockEmployer, auth *mock.MockAuth, static *mock.MockStatic)
+		mockSetup        func(employer *mock.MockEmployer, auth *mock.MockAuth)
 		expectedStatus   int
 		expectedResponse interface{}
 	}{
@@ -730,18 +730,9 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth, static *mock.MockStatic) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "employer", nil)
-
-				static.EXPECT().
-					UploadStatic(gomock.Any(), gomock.Any()).
-					Return(testLogo, nil)
-
-				employer.EXPECT().
-					UpdateLogo(gomock.Any(), 1, 1).
-					Return(nil)
+			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "employer", nil)
+				employer.EXPECT().UpdateLogo(gomock.Any(), 1, gomock.Any()).Return(testLogo, nil)
 			},
 			expectedStatus:   http.StatusOK,
 			expectedResponse: testLogo,
@@ -751,7 +742,7 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 			setupRequest: func() *http.Request {
 				return httptest.NewRequest(http.MethodPost, "/employer/logo", nil)
 			},
-			mockSetup:      func(employer *mock.MockEmployer, auth *mock.MockAuth, static *mock.MockStatic) {},
+			mockSetup:      func(employer *mock.MockEmployer, auth *mock.MockAuth) {},
 			expectedStatus: http.StatusUnauthorized,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusUnauthorized,
@@ -765,10 +756,8 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth, static *mock.MockStatic) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
+			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "applicant", nil)
 			},
 			expectedStatus: http.StatusForbidden,
 			expectedResponse: utils.APIError{
@@ -783,10 +772,8 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth, static *mock.MockStatic) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "employer", nil)
+			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "employer", nil)
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
@@ -812,17 +799,13 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth, static *mock.MockStatic) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "employer", nil)
+			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "employer", nil)
 
-				static.EXPECT().
-					UploadStatic(gomock.Any(), gomock.Any()).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при загрузке файла"),
-					))
+				employer.EXPECT().UpdateLogo(gomock.Any(), 1, gomock.Any()).Return(nil, entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("ошибка при загрузке файла"),
+				))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedResponse: utils.APIError{
@@ -848,21 +831,13 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth, static *mock.MockStatic) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "employer", nil)
+			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "employer", nil)
 
-				static.EXPECT().
-					UploadStatic(gomock.Any(), gomock.Any()).
-					Return(testLogo, nil)
-
-				employer.EXPECT().
-					UpdateLogo(gomock.Any(), 1, 1).
-					Return(entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при обновлении логотипа"),
-					))
+				employer.EXPECT().UpdateLogo(gomock.Any(), 1, gomock.Any()).Return(nil, entity.NewError(
+					entity.ErrInternal,
+					fmt.Errorf("ошибка при обновлении логотипа"),
+				))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedResponse: utils.APIError{
@@ -882,9 +857,8 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 
 			mockEmployer := mock.NewMockEmployer(ctrl)
 			mockAuth := mock.NewMockAuth(ctrl)
-			mockStatic := mock.NewMockStatic(ctrl)
 
-			tc.mockSetup(mockEmployer, mockAuth, mockStatic)
+			tc.mockSetup(mockEmployer, mockAuth)
 
 			cfg := config.CSRFConfig{
 				CookieName: "csrf_token",
@@ -894,7 +868,7 @@ func TestEmployerHandler_UploadLogo(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewEmployerHandler(mockAuth, mockEmployer, mockStatic, cfg)
+			handler := NewEmployerHandler(mockAuth, mockEmployer, cfg)
 
 			req := tc.setupRequest()
 			w := httptest.NewRecorder()
@@ -993,7 +967,7 @@ func TestEmployerHandler_EmailExists(t *testing.T) {
 			tc.mockSetup(MockEmployer)
 
 			cfg := config.CSRFConfig{}
-			handler := NewEmployerHandler(nil, MockEmployer, nil, cfg)
+			handler := NewEmployerHandler(nil, MockEmployer, cfg)
 
 			var reqBody []byte
 			if body, ok := tc.requestBody.(string); ok {

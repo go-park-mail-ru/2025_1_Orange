@@ -47,18 +47,13 @@ type PostgresConfig struct {
 }
 
 type MinioConfig struct {
-	InternalEndpoint string             `yaml:"internal_endpoint"`
-	PublicEndpoint   string             `yaml:"public_endpoint"`
-	RootUser         string             `yaml:"-"`
-	RootPassword     string             `yaml:"-"`
-	UseSSL           bool               `yaml:"use_ssl"`
-	Scheme           string             `yaml:"scheme"`
-	Buckets          MinioBucketsConfig `yaml:"buckets"`
-}
-
-type MinioBucketsConfig struct {
-	ApplicantBucket string `yaml:"applicant_bucket"`
-	EmployerBucket  string `yaml:"employer_bucket"`
+	InternalEndpoint string `yaml:"internal_endpoint"`
+	PublicEndpoint   string `yaml:"public_endpoint"`
+	RootUser         string `yaml:"-"`
+	RootPassword     string `yaml:"-"`
+	UseSSL           bool   `yaml:"use_ssl"`
+	Scheme           string `yaml:"scheme"`
+	Bucket           string `yaml:"bucket"`
 }
 
 type S3ClientConfig struct {
@@ -122,12 +117,10 @@ type Config struct {
 }
 
 func LoadAppConfig() (*Config, error) {
-	// Загрузка .env
 	if err := godotenv.Load(); err != nil {
 		return nil, fmt.Errorf("error loading .env: %w", err)
 	}
 
-	// Чтение YAML
 	yamlFile, err := os.ReadFile("configs/main.yml")
 	if err != nil {
 		return nil, fmt.Errorf("error reading config file: %w", err)
@@ -138,26 +131,9 @@ func LoadAppConfig() (*Config, error) {
 		return nil, fmt.Errorf("error parsing YAML: %w", err)
 	}
 
-	// Заполнение секретов из .env
 	cfg.CSRF.Secret = os.Getenv("CSRF_SECRET")
 
-	// Формирование DSN для PostgreSQL
-	cfg.Postgres = PostgresConfig{
-		Host:     os.Getenv("POSTGRES_HOST"),
-		Port:     os.Getenv("POSTGRES_CONTAINER_PORT"),
-		User:     os.Getenv("POSTGRES_USER"),
-		Password: os.Getenv("POSTGRES_PASSWORD"),
-		DBName:   os.Getenv("POSTGRES_DB"),
-		SSLMode:  "disable",
-		DSN: fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			os.Getenv("POSTGRES_HOST"),
-			os.Getenv("POSTGRES_CONTAINER_PORT"),
-			os.Getenv("POSTGRES_USER"),
-			os.Getenv("POSTGRES_PASSWORD"),
-			os.Getenv("POSTGRES_DB"),
-		),
-	}
+	cfg.Postgres = loadPostgresConfig()
 
 	return &cfg, nil
 }
@@ -206,7 +182,13 @@ func LoadS3Config() (*S3Config, error) {
 	cfg.Minio.RootUser = os.Getenv("MINIO_ROOT_USER")
 	cfg.Minio.RootPassword = os.Getenv("MINIO_ROOT_PASSWORD")
 
-	cfg.Postgres = PostgresConfig{
+	cfg.Postgres = loadPostgresConfig()
+
+	return &cfg, nil
+}
+
+func loadPostgresConfig() PostgresConfig {
+	return PostgresConfig{
 		Host:     os.Getenv("POSTGRES_HOST"),
 		Port:     os.Getenv("POSTGRES_CONTAINER_PORT"),
 		User:     os.Getenv("POSTGRES_USER"),
@@ -222,6 +204,4 @@ func LoadS3Config() (*S3Config, error) {
 			os.Getenv("POSTGRES_DB"),
 		),
 	}
-
-	return &cfg, nil
 }

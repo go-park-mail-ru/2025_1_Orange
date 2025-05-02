@@ -191,24 +191,29 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 	return a.applicantRepository.UpdateApplicant(ctx, userID, updateFields)
 }
 
-func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID, avatarID int) error {
+func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID int, data []byte) (*dto.UploadStaticResponse, error) {
+	avatar, err := a.staticGateway.UploadStatic(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+
 	applicant, err := a.applicantRepository.GetApplicantByID(ctx, userID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if applicant.AvatarID != 0 {
 		err = a.staticGateway.DeleteStatic(ctx, applicant.AvatarID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	err = a.applicantRepository.UpdateApplicant(ctx, userID, map[string]interface{}{"avatar_id": avatarID})
+	err = a.applicantRepository.UpdateApplicant(ctx, userID, map[string]interface{}{"avatar_id": avatar.ID})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return avatar, nil
 }
 
 func (a *ApplicantService) EmailExists(ctx context.Context, email string) (*dto.EmailExistsResponse, error) {

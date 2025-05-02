@@ -265,13 +265,8 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logo, err := h.static.UploadStatic(ctx, data)
+	logo, err := h.employer.UpdateLogo(ctx, userID, data)
 	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
-
-	if err = h.employer.UpdateLogo(ctx, userID, logo.ID); err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}

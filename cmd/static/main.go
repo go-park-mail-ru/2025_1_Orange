@@ -3,9 +3,17 @@ package main
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/repository/postgres"
+	"ResuMatch/internal/transport/grpc/interceptors"
+	"ResuMatch/internal/transport/grpc/static"
+	staticPROTO "ResuMatch/internal/transport/grpc/static/proto"
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
+	"google.golang.org/grpc"
+	"net"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -16,19 +24,42 @@ func main() {
 
 	staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
-		l.Log.Errorf("Не удалось установить соединение соединение с static postgres: %v", err)
+		l.Log.Errorf("не удалось установить соединение соединение с static postgres: %v", err)
 	}
 
-	applicantStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.ApplicantBucket, cfg.Minio)
+	staticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Bucket, cfg.Minio)
 	if err != nil {
-		l.Log.Errorf("Ошибка создания репозитория статики для соискателя: %v", err)
+		l.Log.Errorf("ошибка создания репозитория статики: %v", err)
 	}
 
-	employerStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.EmployerBucket, cfg.Minio)
+	staticService := service.NewStaticService(staticRepo)
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptors.RequestIDServerInterceptor()),
+	)
+
+	staticGRPC := static.NewGRPC(staticService)
+	staticPROTO.RegisterStaticServiceServer(grpcServer, staticGRPC)
+
+	listener, err := net.Listen("tcp", cfg.Addr())
 	if err != nil {
-		l.Log.Errorf("Ошибка создания репозитория статики для работодателя: %v", err)
+		l.Log.Fatalf("Невозможно прослушать порт по адресу %s: %v", cfg.Addr(), err)
 	}
 
-	applicantStaticService := service.NewStaticService(applicantStaticRepo)
-	employerStaticService := service.NewStaticService(employerStaticRepo)
+	l.Log.Infof("Запуск сервиса статики на %s", cfg.Addr())
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := grpcServer.Serve(listener); err != nil {
+			l.Log.Fatal("ошибка сервера gRPC:", err)
+		}
+	}()
+
+	sig := <-quit
+	l.Log.Infof("Завершение работы сервиса статики по сигналу: %v", sig)
+
+	grpcServer.GracefulStop()
+	l.Log.Info("Сервис статики остановлен")
 }

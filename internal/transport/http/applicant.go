@@ -284,13 +284,8 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	avatar, err := h.static.UploadStatic(ctx, data)
+	avatar, err := h.applicant.UpdateAvatar(ctx, userID, data)
 	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
-
-	if err = h.applicant.UpdateAvatar(ctx, userID, avatar.ID); err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}

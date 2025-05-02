@@ -10,6 +10,6 @@ type Employer interface {
 	Login(context.Context, *dto.Login) (int, error)
 	GetUser(context.Context, int) (*dto.EmployerProfileResponse, error)
 	UpdateProfile(context.Context, int, *dto.EmployerProfileUpdate) error
-	UpdateLogo(context.Context, int, int) error
+	UpdateLogo(context.Context, int, []byte) (*dto.UploadStaticResponse, error)
 	EmailExists(context.Context, string) (*dto.EmailExistsResponse, error)
 }

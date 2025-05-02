@@ -5,6 +5,7 @@ import (
 	"ResuMatch/internal/repository/postgres"
 	"ResuMatch/internal/server"
 	"ResuMatch/internal/transport/grpc/auth"
+	"ResuMatch/internal/transport/grpc/static"
 	handler "ResuMatch/internal/transport/http"
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
@@ -39,10 +40,10 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Не удалось установить соединение соединение с city postgres: %v", err)
 	}
 
-	staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	if err != nil {
-		l.Log.Errorf("Не удалось установить соединение соединение с static postgres: %v", err)
-	}
+	//staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
+	//if err != nil {
+	//	l.Log.Errorf("Не удалось установить соединение соединение с static postgres: %v", err)
+	//}
 
 	applicantConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
@@ -80,15 +81,15 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Ошибка создания репозитория города: %v", err)
 	}
 
-	applicantStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.ApplicantBucket, cfg.Minio.Config)
-	if err != nil {
-		l.Log.Errorf("Ошибка создания репозитория статики для соискателя: %v", err)
-	}
-
-	employerStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.EmployerBucket, cfg.Minio.Config)
-	if err != nil {
-		l.Log.Errorf("Ошибка создания репозитория статики для работодателя: %v", err)
-	}
+	//applicantStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Mi, cfg.Minio.Config)
+	//if err != nil {
+	//	l.Log.Errorf("Ошибка создания репозитория статики для соискателя: %v", err)
+	//}
+	//
+	//employerStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.EmployerBucket, cfg.Minio.Config)
+	//if err != nil {
+	//	l.Log.Errorf("Ошибка создания репозитория статики для работодателя: %v", err)
+	//}
 
 	applicantRepo, err := postgres.NewApplicantRepository(applicantConn)
 	if err != nil {
@@ -101,16 +102,20 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-	applicantStaticService := service.NewStaticService(applicantStaticRepo)
-	employerStaticService := service.NewStaticService(employerStaticRepo)
+	//applicantStaticService := service.NewStaticService(applicantStaticRepo)
+	//employerStaticService := service.NewStaticService(employerStaticRepo)
+	staticService, err := static.NewGateway(cfg.Microservices.S3.Addr())
+	if err != nil {
+		l.Log.Errorf("Ошибка при подключении к сервису статики: %v", err)
+	}
 
 	authService, err := auth.NewGateway(cfg.Microservices.Auth.Addr())
 	if err != nil {
 		l.Log.Errorf("Ошибка при подключении к сервису авторизации: %v", err)
 	}
 
-	applicantService := service.NewApplicantService(applicantRepo, cityRepo, applicantStaticService)
-	employerService := service.NewEmployerService(employerRepo, employerStaticService)
+	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticService)
+	employerService := service.NewEmployerService(employerRepo, staticService)
 
 	specializationService := service.NewSpecializationService(specializationRepo)
 
@@ -120,8 +125,8 @@ func Init(cfg *config.Config) *server.Server {
 
 	// Transport Init
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
-	applicantHandler := handler.NewApplicantHandler(authService, applicantService, applicantStaticService, cfg.CSRF)
-	employmentHandler := handler.NewEmployerHandler(authService, employerService, employerStaticService, cfg.CSRF)
+	applicantHandler := handler.NewApplicantHandler(authService, applicantService, staticService, cfg.CSRF)
+	employmentHandler := handler.NewEmployerHandler(authService, employerService, staticService, cfg.CSRF)
 	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 	specializationHandler := handler.NewSpecializationHandler(specializationService)

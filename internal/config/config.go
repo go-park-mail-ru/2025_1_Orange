@@ -53,16 +53,27 @@ type MinioConfig struct {
 	RootPassword     string `yaml:"-"`
 	UseSSL           bool   `yaml:"use_ssl"`
 	Scheme           string `yaml:"scheme"`
+	Bucket           string `yaml:"bucket"`
 }
 
-type MinioBucketsConfig struct {
-	ApplicantBucket string `yaml:"applicant_bucket"`
-	EmployerBucket  string `yaml:"employer_bucket"`
+type S3ClientConfig struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
 }
 
-type MinioClientConfig struct {
-	Config  MinioConfig        `yaml:"config"`
-	Buckets MinioBucketsConfig `yaml:"buckets"`
+func (s3 *S3ClientConfig) Addr() string {
+	return fmt.Sprintf("%s:%s", s3.Host, s3.Port)
+}
+
+type S3Config struct {
+	Host     string         `yaml:"host"`
+	Port     string         `yaml:"port"`
+	Minio    MinioConfig    `yaml:"minio"`
+	Postgres PostgresConfig `yaml:"postgres"`
+}
+
+func (s3 *S3Config) Addr() string {
+	return fmt.Sprintf("%s:%s", s3.Host, s3.Port)
 }
 
 type RedisConfig struct {
@@ -75,6 +86,7 @@ type RedisConfig struct {
 
 type MicroservicesConfig struct {
 	Auth AuthClientConfig `yaml:"auth_service"`
+	S3   S3ClientConfig   `yaml:"static_service"`
 }
 
 type AuthConfig struct {
@@ -101,18 +113,14 @@ type Config struct {
 	Session       SessionConfig       `yaml:"session_id"`
 	CSRF          CSRFConfig          `yaml:"csrf"`
 	Postgres      PostgresConfig      `yaml:"postgres"`
-	Minio         MinioClientConfig   `yaml:"minio"`
-	Redis         RedisConfig         `yaml:"redis"`
 	Microservices MicroservicesConfig `yaml:"microservices"`
 }
 
 func LoadAppConfig() (*Config, error) {
-	// Загрузка .env
 	if err := godotenv.Load(); err != nil {
 		return nil, fmt.Errorf("error loading .env: %w", err)
 	}
 
-	// Чтение YAML
 	yamlFile, err := os.ReadFile("configs/main.yml")
 	if err != nil {
 		return nil, fmt.Errorf("error reading config file: %w", err)
@@ -123,39 +131,9 @@ func LoadAppConfig() (*Config, error) {
 		return nil, fmt.Errorf("error parsing YAML: %w", err)
 	}
 
-	// Заполнение секретов из .env
 	cfg.CSRF.Secret = os.Getenv("CSRF_SECRET")
 
-	// Формирование DSN для PostgreSQL
-	cfg.Postgres = PostgresConfig{
-		Host:     os.Getenv("POSTGRES_HOST"),
-		Port:     os.Getenv("POSTGRES_CONTAINER_PORT"),
-		User:     os.Getenv("POSTGRES_USER"),
-		Password: os.Getenv("POSTGRES_PASSWORD"),
-		DBName:   os.Getenv("POSTGRES_DB"),
-		SSLMode:  "disable",
-		DSN: fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			os.Getenv("POSTGRES_HOST"),
-			os.Getenv("POSTGRES_CONTAINER_PORT"),
-			os.Getenv("POSTGRES_USER"),
-			os.Getenv("POSTGRES_PASSWORD"),
-			os.Getenv("POSTGRES_DB"),
-		),
-	}
-
-	// Настройка Redis
-	cfg.Redis = RedisConfig{
-		Host:     os.Getenv("REDIS_HOST"),
-		Port:     os.Getenv("REDIS_CONTAINER_PORT"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-		DB:       cfg.Redis.DB,
-		TTL:      cfg.Redis.TTL,
-	}
-
-	// Настройка Minio
-	cfg.Minio.Config.RootUser = os.Getenv("MINIO_ROOT_USER")
-	cfg.Minio.Config.RootPassword = os.Getenv("MINIO_ROOT_PASSWORD")
+	cfg.Postgres = loadPostgresConfig()
 
 	return &cfg, nil
 }
@@ -184,4 +162,46 @@ func LoadAuthConfig() (*AuthConfig, error) {
 	}
 
 	return &cfg, nil
+}
+
+func LoadS3Config() (*S3Config, error) {
+	if err := godotenv.Load(); err != nil {
+		return nil, fmt.Errorf("error loading .env: %w", err)
+	}
+
+	yamlFile, err := os.ReadFile("configs/static.yml")
+	if err != nil {
+		return nil, fmt.Errorf("error reading static config file: %w", err)
+	}
+
+	var cfg S3Config
+	if err := yaml.Unmarshal(yamlFile, &cfg); err != nil {
+		return nil, fmt.Errorf("error parsing static YAML: %w", err)
+	}
+
+	cfg.Minio.RootUser = os.Getenv("MINIO_ROOT_USER")
+	cfg.Minio.RootPassword = os.Getenv("MINIO_ROOT_PASSWORD")
+
+	cfg.Postgres = loadPostgresConfig()
+
+	return &cfg, nil
+}
+
+func loadPostgresConfig() PostgresConfig {
+	return PostgresConfig{
+		Host:     os.Getenv("POSTGRES_HOST"),
+		Port:     os.Getenv("POSTGRES_CONTAINER_PORT"),
+		User:     os.Getenv("POSTGRES_USER"),
+		Password: os.Getenv("POSTGRES_PASSWORD"),
+		DBName:   os.Getenv("POSTGRES_DB"),
+		SSLMode:  "disable",
+		DSN: fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			os.Getenv("POSTGRES_HOST"),
+			os.Getenv("POSTGRES_CONTAINER_PORT"),
+			os.Getenv("POSTGRES_USER"),
+			os.Getenv("POSTGRES_PASSWORD"),
+			os.Getenv("POSTGRES_DB"),
+		),
+	}
 }

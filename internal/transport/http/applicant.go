@@ -16,12 +16,11 @@ import (
 type ApplicantHandler struct {
 	auth      usecase.Auth
 	applicant usecase.Applicant
-	static    usecase.Static
 	cfg       config.CSRFConfig
 }
 
-func NewApplicantHandler(auth usecase.Auth, applicant usecase.Applicant, static usecase.Static, cfg config.CSRFConfig) ApplicantHandler {
-	return ApplicantHandler{auth: auth, applicant: applicant, static: static, cfg: cfg}
+func NewApplicantHandler(auth usecase.Auth, applicant usecase.Applicant, cfg config.CSRFConfig) ApplicantHandler {
+	return ApplicantHandler{auth: auth, applicant: applicant, cfg: cfg}
 }
 
 func (h *ApplicantHandler) Configure(r *http.ServeMux) {
@@ -284,13 +283,8 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	avatar, err := h.static.UploadStatic(ctx, data)
+	avatar, err := h.applicant.UpdateAvatar(ctx, userID, data)
 	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
-
-	if err = h.applicant.UpdateAvatar(ctx, userID, avatar.ID); err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}

@@ -13,13 +13,13 @@ import (
 
 type EmployerService struct {
 	employerRepository repository.EmployerRepository
-	staticRepository   repository.StaticRepository
+	staticGateway      usecase.Static
 }
 
-func NewEmployerService(employerRepository repository.EmployerRepository, staticRepository repository.StaticRepository) usecase.Employer {
+func NewEmployerService(employerRepository repository.EmployerRepository, staticGateway usecase.Static) usecase.Employer {
 	return &EmployerService{
 		employerRepository: employerRepository,
-		staticRepository:   staticRepository,
+		staticGateway:      staticGateway,
 	}
 }
 
@@ -40,7 +40,7 @@ func (e *EmployerService) employerEntityToDTO(ctx context.Context, employer *ent
 	}
 
 	if employer.LogoID > 0 {
-		logo, err := e.staticRepository.GetStatic(ctx, employer.LogoID)
+		logo, err := e.staticGateway.GetStatic(ctx, employer.LogoID)
 		if err != nil {
 			return nil, err
 		}
@@ -157,24 +157,29 @@ func (e *EmployerService) UpdateProfile(ctx context.Context, userID int, employe
 	return e.employerRepository.UpdateEmployer(ctx, userID, updateFields)
 }
 
-func (e *EmployerService) UpdateLogo(ctx context.Context, userID, logoID int) error {
+func (e *EmployerService) UpdateLogo(ctx context.Context, userID int, data []byte) (*dto.UploadStaticResponse, error) {
+	logo, err := e.staticGateway.UploadStatic(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+
 	employer, err := e.employerRepository.GetEmployerByID(ctx, userID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if employer.LogoID != 0 {
-		err = e.staticRepository.DeleteStatic(ctx, employer.LogoID)
+		err = e.staticGateway.DeleteStatic(ctx, employer.LogoID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	err = e.employerRepository.UpdateEmployer(ctx, userID, map[string]interface{}{"logo_id": logoID})
+	err = e.employerRepository.UpdateEmployer(ctx, userID, map[string]interface{}{"logo_id": logo.ID})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return logo, nil
 }
 
 func (e *EmployerService) EmailExists(ctx context.Context, email string) (*dto.EmailExistsResponse, error) {

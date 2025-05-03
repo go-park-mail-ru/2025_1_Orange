@@ -1,0 +1,14 @@
+host: "0.0.0.0"
+port: "8083"
+minio:
+  internal_endpoint: "minio:9000"
+  public_endpoint: "localhost:9000"
+  use_ssl: false
+  scheme: "http"
+  bucket: "assets"
+postgres:
+  host: "localhost"
+  port: "5432"
+  user: "postgres"
+  dbname: "mydb"
+  sslmode: "disable"

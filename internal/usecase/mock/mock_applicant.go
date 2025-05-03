@@ -102,11 +102,12 @@ func (mr *MockApplicantMockRecorder) Register(arg0, arg1 any) *gomock.Call {
 }
 
 // UpdateAvatar mocks base method.
-func (m *MockApplicant) UpdateAvatar(arg0 context.Context, arg1, arg2 int) error {
+func (m *MockApplicant) UpdateAvatar(arg0 context.Context, arg1 int, arg2 []byte) (*dto.UploadStaticResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAvatar", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*dto.UploadStaticResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdateAvatar indicates an expected call of UpdateAvatar.

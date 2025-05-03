@@ -161,7 +161,7 @@ func TestApplicantHandler_Register(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
+			handler := NewApplicantHandler(mockAuth, mockApplicant, cfg)
 
 			var reqBody []byte
 			if tc.requestBody != nil {
@@ -306,7 +306,7 @@ func TestApplicantHandler_Login(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
+			handler := NewApplicantHandler(mockAuth, mockApplicant, cfg)
 
 			var reqBody []byte
 			if tc.requestBody != nil {
@@ -517,7 +517,7 @@ func TestApplicantHandler_GetProfile(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
+			handler := NewApplicantHandler(mockAuth, mockApplicant, cfg)
 
 			req := tc.setupRequest()
 			req.SetPathValue("id", tc.pathID)
@@ -696,7 +696,7 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewApplicantHandler(mockAuth, mockApplicant, nil, cfg)
+			handler := NewApplicantHandler(mockAuth, mockApplicant, cfg)
 
 			req := tc.setupRequest()
 			w := httptest.NewRecorder()
@@ -734,7 +734,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 	testCases := []struct {
 		name             string
 		setupRequest     func() *http.Request
-		mockSetup        func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic)
+		mockSetup        func(applicant *mock.MockApplicant, auth *mock.MockAuth)
 		expectedStatus   int
 		expectedResponse interface{}
 	}{
@@ -756,18 +756,14 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic) {
+			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "valid-session").
 					Return(1, "applicant", nil)
 
-				static.EXPECT().
-					UploadStatic(gomock.Any(), gomock.Any()).
-					Return(testAvatar, nil)
-
 				applicant.EXPECT().
-					UpdateAvatar(gomock.Any(), 1, 1).
-					Return(nil)
+					UpdateAvatar(gomock.Any(), 1, gomock.Any()).
+					Return(testAvatar, nil)
 			},
 			expectedStatus:   http.StatusOK,
 			expectedResponse: testAvatar,
@@ -777,7 +773,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 			setupRequest: func() *http.Request {
 				return httptest.NewRequest(http.MethodPost, "/applicant/avatar", nil)
 			},
-			mockSetup:      func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic) {},
+			mockSetup:      func(applicant *mock.MockApplicant, auth *mock.MockAuth) {},
 			expectedStatus: http.StatusUnauthorized,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusUnauthorized,
@@ -791,7 +787,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic) {
+			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "valid-session").
 					Return(1, "employer", nil)
@@ -809,7 +805,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic) {
+			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "valid-session").
 					Return(1, "applicant", nil)
@@ -818,42 +814,6 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 			expectedResponse: utils.APIError{
 				Status:  http.StatusBadRequest,
 				Message: entity.ErrBadRequest.Error(),
-			},
-		},
-		{
-			name: "ошибка при загрузке файла",
-			setupRequest: func() *http.Request {
-				body := &bytes.Buffer{}
-				writer := multipart.NewWriter(body)
-				part, _ := writer.CreateFormFile("avatar", "avatar.jpg")
-
-				_, err := part.Write([]byte("test image content"))
-				require.NoError(t, err)
-
-				err = writer.Close()
-				require.NoError(t, err)
-
-				req := httptest.NewRequest(http.MethodPost, "/applicant/avatar", body)
-				req.Header.Set("Content-Type", writer.FormDataContentType())
-				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
-				return req
-			},
-			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
-
-				static.EXPECT().
-					UploadStatic(gomock.Any(), gomock.Any()).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при загрузке файла"),
-					))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedResponse: utils.APIError{
-				Status:  http.StatusInternalServerError,
-				Message: "ошибка при загрузке файла",
 			},
 		},
 		{
@@ -874,18 +834,14 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
 				return req
 			},
-			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth, static *mock.MockStatic) {
+			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "valid-session").
 					Return(1, "applicant", nil)
 
-				static.EXPECT().
-					UploadStatic(gomock.Any(), gomock.Any()).
-					Return(testAvatar, nil)
-
 				applicant.EXPECT().
-					UpdateAvatar(gomock.Any(), 1, 1).
-					Return(entity.NewError(
+					UpdateAvatar(gomock.Any(), 1, gomock.Any()).
+					Return(nil, entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при обновлении аватара"),
 					))
@@ -908,9 +864,8 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 
 			mockApplicant := mock.NewMockApplicant(ctrl)
 			mockAuth := mock.NewMockAuth(ctrl)
-			mockStatic := mock.NewMockStatic(ctrl)
 
-			tc.mockSetup(mockApplicant, mockAuth, mockStatic)
+			tc.mockSetup(mockApplicant, mockAuth)
 
 			cfg := config.CSRFConfig{
 				CookieName: "csrf_token",
@@ -920,7 +875,7 @@ func TestApplicantHandler_UploadAvatar(t *testing.T) {
 				Secure:     false,
 				SameSite:   "Strict",
 			}
-			handler := NewApplicantHandler(mockAuth, mockApplicant, mockStatic, cfg)
+			handler := NewApplicantHandler(mockAuth, mockApplicant, cfg)
 
 			req := tc.setupRequest()
 			w := httptest.NewRecorder()
@@ -1019,7 +974,7 @@ func TestApplicantHandler_EmailExists(t *testing.T) {
 			tc.mockSetup(MockApplicant)
 
 			cfg := config.CSRFConfig{}
-			handler := NewApplicantHandler(nil, MockApplicant, nil, cfg)
+			handler := NewApplicantHandler(nil, MockApplicant, cfg)
 
 			var reqBody []byte
 			if body, ok := tc.requestBody.(string); ok {

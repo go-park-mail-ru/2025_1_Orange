@@ -4,6 +4,7 @@ import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository/mock"
+	mockUC "ResuMatch/internal/usecase/mock"
 	"context"
 	"errors"
 	"fmt"
@@ -631,48 +632,73 @@ func TestApplicantService_GetUser(t *testing.T) {
 func TestApplicantService_UpdateAvatar(t *testing.T) {
 	t.Parallel()
 
+	// Тестовые данные
+	testImage := []byte{0x89, 0x50, 0x4E, 0x47} // Просто пример PNG заголовка
+	mockAvatarResponse := &dto.UploadStaticResponse{ID: 100}
+
 	testCases := []struct {
 		name        string
 		userID      int
-		avatarID    int
-		mockSetup   func(*mock.MockApplicantRepository)
+		imageData   []byte
+		mockSetup   func(*mock.MockApplicantRepository, *mockUC.MockStatic)
+		expected    *dto.UploadStaticResponse
 		expectedErr error
 	}{
 		{
-			name:     "Успешное обновление аватара",
-			userID:   1,
-			avatarID: 100,
-			mockSetup: func(appRepo *mock.MockApplicantRepository) {
+			name:      "Успешное обновление аватара",
+			userID:    1,
+			imageData: testImage,
+			mockSetup: func(appRepo *mock.MockApplicantRepository, staticUC *mockUC.MockStatic) {
+				staticUC.EXPECT().
+					UploadStatic(gomock.Any(), testImage).
+					Return(mockAvatarResponse, nil)
+
+				appRepo.EXPECT().
+					GetApplicantByID(gomock.Any(), 1).
+					Return(&entity.Applicant{AvatarID: 0}, nil)
+
 				appRepo.EXPECT().
 					UpdateApplicant(
 						gomock.Any(),
 						1,
-						map[string]interface{}{"avatar_id": 100},
+						map[string]interface{}{"avatar_id": mockAvatarResponse.ID},
 					).
 					Return(nil)
 			},
+			expected:    mockAvatarResponse,
 			expectedErr: nil,
 		},
 		{
-			name:     "Ошибка обновления avatarID",
-			userID:   2,
-			avatarID: 1,
-			mockSetup: func(appRepo *mock.MockApplicantRepository) {
-				appRepo.EXPECT().
-					UpdateApplicant(
-						gomock.Any(),
-						2,
-						map[string]interface{}{"avatar_id": 1},
-					).
-					Return(entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("не удалось обновить соискателя с id=1"),
-					))
+			name:      "Ошибка загрузки аватара",
+			userID:    2,
+			imageData: testImage,
+			mockSetup: func(appRepo *mock.MockApplicantRepository, staticUC *mockUC.MockStatic) {
+				staticUC.EXPECT().
+					UploadStatic(gomock.Any(), testImage).
+					Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка загрузки")))
 			},
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("не удалось обновить соискателя с id=1"),
-			),
+			expected:    nil,
+			expectedErr: entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка загрузки")),
+		},
+		{
+			name:      "Ошибка при удалении старого аватара",
+			userID:    3,
+			imageData: testImage,
+			mockSetup: func(appRepo *mock.MockApplicantRepository, staticUC *mockUC.MockStatic) {
+				staticUC.EXPECT().
+					UploadStatic(gomock.Any(), testImage).
+					Return(mockAvatarResponse, nil)
+
+				appRepo.EXPECT().
+					GetApplicantByID(gomock.Any(), 3).
+					Return(&entity.Applicant{AvatarID: 50}, nil)
+
+				staticUC.EXPECT().
+					DeleteStatic(gomock.Any(), 50).
+					Return(entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка удаления")))
+			},
+			expected:    nil,
+			expectedErr: entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка удаления")),
 		},
 	}
 
@@ -685,19 +711,19 @@ func TestApplicantService_UpdateAvatar(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockAppRepo := mock.NewMockApplicantRepository(ctrl)
-			service := NewApplicantService(mockAppRepo, nil, nil)
+			mockStaticUC := mockUC.NewMockStatic(ctrl)
+			service := NewApplicantService(mockAppRepo, nil, mockStaticUC)
 
-			tc.mockSetup(mockAppRepo)
+			tc.mockSetup(mockAppRepo, mockStaticUC)
 
-			err := service.UpdateAvatar(context.Background(), tc.userID, tc.avatarID)
+			result, err := service.UpdateAvatar(context.Background(), tc.userID, tc.imageData)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
-				var serviceErr entity.Error
-				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
 			} else {
 				require.NoError(t, err)
+				require.Equal(t, tc.expected, result)
 			}
 		})
 	}

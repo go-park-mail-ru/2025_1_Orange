@@ -14,18 +14,18 @@ import (
 type ApplicantService struct {
 	applicantRepository repository.ApplicantRepository
 	cityRepository      repository.CityRepository
-	staticRepository    repository.StaticRepository
+	staticGateway       usecase.Static
 }
 
 func NewApplicantService(
 	applicantRepository repository.ApplicantRepository,
 	cityRepository repository.CityRepository,
-	staticRepository repository.StaticRepository,
+	staticGateway usecase.Static,
 ) usecase.Applicant {
 	return &ApplicantService{
 		applicantRepository: applicantRepository,
 		cityRepository:      cityRepository,
-		staticRepository:    staticRepository,
+		staticGateway:       staticGateway,
 	}
 }
 
@@ -48,7 +48,7 @@ func (a *ApplicantService) applicantEntityToDTO(ctx context.Context, applicantEn
 	}
 
 	if applicantEntity.AvatarID > 0 {
-		avatar, err := a.staticRepository.GetStatic(ctx, applicantEntity.AvatarID)
+		avatar, err := a.staticGateway.GetStatic(ctx, applicantEntity.AvatarID)
 		if err != nil {
 			return nil, err
 		}
@@ -191,24 +191,29 @@ func (a *ApplicantService) UpdateProfile(ctx context.Context, userID int, applic
 	return a.applicantRepository.UpdateApplicant(ctx, userID, updateFields)
 }
 
-func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID, avatarID int) error {
+func (a *ApplicantService) UpdateAvatar(ctx context.Context, userID int, data []byte) (*dto.UploadStaticResponse, error) {
+	avatar, err := a.staticGateway.UploadStatic(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+
 	applicant, err := a.applicantRepository.GetApplicantByID(ctx, userID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if applicant.AvatarID != 0 {
-		err = a.staticRepository.DeleteStatic(ctx, applicant.AvatarID)
+		err = a.staticGateway.DeleteStatic(ctx, applicant.AvatarID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	err = a.applicantRepository.UpdateApplicant(ctx, userID, map[string]interface{}{"avatar_id": avatarID})
+	err = a.applicantRepository.UpdateApplicant(ctx, userID, map[string]interface{}{"avatar_id": avatar.ID})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return avatar, nil
 }
 
 func (a *ApplicantService) EmailExists(ctx context.Context, email string) (*dto.EmailExistsResponse, error) {

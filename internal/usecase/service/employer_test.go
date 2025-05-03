@@ -4,6 +4,7 @@ import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository/mock"
+	mockUC "ResuMatch/internal/usecase/mock"
 	"context"
 	"errors"
 	"fmt"
@@ -318,14 +319,14 @@ func TestEmployerService_GetUser(t *testing.T) {
 	testCases := []struct {
 		name           string
 		employerID     int
-		mockSetup      func(*mock.MockEmployerRepository, *mock.MockStaticRepository)
+		mockSetup      func(*mock.MockEmployerRepository, *mockUC.MockStatic)
 		expectedResult *dto.EmployerProfileResponse
 		expectedErr    error
 	}{
 		{
 			name:       "Успешное получение профиля",
 			employerID: 1,
-			mockSetup: func(empRepo *mock.MockEmployerRepository, staticRepo *mock.MockStaticRepository) {
+			mockSetup: func(empRepo *mock.MockEmployerRepository, staticUC *mockUC.MockStatic) {
 				empRepo.EXPECT().
 					GetEmployerByID(gomock.Any(), 1).
 					Return(&entity.Employer{
@@ -344,7 +345,7 @@ func TestEmployerService_GetUser(t *testing.T) {
 						UpdatedAt:    time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 					}, nil)
 
-				staticRepo.EXPECT().
+				staticUC.EXPECT().
 					GetStatic(gomock.Any(), 5).
 					Return("assets/logo.png", nil)
 			},
@@ -368,7 +369,7 @@ func TestEmployerService_GetUser(t *testing.T) {
 		{
 			name:       "Работодатель не найден",
 			employerID: 999,
-			mockSetup: func(empRepo *mock.MockEmployerRepository, staticRepo *mock.MockStaticRepository) {
+			mockSetup: func(empRepo *mock.MockEmployerRepository, staticUC *mockUC.MockStatic) {
 				empRepo.EXPECT().
 					GetEmployerByID(gomock.Any(), 999).
 					Return(nil, entity.NewError(
@@ -385,7 +386,7 @@ func TestEmployerService_GetUser(t *testing.T) {
 		{
 			name:       "Ошибка получения логотипа",
 			employerID: 2,
-			mockSetup: func(empRepo *mock.MockEmployerRepository, staticRepo *mock.MockStaticRepository) {
+			mockSetup: func(empRepo *mock.MockEmployerRepository, staticUC *mockUC.MockStatic) {
 				empRepo.EXPECT().
 					GetEmployerByID(gomock.Any(), 2).
 					Return(&entity.Employer{
@@ -396,7 +397,7 @@ func TestEmployerService_GetUser(t *testing.T) {
 						LogoID:       10,
 					}, nil)
 
-				staticRepo.EXPECT().
+				staticUC.EXPECT().
 					GetStatic(gomock.Any(), 10).
 					Return("", entity.NewError(
 						entity.ErrInternal,
@@ -420,10 +421,10 @@ func TestEmployerService_GetUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockEmpRepo := mock.NewMockEmployerRepository(ctrl)
-			mockStaticRepo := mock.NewMockStaticRepository(ctrl)
-			employerService := NewEmployerService(mockEmpRepo, mockStaticRepo)
+			mockStaticUC := mockUC.NewMockStatic(ctrl)
+			employerService := NewEmployerService(mockEmpRepo, mockStaticUC)
 
-			tc.mockSetup(mockEmpRepo, mockStaticRepo)
+			tc.mockSetup(mockEmpRepo, mockStaticUC)
 
 			result, err := employerService.GetUser(context.Background(), tc.employerID)
 
@@ -542,47 +543,113 @@ func TestEmployerService_UpdateProfile(t *testing.T) {
 func TestEmployerService_UpdateLogo(t *testing.T) {
 	t.Parallel()
 
+	// Тестовые данные
+	testImage := []byte{0xFF, 0xD8, 0xFF} // Пример JPEG заголовка
+	mockLogoResponse := &dto.UploadStaticResponse{ID: 100}
+
 	testCases := []struct {
 		name        string
 		userID      int
-		logoID      int
-		mockSetup   func(*mock.MockEmployerRepository)
+		imageData   []byte
+		mockSetup   func(*mock.MockEmployerRepository, *mockUC.MockStatic)
 		expectedErr error
 	}{
 		{
-			name:   "Успешное обновление логотипа",
-			userID: 1,
-			logoID: 100,
-			mockSetup: func(empRepo *mock.MockEmployerRepository) {
+			name:      "Успешное обновление логотипа",
+			userID:    1,
+			imageData: testImage,
+			mockSetup: func(empRepo *mock.MockEmployerRepository, staticUC *mockUC.MockStatic) {
+				staticUC.EXPECT().
+					UploadStatic(gomock.Any(), testImage).
+					Return(mockLogoResponse, nil)
+
+				empRepo.EXPECT().
+					GetEmployerByID(gomock.Any(), 1).
+					Return(&entity.Employer{LogoID: 0}, nil)
+
 				empRepo.EXPECT().
 					UpdateEmployer(
 						gomock.Any(),
 						1,
-						map[string]interface{}{"logo_id": 100},
+						map[string]interface{}{"logo_id": mockLogoResponse.ID},
 					).
 					Return(nil)
 			},
 			expectedErr: nil,
 		},
 		{
-			name:   "Ошибка при обновлении логотипа",
-			userID: 2,
-			logoID: 200,
-			mockSetup: func(empRepo *mock.MockEmployerRepository) {
-				empRepo.EXPECT().
-					UpdateEmployer(
-						gomock.Any(),
-						2,
-						map[string]interface{}{"logo_id": 200},
-					).
-					Return(entity.NewError(
+			name:      "Ошибка загрузки логотипа",
+			userID:    2,
+			imageData: testImage,
+			mockSetup: func(empRepo *mock.MockEmployerRepository, staticUC *mockUC.MockStatic) {
+				staticUC.EXPECT().
+					UploadStatic(gomock.Any(), testImage).
+					Return(nil, entity.NewError(
 						entity.ErrInternal,
-						fmt.Errorf("не удалось обновить работодателя с id=2"),
+						fmt.Errorf("ошибка загрузки логотипа"),
 					))
 			},
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("не удалось обновить работодателя с id=2"),
+				fmt.Errorf("ошибка загрузки логотипа"),
+			),
+		},
+		{
+			name:      "Ошибка при обновлении логотипа",
+			userID:    3,
+			imageData: testImage,
+			mockSetup: func(empRepo *mock.MockEmployerRepository, staticUC *mockUC.MockStatic) {
+				staticUC.EXPECT().
+					UploadStatic(gomock.Any(), testImage).
+					Return(mockLogoResponse, nil)
+
+				empRepo.EXPECT().
+					GetEmployerByID(gomock.Any(), 3).
+					Return(&entity.Employer{LogoID: 50}, nil)
+
+				staticUC.EXPECT().
+					DeleteStatic(gomock.Any(), 50).
+					Return(nil)
+
+				empRepo.EXPECT().
+					UpdateEmployer(
+						gomock.Any(),
+						3,
+						map[string]interface{}{"logo_id": mockLogoResponse.ID},
+					).
+					Return(entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("не удалось обновить работодателя с id=3"),
+					))
+			},
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("не удалось обновить работодателя с id=3"),
+			),
+		},
+		{
+			name:      "Ошибка при удалении старого логотипа",
+			userID:    4,
+			imageData: testImage,
+			mockSetup: func(empRepo *mock.MockEmployerRepository, staticUC *mockUC.MockStatic) {
+				staticUC.EXPECT().
+					UploadStatic(gomock.Any(), testImage).
+					Return(mockLogoResponse, nil)
+
+				empRepo.EXPECT().
+					GetEmployerByID(gomock.Any(), 4).
+					Return(&entity.Employer{LogoID: 50}, nil)
+
+				staticUC.EXPECT().
+					DeleteStatic(gomock.Any(), 50).
+					Return(entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка удаления логотипа"),
+					))
+			},
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка удаления логотипа"),
 			),
 		},
 	}
@@ -596,11 +663,12 @@ func TestEmployerService_UpdateLogo(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockEmployerRepo := mock.NewMockEmployerRepository(ctrl)
-			service := NewEmployerService(mockEmployerRepo, nil)
+			mockStaticUC := mockUC.NewMockStatic(ctrl)
+			service := NewEmployerService(mockEmployerRepo, mockStaticUC)
 
-			tc.mockSetup(mockEmployerRepo)
+			tc.mockSetup(mockEmployerRepo, mockStaticUC)
 
-			err := service.UpdateLogo(context.Background(), tc.userID, tc.logoID)
+			_, err := service.UpdateLogo(context.Background(), tc.userID, tc.imageData)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)

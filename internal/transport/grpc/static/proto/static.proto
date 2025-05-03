@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package static;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "./;static";
+
+message FileID {
+  uint64 id = 1;
+}
+
+message StaticURL {
+  string path = 1;
+}
+
+message UploadStaticRequest {
+  bytes data = 1;
+}
+
+message UploadStaticResponse {
+  uint64 id = 1;
+  string path = 2;
+}
+
+service StaticService {
+  rpc UploadStatic (UploadStaticRequest) returns (UploadStaticResponse);
+  rpc GetStatic (FileID) returns (StaticURL);
+  rpc DeleteStatic (FileID) returns (google.protobuf.Empty);
+}

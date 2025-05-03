@@ -17,12 +17,11 @@ import (
 type EmployerHandler struct {
 	auth     usecase.Auth
 	employer usecase.Employer
-	static   usecase.Static
 	cfg      config.CSRFConfig
 }
 
-func NewEmployerHandler(auth usecase.Auth, employer usecase.Employer, static usecase.Static, cfg config.CSRFConfig) EmployerHandler {
-	return EmployerHandler{auth: auth, employer: employer, static: static, cfg: cfg}
+func NewEmployerHandler(auth usecase.Auth, employer usecase.Employer, cfg config.CSRFConfig) EmployerHandler {
+	return EmployerHandler{auth: auth, employer: employer, cfg: cfg}
 }
 
 func (h *EmployerHandler) Configure(r *http.ServeMux) {
@@ -265,13 +264,8 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logo, err := h.static.UploadStatic(ctx, data)
+	logo, err := h.employer.UpdateLogo(ctx, userID, data)
 	if err != nil {
-		utils.WriteAPIError(w, utils.ToAPIError(err))
-		return
-	}
-
-	if err = h.employer.UpdateLogo(ctx, userID, logo.ID); err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}

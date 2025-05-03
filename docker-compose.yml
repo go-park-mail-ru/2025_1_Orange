@@ -10,11 +10,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
       auth:
+        condition: service_started
+      static:
         condition: service_started
     restart: unless-stopped
     command: >
@@ -36,7 +34,25 @@ services:
     ports:
       - "${AUTH_PORT}:${AUTH_PORT}"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - resumatch-network
+
+  static:
+    container_name: static
+    build:
+      context: .
+      dockerfile: docker/static.dockerfile
+    env_file: .env
+    ports:
+      - "${STATIC_PORT}:${STATIC_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - resumatch-network

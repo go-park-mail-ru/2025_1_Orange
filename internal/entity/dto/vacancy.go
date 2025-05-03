@@ -6,9 +6,9 @@ import (
 
 // VacancyShort представляет сокращенную информацию о вакансии
 type VacancyShortResponse struct {
-	ID             int                      `json:"id" validate:"required,email"`
+	ID             int                      `json:"id"`
 	Title          string                   `json:"title"`
-	Employer       *EmployerProfileResponse `json:"employer_id"`
+	Employer       *EmployerProfileResponse `json:"employer"`
 	Specialization string                   `json:"specialization"`
 	WorkFormat     string                   `json:"work_format"`
 	Employment     string                   `json:"employment"`
@@ -20,6 +20,7 @@ type VacancyShortResponse struct {
 	UpdatedAt      string                   `json:"updated_at"`
 	City           string                   `json:"city"`
 	Responded      bool                     `json:"responded"`
+	Liked          bool                     `json:"liked"`
 }
 
 type VacancyCreate struct {
@@ -82,6 +83,7 @@ type VacancyResponse struct {
 	CreatedAt            string   `json:"created_at"`
 	UpdatedAt            string   `json:"updated_at"`
 	Responded            bool     `json:"responded"`
+	Liked                bool     `json:"liked"`
 }
 
 type VacancyResponsed struct {

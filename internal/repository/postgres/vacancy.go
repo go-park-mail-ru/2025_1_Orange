@@ -2073,7 +2073,13 @@ ORDER BY
 			fmt.Errorf("ошибка при получении понравившихся вакансий: %w", err),
 		)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}()
 
 	var vacancies []*entity.Vacancy
 	for rows.Next() {

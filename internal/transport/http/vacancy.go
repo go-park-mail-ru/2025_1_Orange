@@ -713,7 +713,7 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID int = 0
+	var userID = 0
 	var userRole string
 
 	cookie, err := r.Cookie("session_id")
@@ -781,7 +781,7 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID int = 0
+	var userID = 0
 	var userRole string
 
 	cookie, err := r.Cookie("session_id")

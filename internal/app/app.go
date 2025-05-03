@@ -112,6 +112,8 @@ func Init(cfg *config.Config) *server.Server {
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, applicantStaticRepo)
 	employerService := service.NewEmployerService(employerRepo, employerStaticRepo)
 
+	specializationService := service.NewSpecializationService(specializationRepo)
+
 	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService)
@@ -122,6 +124,7 @@ func Init(cfg *config.Config) *server.Server {
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, employerStaticService, cfg.CSRF)
 	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF)
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
+	specializationHandler := handler.NewSpecializationHandler(specializationService)
 
 	// Server Init
 	srv := server.NewServer(cfg)
@@ -133,6 +136,7 @@ func Init(cfg *config.Config) *server.Server {
 		employmentHandler.Configure(r)
 		resumeHandler.Configure(r)
 		vacancyHandler.Configure(r)
+		specializationHandler.Configure(r)
 	})
 
 	return srv

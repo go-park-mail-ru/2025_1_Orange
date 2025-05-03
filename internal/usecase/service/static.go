@@ -8,11 +8,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 type StaticService struct {

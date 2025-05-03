@@ -2,6 +2,7 @@ package app
 
 import (
 	"ResuMatch/internal/config"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository/postgres"
 	"ResuMatch/internal/server"
 	"ResuMatch/internal/transport/grpc/auth"
@@ -99,7 +100,7 @@ func Init(cfg *config.Config) *server.Server {
 
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticService)
 	employerService := service.NewEmployerService(employerRepo, staticService)
-	
+
 	specializationService := service.NewSpecializationService(specializationRepo)
 
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
@@ -113,8 +114,9 @@ func Init(cfg *config.Config) *server.Server {
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 	specializationHandler := handler.NewSpecializationHandler(specializationService)
 
+	metrics := metrics.NewMetrics("ResuMatch")
 	// Server Init
-	srv := server.NewServer(cfg)
+	srv := server.NewServer(cfg, metrics)
 
 	// Router config
 	srv.SetupRoutes(func(r *http.ServeMux) {

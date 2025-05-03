@@ -40,11 +40,6 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Не удалось установить соединение соединение с city postgres: %v", err)
 	}
 
-	//staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с static postgres: %v", err)
-	//}
-
 	applicantConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {
 		l.Log.Errorf("Не удалось установить соединение соединение с applicant postgres: %v", err)
@@ -81,16 +76,6 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Ошибка создания репозитория города: %v", err)
 	}
 
-	//applicantStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Mi, cfg.Minio.Config)
-	//if err != nil {
-	//	l.Log.Errorf("Ошибка создания репозитория статики для соискателя: %v", err)
-	//}
-	//
-	//employerStaticRepo, err := postgres.NewStaticRepository(staticConn, cfg.Minio.Buckets.EmployerBucket, cfg.Minio.Config)
-	//if err != nil {
-	//	l.Log.Errorf("Ошибка создания репозитория статики для работодателя: %v", err)
-	//}
-
 	applicantRepo, err := postgres.NewApplicantRepository(applicantConn)
 	if err != nil {
 		l.Log.Errorf("Ошибка создания репозитория соискателя: %v", err)
@@ -102,8 +87,6 @@ func Init(cfg *config.Config) *server.Server {
 	}
 
 	// Use Cases Init
-	//applicantStaticService := service.NewStaticService(applicantStaticRepo)
-	//employerStaticService := service.NewStaticService(employerStaticRepo)
 	staticService, err := static.NewGateway(cfg.Microservices.S3.Addr())
 	if err != nil {
 		l.Log.Errorf("Ошибка при подключении к сервису статики: %v", err)
@@ -116,10 +99,9 @@ func Init(cfg *config.Config) *server.Server {
 
 	applicantService := service.NewApplicantService(applicantRepo, cityRepo, staticService)
 	employerService := service.NewEmployerService(employerRepo, staticService)
-
+	
 	specializationService := service.NewSpecializationService(specializationRepo)
 
-	// resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo)
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService)
 

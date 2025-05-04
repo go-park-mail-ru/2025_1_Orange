@@ -2,6 +2,7 @@ package redis
 
 import (
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -46,6 +47,7 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 	for {
 		exists, err := redis.Int(r.conn.Do("EXISTS", sessionToken))
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 			return "", entity.NewError(
 				entity.ErrInternal,
 				fmt.Errorf("не удалось получить сессию для пользователя с id=%d, role=%s :%w", userID, role, err),
@@ -59,6 +61,7 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 
 	_, err := r.conn.Do("SET", sessionToken, fmt.Sprintf("%d:%s", userID, role), "EX", r.sessionAliveTime)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 		return "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось создать сессию для пользователя с id=%d, role=%s :%w", userID, role, err),
@@ -68,6 +71,7 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 	userSessionsKey := userSessionsPrefix + strconv.Itoa(userID) + ":" + role
 	_, err = r.conn.Do("SADD", userSessionsKey, sessionToken)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 		return "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось добавить сессию пользователя с id=%d, role=%s в его активные сессии :%w", userID, role, err),
@@ -76,6 +80,7 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 
 	_, err = r.conn.Do("EXPIRE", userSessionsKey, r.sessionAliveTime)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 		return "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось установить TTL на сессию пользователя с id=%d, role=%s :%w", userID, role, err),
@@ -95,6 +100,7 @@ func (r *SessionRepository) GetSession(ctx context.Context, sessionToken string)
 
 	reply, err := redis.String(r.conn.Do("GET", sessionToken))
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "GetSession").Inc()
 		if errors.Is(err, redis.ErrNil) {
 			return 0, "", entity.NewError(
 				entity.ErrNotFound,
@@ -111,6 +117,7 @@ func (r *SessionRepository) GetSession(ctx context.Context, sessionToken string)
 	var role string
 	_, err = fmt.Sscanf(reply, "%d:%s", &userID, &role)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "GetSession").Inc()
 		return 0, "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось распарсить сессию на id и role с ключом=%s :%w", reply, err),
@@ -130,6 +137,7 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken stri
 
 	reply, err := redis.String(r.conn.Do("GET", sessionToken))
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteSession").Inc()
 		if errors.Is(err, redis.ErrNil) {
 			return nil
 		}
@@ -141,6 +149,7 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken stri
 
 	_, err = r.conn.Do("DEL", sessionToken)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteSession").Inc()
 		return entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось удалить сессию с токеном=%s :%w", sessionToken, err),
@@ -151,6 +160,7 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken stri
 	var role string
 	_, err = fmt.Sscanf(reply, "%d:%s", &userID, &role)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteSession").Inc()
 		return entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось распарсить сессию на id и role с ключом=%s :%w", reply, err),
@@ -160,6 +170,7 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken stri
 	userSessionsKey := userSessionsPrefix + strconv.Itoa(userID) + ":" + role
 	_, err = r.conn.Do("SREM", userSessionsKey, sessionToken)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteSession").Inc()
 		return entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось удалить сессию с ключом=%s и токеном=%s из активных сессий пользователя :%w", userSessionsKey, sessionToken, err),
@@ -182,6 +193,7 @@ func (r *SessionRepository) DeleteAllSessions(ctx context.Context, userID int, r
 
 	sessions, err := redis.Strings(r.conn.Do("SMEMBERS", userSessionsKey))
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteAllSessions").Inc()
 		return entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось получить активные сессии пользователя по ключу=%s :%w", userSessionsKey, err),
@@ -191,6 +203,7 @@ func (r *SessionRepository) DeleteAllSessions(ctx context.Context, userID int, r
 	for _, session := range sessions {
 		_, err = r.conn.Do("DEL", session)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteAllSessions").Inc()
 			return entity.NewError(
 				entity.ErrInternal,
 				fmt.Errorf("не удалось удалить сессию из активные сессии пользователя c ключом=%s :%w", session, err),
@@ -200,6 +213,7 @@ func (r *SessionRepository) DeleteAllSessions(ctx context.Context, userID int, r
 
 	_, err = r.conn.Do("DEL", userSessionsKey)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteAllSessions").Inc()
 		return entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось удалить ключ списка активных сессий пользователя c ключом=%s :%w", userSessionsKey, err),

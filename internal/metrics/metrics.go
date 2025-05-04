@@ -7,12 +7,15 @@ import (
 )
 
 var (
-	RequestCounter       *prometheus.CounterVec
-	RequestDuration      *prometheus.HistogramVec
-	ErrorCounter         *prometheus.CounterVec
-	ResponseSize         *prometheus.HistogramVec
-	ExternalCallDuration *prometheus.HistogramVec
-	ExternalCallCounter  *prometheus.CounterVec
+	RequestCounter            *prometheus.CounterVec
+	RequestDuration           *prometheus.HistogramVec
+	ErrorCounter              *prometheus.CounterVec
+	ResponseSize              *prometheus.HistogramVec
+	AuthServiceCallDuration   *prometheus.HistogramVec
+	StaticServiceCallDuration *prometheus.HistogramVec
+	AuthServiceCallCounter    *prometheus.CounterVec
+	StaticServiceCallCounter  *prometheus.CounterVec
+	LayerErrorCounter         *prometheus.CounterVec
 )
 
 func Init(namespace string) {
@@ -43,6 +46,7 @@ func Init(namespace string) {
 		},
 		[]string{"method", "path", "status"},
 	)
+
 	ResponseSize = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
@@ -52,22 +56,52 @@ func Init(namespace string) {
 		},
 		[]string{"method", "path"},
 	)
-	ExternalCallDuration = prometheus.NewHistogramVec(
+
+	AuthServiceCallDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
-			Name:      "external_call_duration_seconds",
-			Help:      "Duration of external service calls",
+			Name:      "auth_service_call_duration_seconds",
+			Help:      "Duration of auth service calls",
 			Buckets:   prometheus.DefBuckets,
 		},
-		[]string{"service", "method"},
+		[]string{"method"},
 	)
-	ExternalCallCounter = prometheus.NewCounterVec(
+
+	StaticServiceCallDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      "static_service_call_duration_seconds",
+			Help:      "Duration of static service calls",
+			Buckets:   prometheus.DefBuckets,
+		},
+		[]string{"method"},
+	)
+
+	AuthServiceCallCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
-			Name:      "external_call_total",
-			Help:      "Total number of external service calls",
+			Name:      "auth_service_call_total",
+			Help:      "Total number of auth service calls",
 		},
-		[]string{"service", "method", "status"},
+		[]string{"method", "status"},
+	)
+
+	StaticServiceCallCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "static_service_call_total",
+			Help:      "Total number of static service calls",
+		},
+		[]string{"method", "status"},
+	)
+
+	LayerErrorCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "layer_errors_total",
+			Help:      "Total errors in layer (delivery/usecase/repository)",
+		},
+		[]string{"layer", "method"},
 	)
 
 	prometheus.MustRegister(
@@ -75,8 +109,11 @@ func Init(namespace string) {
 		RequestDuration,
 		ErrorCounter,
 		ResponseSize,
-		ExternalCallDuration,
-		ExternalCallCounter,
+		AuthServiceCallDuration,
+		StaticServiceCallDuration,
+		AuthServiceCallCounter,
+		StaticServiceCallCounter,
+		LayerErrorCounter,
 	)
 
 }

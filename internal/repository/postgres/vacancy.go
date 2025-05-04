@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -29,7 +30,7 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 	if vacancy.Title == "" || vacancy.SpecializationID == 0 {
 		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("обязательное поле отсутствует"))
 	}
-
+	metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "Create").Inc()
 	l.Log.WithFields(logrus.Fields{
 		"requestID": requestID,
 	}).Info("sql-запрос в БД на создание резюме Create")
@@ -103,6 +104,7 @@ func (r *VacancyRepository) Create(ctx context.Context, vacancy *entity.Vacancy)
 	)
 
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "Create").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -152,6 +154,7 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddSkills").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -164,6 +167,7 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 	}
 	defer func() {
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddSkills").Inc()
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				l.Log.WithFields(logrus.Fields{
 					"requestID": requestID,
@@ -178,6 +182,7 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 		VALUES ($1, $2)
 	`)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddSkills").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -192,6 +197,7 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddSkills").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть statement: %v", err)
@@ -201,6 +207,7 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 	for _, skillID := range skillIDs {
 		_, err = stmt.ExecContext(ctx, vacancyID, skillID)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddSkills").Inc()
 			var pqErr *pq.Error
 			if errors.As(err, &pqErr) {
 				switch pqErr.Code {
@@ -239,6 +246,7 @@ func (r *VacancyRepository) AddSkills(ctx context.Context, vacancyID int, skillI
 	}
 
 	if err = tx.Commit(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddSkills").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -262,6 +270,7 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddCity").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -274,6 +283,7 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 	}
 	defer func() {
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddCity").Inc()
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				l.Log.WithFields(logrus.Fields{
 					"requestID": requestID,
@@ -288,6 +298,7 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 		VALUES ($1, $2)
 	`)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddCity").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -302,6 +313,7 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddCity").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть statement: %v", err)
@@ -311,6 +323,7 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 	for _, cityID := range cityIDs {
 		_, err = stmt.ExecContext(ctx, vacancyID, cityID)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddCity").Inc()
 			var pqErr *pq.Error
 			if errors.As(err, &pqErr) {
 				switch pqErr.Code {
@@ -349,6 +362,7 @@ func (r *VacancyRepository) AddCity(ctx context.Context, vacancyID int, cityIDs 
 	}
 
 	if err = tx.Commit(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "AddCity").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -385,6 +399,7 @@ func (r *VacancyRepository) CreateSkillIfNotExists(ctx context.Context, skillNam
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateSkillIfNotExists").Inc()
 		// Произошла ошибка, отличная от "запись не найдена"
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
@@ -405,6 +420,7 @@ func (r *VacancyRepository) CreateSkillIfNotExists(ctx context.Context, skillNam
     `
 	err = r.DB.QueryRowContext(ctx, query, skillName).Scan(&id)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateSkillIfNotExists").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -517,6 +533,7 @@ func (r *VacancyRepository) GetByID(ctx context.Context, id int) (*entity.Vacanc
 	)
 
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetByID").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
@@ -621,6 +638,7 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 	)
 
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "Update").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -698,6 +716,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context, limit int, offset int) (
 		`
 	rows, err := r.DB.QueryContext(ctx, query, limit, offset)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetAll").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -712,6 +731,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context, limit int, offset int) (
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetAll").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -744,6 +764,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context, limit int, offset int) (
 			&vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetAll").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -758,6 +779,7 @@ func (r *VacancyRepository) GetAll(ctx context.Context, limit int, offset int) (
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetAll").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -792,6 +814,7 @@ func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 
 	result, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "Delete").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -806,6 +829,7 @@ func (r *VacancyRepository) Delete(ctx context.Context, vacancyID int) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "Delete").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -848,6 +872,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 
 	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetSkillsByVacancyID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -863,6 +888,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetSkillsByVacancyID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -873,6 +899,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 	for rows.Next() {
 		var skill entity.Skill
 		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetSkillsByVacancyID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"vacancyID": vacancyID,
@@ -888,6 +915,7 @@ func (r *VacancyRepository) GetSkillsByVacancyID(ctx context.Context, vacancyID 
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetSkillsByVacancyID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -919,6 +947,7 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 
 	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetCityByVacancyID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -934,6 +963,7 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetCityByVacancyID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -944,6 +974,7 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 	for rows.Next() {
 		var skill entity.City
 		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetCityByVacancyID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"vacancyID": vacancyID,
@@ -959,6 +990,7 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetCityByVacancyID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  vacancyID,
@@ -988,6 +1020,7 @@ func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) err
 
 	_, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteSkills").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -1017,6 +1050,7 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 
 	_, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteCity").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -1083,6 +1117,7 @@ func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []
 
 	rows, err := r.DB.QueryContext(ctx, query, params...)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindCityIDsByNames").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1097,6 +1132,7 @@ func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindCityIDsByNames").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1107,6 +1143,7 @@ func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindCityIDsByNames").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1121,6 +1158,7 @@ func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindCityIDsByNames").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1159,6 +1197,7 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
 	).Scan(&resumeID)
 
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.NewError(entity.ErrNotFound,
 				fmt.Errorf("no active resumes found for applicant"))
@@ -1177,6 +1216,7 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
 
 	_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -1226,6 +1266,7 @@ func (r *VacancyRepository) CreateSpecializationIfNotExists(ctx context.Context,
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateSpecializationIfNotExists").Inc()
 		// Произошла ошибка, отличная от "запись не найдена"
 		l.Log.WithFields(logrus.Fields{
 			"requestID":          requestID,
@@ -1247,6 +1288,7 @@ func (r *VacancyRepository) CreateSpecializationIfNotExists(ctx context.Context,
     `
 	err = r.DB.QueryRowContext(ctx, query, specializationName).Scan(&id)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateSpecializationIfNotExists").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -1322,6 +1364,7 @@ func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, 
 
 	rows, err := r.DB.QueryContext(ctx, query, employerID, limit, offset)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetActiveVacanciesByEmployerID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID":  requestID,
 			"employerID": employerID,
@@ -1337,6 +1380,7 @@ func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, 
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetActiveVacanciesByEmployerID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1354,6 +1398,7 @@ func (r *VacancyRepository) GetActiveVacanciesByEmployerID(ctx context.Context, 
 			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetActiveVacanciesByEmployerID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1386,6 +1431,7 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
     `
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetVacanciesByApplicantID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID":   requestID,
 			"applicantID": applicantID,
@@ -1398,6 +1444,7 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetVacanciesByApplicantID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1415,6 +1462,7 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
 			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetVacanciesByApplicantID").Inc()
 			return nil, entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка обработки данных вакансии: %w", err))
 		}
 		vacancies = append(vacancies, &vacancy)
@@ -1453,6 +1501,7 @@ func (r *VacancyRepository) SearchVacancies(ctx context.Context, searchQuery str
 
 	rows, err := r.DB.QueryContext(ctx, query, "%"+searchQuery+"%", limit, offset)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacancies").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1466,6 +1515,7 @@ func (r *VacancyRepository) SearchVacancies(ctx context.Context, searchQuery str
 	// defer rows.Close()
 	defer func() {
 		if err := rows.Close(); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacancies").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1498,6 +1548,7 @@ func (r *VacancyRepository) SearchVacancies(ctx context.Context, searchQuery str
 			&vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacancies").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1512,6 +1563,7 @@ func (r *VacancyRepository) SearchVacancies(ctx context.Context, searchQuery str
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacancies").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1551,6 +1603,7 @@ func (r *VacancyRepository) SearchVacanciesByEmployerID(ctx context.Context, emp
 
 	rows, err := r.DB.QueryContext(ctx, query, employerID, "%"+searchQuery+"%", limit, offset)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByEmployerID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1564,6 +1617,7 @@ func (r *VacancyRepository) SearchVacanciesByEmployerID(ctx context.Context, emp
 	// defer rows.Close()
 	defer func() {
 		if err := rows.Close(); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByEmployerID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1596,6 +1650,7 @@ func (r *VacancyRepository) SearchVacanciesByEmployerID(ctx context.Context, emp
 			&vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByEmployerID").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1610,6 +1665,7 @@ func (r *VacancyRepository) SearchVacanciesByEmployerID(ctx context.Context, emp
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByEmployerID").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1655,6 +1711,7 @@ func (r *VacancyRepository) FindSpecializationIDsByNames(ctx context.Context, sp
 	// Выполняем запрос
 	rows, err := r.DB.QueryContext(ctx, query, params...)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindSpecializationIDsByNames").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1667,6 +1724,7 @@ func (r *VacancyRepository) FindSpecializationIDsByNames(ctx context.Context, sp
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindSpecializationIDsByNames").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1678,6 +1736,7 @@ func (r *VacancyRepository) FindSpecializationIDsByNames(ctx context.Context, sp
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindSpecializationIDsByNames").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1692,6 +1751,7 @@ func (r *VacancyRepository) FindSpecializationIDsByNames(ctx context.Context, sp
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "FindSpecializationIDsByNames").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1750,6 +1810,7 @@ func (r *VacancyRepository) SearchVacanciesBySpecializations(ctx context.Context
 	// Выполняем запрос
 	rows, err := r.DB.QueryContext(ctx, query, params...)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesBySpecializations").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1762,6 +1823,7 @@ func (r *VacancyRepository) SearchVacanciesBySpecializations(ctx context.Context
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesBySpecializations").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1795,6 +1857,7 @@ func (r *VacancyRepository) SearchVacanciesBySpecializations(ctx context.Context
 			&vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesBySpecializations").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1809,6 +1872,7 @@ func (r *VacancyRepository) SearchVacanciesBySpecializations(ctx context.Context
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesBySpecializations").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1875,6 +1939,7 @@ func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context
 	// Выполняем запрос
 	rows, err := r.DB.QueryContext(ctx, query, params...)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByQueryAndSpecializations").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1887,6 +1952,7 @@ func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByQueryAndSpecializations").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1920,6 +1986,7 @@ func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context
 			&vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByQueryAndSpecializations").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1934,6 +2001,7 @@ func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "SearchVacanciesByQueryAndSpecializations").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1966,6 +2034,7 @@ func (r *VacancyRepository) CreateLike(ctx context.Context, vacancyID, applicant
     `
 	_, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateLike").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -1997,6 +2066,7 @@ func (r *VacancyRepository) DeleteLike(ctx context.Context, vacancyID, applicant
     `
 	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteLike").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -2006,6 +2076,7 @@ func (r *VacancyRepository) DeleteLike(ctx context.Context, vacancyID, applicant
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteLike").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -2062,6 +2133,7 @@ ORDER BY
 	`
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetlikedVacancies").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID":   requestID,
 			"applicantID": applicantID,
@@ -2075,6 +2147,7 @@ ORDER BY
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetlikedVacancies").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -2092,6 +2165,7 @@ ORDER BY
 			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt,
 		)
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetlikedVacancies").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,

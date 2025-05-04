@@ -3,6 +3,7 @@ package service
 import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"bytes"
@@ -44,6 +45,7 @@ func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (*dto.Upl
 	}
 
 	if err := s.validateImageContent(data, contentType); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Static Service", "UploadStatic").Inc()
 		return nil, err
 	}
 

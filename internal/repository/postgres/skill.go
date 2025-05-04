@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -43,6 +44,7 @@ func (r *SkillRepository) GetByIDs(ctx context.Context, ids []int) ([]entity.Ski
 
 	rows, err := r.DB.QueryContext(ctx, query, params...)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Skill Repository", "GetByIDs").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"ids":       ids,
@@ -58,6 +60,7 @@ func (r *SkillRepository) GetByIDs(ctx context.Context, ids []int) ([]entity.Ski
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Skill Repository", "GetByIDs").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -68,6 +71,7 @@ func (r *SkillRepository) GetByIDs(ctx context.Context, ids []int) ([]entity.Ski
 	for rows.Next() {
 		var skill entity.Skill
 		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Skill Repository", "GetByIDs").Inc()
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -82,6 +86,7 @@ func (r *SkillRepository) GetByIDs(ctx context.Context, ids []int) ([]entity.Ski
 	}
 
 	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Skill Repository", "GetByIDs").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,

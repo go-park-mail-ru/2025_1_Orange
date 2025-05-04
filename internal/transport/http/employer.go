@@ -4,11 +4,11 @@ import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -56,10 +56,11 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var registerDTO dto.EmployerRegister
 	if err := json.NewDecoder(r.Body).Decode(&registerDTO); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Register").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrBadRequest)
 		return
 	}
-	fmt.Printf("comp=%s, addr=%s", registerDTO.CompanyName, registerDTO.LegalAddress)
+
 	employerID, err := h.employer.Register(ctx, &registerDTO)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -75,6 +76,7 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: employerID, Role: "employer"}); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Register").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -103,6 +105,7 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var loginDTO dto.Login
 	if err := json.NewDecoder(r.Body).Decode(&loginDTO); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Login").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrBadRequest)
 		return
 	}
@@ -122,6 +125,7 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: employerID, Role: "employer"}); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Login").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -145,6 +149,7 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	requestedID := r.PathValue("id")
 	employerID, err := strconv.Atoi(requestedID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -157,6 +162,7 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(employer); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -183,6 +189,7 @@ func (h *EmployerHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) 
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UpdateProfile").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -200,6 +207,7 @@ func (h *EmployerHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) 
 
 	var employerDTO dto.EmployerProfileUpdate
 	if err := json.NewDecoder(r.Body).Decode(&employerDTO); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UpdateProfile").Inc()
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
@@ -233,6 +241,7 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -250,16 +259,19 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 
 	file, _, err := r.FormFile("logo")
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	data, err := io.ReadAll(file)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
 	if err = file.Close(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -271,6 +283,7 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = json.NewEncoder(w).Encode(logo); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -296,6 +309,7 @@ func (h *EmployerHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 	var emailDTO dto.EmailExistsRequest
 	err := json.NewDecoder(r.Body).Decode(&emailDTO)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "EmailExists").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -308,6 +322,7 @@ func (h *EmployerHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(response); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "EmailExists").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

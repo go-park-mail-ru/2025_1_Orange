@@ -4,6 +4,7 @@ import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
@@ -55,6 +56,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var registerDTO dto.ApplicantRegister
 	if err := json.NewDecoder(r.Body).Decode(&registerDTO); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "Register").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -74,6 +76,7 @@ func (h *ApplicantHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: applicantID, Role: "applicant"}); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "Register").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -102,6 +105,7 @@ func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var loginDTO dto.Login
 	if err := json.NewDecoder(r.Body).Decode(&loginDTO); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "Login").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -121,6 +125,7 @@ func (h *ApplicantHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: applicantID, Role: "applicant"}); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "Login").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -145,6 +150,7 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -158,6 +164,7 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	requestedID := r.PathValue("id")
 	applicantID, err := strconv.Atoi(requestedID)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -177,6 +184,7 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err = json.NewEncoder(w).Encode(applicant); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -202,6 +210,7 @@ func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request)
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UpdateProfile").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -219,6 +228,7 @@ func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request)
 
 	var applicantDTO dto.ApplicantProfileUpdate
 	if err := json.NewDecoder(r.Body).Decode(&applicantDTO); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UpdateProfile").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -252,6 +262,7 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UploadAvatar").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -269,16 +280,19 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 
 	file, _, err := r.FormFile("avatar")
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UploadAvatar").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	data, err := io.ReadAll(file)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UploadAvatar").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
 	if err = file.Close(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UploadAvatar").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -290,6 +304,7 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err = json.NewEncoder(w).Encode(avatar); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UploadAvatar").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}
@@ -315,6 +330,7 @@ func (h *ApplicantHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 	var emailDTO dto.EmailExistsRequest
 	err := json.NewDecoder(r.Body).Decode(&emailDTO)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "EmailExists").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -327,6 +343,7 @@ func (h *ApplicantHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(response); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "EmailExists").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

@@ -1384,7 +1384,7 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
         ORDER BY vr.applied_at DESC
 		LIMIT $2 OFFSET $3
     `
-	rows, err := r.DB.QueryContext(ctx, query, applicantID)
+	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
 		l.Log.WithFields(logrus.Fields{
 			"requestID":   requestID,

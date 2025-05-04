@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func MetricsMiddleware(metrics *metrics.Metrics) func(http.Handler) http.Handler {
+func MetricsMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -20,7 +20,7 @@ func MetricsMiddleware(metrics *metrics.Metrics) func(http.Handler) http.Handler
 
 			duration := time.Since(start).Seconds()
 			method := r.Method
-			path := r.URL.Path
+			path := metrics.NormalizePath(r.URL.Path)
 			status := strconv.Itoa(rec.statusCode)
 
 			metrics.RequestCounter.WithLabelValues(method, path, status).Inc()
@@ -33,6 +33,7 @@ func MetricsMiddleware(metrics *metrics.Metrics) func(http.Handler) http.Handler
 		})
 	}
 }
+
 func PrometheusHandler() http.Handler {
 	return promhttp.Handler()
 }

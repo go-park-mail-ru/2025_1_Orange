@@ -3,7 +3,6 @@ package server
 import (
 	_ "ResuMatch/docs"
 	"ResuMatch/internal/config"
-	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/middleware"
 	"context"
 	"net/http"
@@ -15,13 +14,11 @@ import (
 type Server struct {
 	httpServer *http.Server
 	config     *config.Config
-	metrics    *metrics.Metrics
 }
 
-func NewServer(cfg *config.Config, metrics *metrics.Metrics) *Server {
+func NewServer(cfg *config.Config) *Server {
 	return &Server{
-		config:  cfg,
-		metrics: metrics,
+		config: cfg,
 		httpServer: &http.Server{
 			Addr:           cfg.HTTP.Host + ":" + cfg.HTTP.Port,
 			ReadTimeout:    cfg.HTTP.ReadTimeout,
@@ -44,7 +41,7 @@ func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	// subrouter.Handle("/static/assets/", http.StripPrefix("/static/assets/", http.FileServer(http.Dir("/app/assets"))))
 
 	handler := middleware.CreateMiddlewareChain(
-		middleware.MetricsMiddleware(s.metrics),
+		middleware.MetricsMiddleware(),
 		middleware.RecoveryMiddleware(),
 		middleware.CORS(s.config.HTTP.CORSAllowedOrigins),
 		middleware.CSRFMiddleware(s.config.CSRF),

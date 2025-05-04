@@ -114,9 +114,11 @@ func Init(cfg *config.Config) *server.Server {
 	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF)
 	specializationHandler := handler.NewSpecializationHandler(specializationService)
 
-	metrics := metrics.NewMetrics("ResuMatch")
+	// Metrics Init
+	metrics.Init("resumatch")
+
 	// Server Init
-	srv := server.NewServer(cfg, metrics)
+	srv := server.NewServer(cfg)
 
 	// Router config
 	srv.SetupRoutes(func(r *http.ServeMux) {

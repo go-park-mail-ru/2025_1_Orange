@@ -5,5 +5,3 @@ go.sum
 cover.out
 coverage.html
 assets
-
-prometheus.yml

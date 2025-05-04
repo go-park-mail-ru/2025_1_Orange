@@ -2,8 +2,6 @@ package server
 
 import (
 	"ResuMatch/internal/config"
-	"ResuMatch/internal/metrics"
-
 	// "context"
 	"net/http"
 	"testing"
@@ -30,8 +28,7 @@ func TestNewServer(t *testing.T) {
 		},
 	}
 
-	metrics := metrics.NewMetrics("ResuMatch")
-	server := NewServer(cfg, metrics)
+	server := NewServer(cfg)
 
 	require.NotNil(t, server)
 	require.Equal(t, "localhost:8080", server.httpServer.Addr)
@@ -56,8 +53,7 @@ func TestSetupRoutes(t *testing.T) {
 			Secret:     "secret",
 		},
 	}
-	metrics := metrics.NewMetrics("ResuMatch")
-	server := NewServer(cfg, metrics)
+	server := NewServer(cfg)
 
 	// Мокируем функцию routeConfig
 	called := false
@@ -88,8 +84,7 @@ func TestRunAndStop(t *testing.T) {
 			MaxHeaderBytes: 1 << 10,
 		},
 	}
-	metrics := metrics.NewMetrics("ResuMatch")
-	server := NewServer(cfg, metrics)
+	server := NewServer(cfg)
 	server.SetupRoutes(func(mux *http.ServeMux) {
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)

@@ -19,6 +19,6 @@
 # Ссылки
 - [Фронтенд](https://github.com/frontend-park-mail-ru/2025_1_Orange)
 
-- [Деплой](http://217.16.23.61:8001)
+- [Деплой](http://217.16.23.61)
 
 - [Figma](https://www.figma.com/design/tpgG82sgFDfodZ4TRE9mxo/ResuMatch?node-id=202-705&p=f&t=fEqYP2W01gbKOdnH-0)

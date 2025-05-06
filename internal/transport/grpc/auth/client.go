@@ -4,6 +4,7 @@ import (
 	"ResuMatch/internal/metrics"
 	authPROTO "ResuMatch/internal/transport/grpc/auth/proto"
 	"ResuMatch/internal/transport/grpc/interceptors"
+	"ResuMatch/internal/transport/grpc/utils"
 	"context"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
@@ -21,7 +22,7 @@ func NewGateway(connectAddr string) (*Gateway, error) {
 		grpc.WithUnaryInterceptor(interceptors.RequestIDClientInterceptor()),
 	)
 	if err != nil {
-		return nil, err
+		return nil, utils.FromGRPCError(err)
 	}
 
 	authClient := authPROTO.NewAuthServiceClient(grpcConn)
@@ -36,7 +37,7 @@ func (gw *Gateway) Logout(ctx context.Context, session string) error {
 	_, err := gw.authClient.Logout(ctx, &authPROTO.LogoutRequest{Session: session})
 	if err != nil {
 		metrics.AuthServiceCallCounter.WithLabelValues("Logout", "500").Inc()
-		return err
+		return utils.FromGRPCError(err)
 	}
 
 	metrics.AuthServiceCallCounter.WithLabelValues("Logout", "200").Inc()
@@ -50,7 +51,7 @@ func (gw *Gateway) LogoutAll(ctx context.Context, userID int, role string) error
 	_, err := gw.authClient.LogoutAll(ctx, &authPROTO.LogoutAllRequest{UserId: uint64(userID), Role: role})
 	if err != nil {
 		metrics.AuthServiceCallCounter.WithLabelValues("LogoutAll", "500").Inc()
-		return err
+		return utils.FromGRPCError(err)
 	}
 
 	metrics.AuthServiceCallCounter.WithLabelValues("LogoutAll", "200").Inc()
@@ -64,7 +65,7 @@ func (gw *Gateway) GetUserIDBySession(ctx context.Context, session string) (int,
 	resp, err := gw.authClient.GetUserIDBySession(ctx, &authPROTO.GetUserIDBySessionRequest{Session: session})
 	if err != nil {
 		metrics.AuthServiceCallCounter.WithLabelValues("GetUserIDBySession", "500").Inc()
-		return -1, "", err
+		return -1, "", utils.FromGRPCError(err)
 	}
 
 	metrics.AuthServiceCallCounter.WithLabelValues("GetUserIDBySession", "200").Inc()
@@ -78,7 +79,7 @@ func (gw *Gateway) CreateSession(ctx context.Context, userID int, role string) (
 	resp, err := gw.authClient.CreateSession(ctx, &authPROTO.CreateSessionRequest{UserId: uint64(userID), Role: role})
 	if err != nil {
 		metrics.AuthServiceCallCounter.WithLabelValues("CreateSession", "500").Inc()
-		return "", err
+		return "", utils.FromGRPCError(err)
 	}
 	metrics.AuthServiceCallCounter.WithLabelValues("CreateSession", "200").Inc()
 	return resp.Session, nil

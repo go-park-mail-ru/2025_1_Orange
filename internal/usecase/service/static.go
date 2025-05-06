@@ -35,16 +35,21 @@ func NewStaticService(staticRepository repository.StaticRepository) usecase.Stat
 func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (*dto.UploadStaticResponse, error) {
 	const maxFileSize = 5 << 20
 	if len(data) > maxFileSize {
+		fmt.Println("BAD SIZE")
+		metrics.LayerErrorCounter.WithLabelValues("Static Service", "UploadStatic").Inc()
 		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("размер файла превышает 5MB"))
 	}
 
 	contentType := http.DetectContentType(data)
 	ext, allowed := allowedTypes[contentType]
 	if !allowed {
+		fmt.Println("BAD CONTENT TYPE")
+		metrics.LayerErrorCounter.WithLabelValues("Static Service", "UploadStatic").Inc()
 		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("недопустимый формат файла"))
 	}
 
 	if err := s.validateImageContent(data, contentType); err != nil {
+		fmt.Println("BAD CONTENT")
 		metrics.LayerErrorCounter.WithLabelValues("Static Service", "UploadStatic").Inc()
 		return nil, err
 	}

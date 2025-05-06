@@ -2,6 +2,7 @@ package main
 
 import (
 	"ResuMatch/internal/config"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository/postgres"
 	"ResuMatch/internal/transport/grpc/interceptors"
 	"ResuMatch/internal/transport/grpc/static"
@@ -22,6 +23,8 @@ func main() {
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}
+
+	metrics.Init("resumatch")
 
 	staticConn, err := connector.NewPostgresConnection(cfg.Postgres)
 	if err != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"ResuMatch/internal/config"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/transport/grpc/auth"
 	authPROTO "ResuMatch/internal/transport/grpc/auth/proto"
@@ -21,6 +22,8 @@ func main() {
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}
+
+	metrics.Init("resumatch")
 
 	// Redis Connection
 	sessionConn, err := connector.NewRedisConnection(cfg.Redis)

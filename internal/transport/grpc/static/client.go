@@ -5,6 +5,7 @@ import (
 	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/transport/grpc/interceptors"
 	staticPROTO "ResuMatch/internal/transport/grpc/static/proto"
+	"ResuMatch/internal/transport/grpc/utils"
 	"context"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
@@ -36,7 +37,7 @@ func (gw *Gateway) UploadStatic(ctx context.Context, data []byte) (*dto.UploadSt
 	resp, err := gw.staticClient.UploadStatic(ctx, &staticPROTO.UploadStaticRequest{Data: data})
 	if err != nil {
 		metrics.StaticServiceCallCounter.WithLabelValues("UploadStatic", "500").Inc()
-		return nil, err
+		return nil, utils.FromGRPCError(err)
 	}
 
 	staticDTO := &dto.UploadStaticResponse{
@@ -55,11 +56,11 @@ func (gw *Gateway) GetStatic(ctx context.Context, id int) (string, error) {
 	resp, err := gw.staticClient.GetStatic(ctx, &staticPROTO.FileID{Id: uint64(id)})
 	if err != nil {
 		metrics.StaticServiceCallCounter.WithLabelValues("GetStatic", "500").Inc()
-		return "", err
+		return "", utils.FromGRPCError(err)
 	}
 
 	metrics.StaticServiceCallCounter.WithLabelValues("GetStatic", "200").Inc()
-	return resp.Path, err
+	return resp.Path, nil
 
 }
 
@@ -70,7 +71,7 @@ func (gw *Gateway) DeleteStatic(ctx context.Context, id int) error {
 	_, err := gw.staticClient.DeleteStatic(ctx, &staticPROTO.FileID{Id: uint64(id)})
 	if err != nil {
 		metrics.StaticServiceCallCounter.WithLabelValues("DeleteStatic", "500").Inc()
-		return err
+		return utils.FromGRPCError(err)
 	}
 
 	metrics.StaticServiceCallCounter.WithLabelValues("DeleteStatic", "200").Inc()

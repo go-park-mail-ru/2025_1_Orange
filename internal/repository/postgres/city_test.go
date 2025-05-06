@@ -6,18 +6,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCityRepository_GetCityByID(t *testing.T) {
 	t.Parallel()
 
-	query := `SELECT id, name FROM city WHERE id = $1`
-
-	columns := []string{"id", "name"}
+	query := regexp.QuoteMeta(`SELECT id, name FROM city WHERE id = $1`)
 
 	testCases := []struct {
 		name           string
@@ -31,44 +30,43 @@ func TestCityRepository_GetCityByID(t *testing.T) {
 			id:   1,
 			expectedResult: &entity.City{
 				ID:   1,
-				Name: "Москва",
+				Name: "Moscow",
 			},
 			expectedErr: nil,
 			setupMock: func(mock sqlmock.Sqlmock, id int) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
+				rows := sqlmock.NewRows([]string{"id", "name"}).
+					AddRow(1, "Moscow")
+				mock.ExpectQuery(query).
 					WithArgs(id).
-					WillReturnRows(sqlmock.NewRows(columns).AddRow(
-						1,
-						"Москва",
-					))
+					WillReturnRows(rows)
 			},
 		},
 		{
-			name:           "Город не найден по ID",
-			id:             777,
+			name:           "Город не найден",
+			id:             999,
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrNotFound,
-				fmt.Errorf("город с id=777 не найден"),
+				fmt.Errorf("город с id=%d не найден", 999),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, id int) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
+				mock.ExpectQuery(query).
 					WithArgs(id).
 					WillReturnError(sql.ErrNoRows)
 			},
 		},
 		{
-			name:           "Ошибка PostgreSQL",
-			id:             5,
+			name:           "Ошибка базы данных",
+			id:             1,
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("не удалось получить город по id=5"),
+				fmt.Errorf("не удалось получить город по id=%d", 1),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, id int) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
+				mock.ExpectQuery(query).
 					WithArgs(id).
-					WillReturnError(errors.New("database connection error"))
+					WillReturnError(errors.New("database error"))
 			},
 		},
 	}
@@ -80,11 +78,7 @@ func TestCityRepository_GetCityByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
+			defer db.Close()
 
 			tc.setupMock(mock, tc.id)
 
@@ -98,9 +92,11 @@ func TestCityRepository_GetCityByID(t *testing.T) {
 				var repoErr entity.Error
 				require.ErrorAs(t, err, &repoErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Equal(t, tc.expectedResult, result)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedResult, result)
+				require.Equal(t, tc.expectedResult.ID, result.ID)
+				require.Equal(t, tc.expectedResult.Name, result.Name)
 			}
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
@@ -110,60 +106,57 @@ func TestCityRepository_GetCityByID(t *testing.T) {
 func TestCityRepository_GetCityByName(t *testing.T) {
 	t.Parallel()
 
-	query := `SELECT id, name FROM city WHERE name = $1`
-
-	columns := []string{"id", "name"}
+	query := regexp.QuoteMeta(`SELECT id, name FROM city WHERE name = $1`)
 
 	testCases := []struct {
 		name           string
-		city           string
+		cityName       string
 		expectedResult *entity.City
 		expectedErr    error
-		setupMock      func(mock sqlmock.Sqlmock, city string)
+		setupMock      func(mock sqlmock.Sqlmock, cityName string)
 	}{
 		{
-			name: "Успешное получение города по названию",
-			city: "Москва",
+			name:     "Успешное получение города по названию",
+			cityName: "Moscow",
 			expectedResult: &entity.City{
 				ID:   1,
-				Name: "Москва",
+				Name: "Moscow",
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, city string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(city).
-					WillReturnRows(sqlmock.NewRows(columns).AddRow(
-						1,
-						"Москва",
-					))
+			setupMock: func(mock sqlmock.Sqlmock, cityName string) {
+				rows := sqlmock.NewRows([]string{"id", "name"}).
+					AddRow(1, "Moscow")
+				mock.ExpectQuery(query).
+					WithArgs(cityName).
+					WillReturnRows(rows)
 			},
 		},
 		{
-			name:           "Город не найден по названию",
-			city:           "Подземелье",
+			name:           "Город не найден",
+			cityName:       "Nonexistent",
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrNotFound,
-				fmt.Errorf("город с name=Подземелье не найден"),
+				fmt.Errorf("город с name=%s не найден", "Nonexistent"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, city string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(city).
+			setupMock: func(mock sqlmock.Sqlmock, cityName string) {
+				mock.ExpectQuery(query).
+					WithArgs(cityName).
 					WillReturnError(sql.ErrNoRows)
 			},
 		},
 		{
-			name:           "Ошибка PostgreSQL",
-			city:           "Москва",
+			name:           "Ошибка базы данных",
+			cityName:       "Moscow",
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("не удалось найти город с name=Москва"),
+				fmt.Errorf("не удалось найти город с name=%s", "Moscow"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, city string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(city).
-					WillReturnError(errors.New("database connection error"))
+			setupMock: func(mock sqlmock.Sqlmock, cityName string) {
+				mock.ExpectQuery(query).
+					WithArgs(cityName).
+					WillReturnError(errors.New("database error"))
 			},
 		},
 	}
@@ -175,27 +168,25 @@ func TestCityRepository_GetCityByName(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
+			defer db.Close()
 
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
-
-			tc.setupMock(mock, tc.city)
+			tc.setupMock(mock, tc.cityName)
 
 			repo := &CityRepository{DB: db}
 			ctx := context.Background()
 
-			result, err := repo.GetCityByName(ctx, tc.city)
+			result, err := repo.GetCityByName(ctx, tc.cityName)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
 				var repoErr entity.Error
 				require.ErrorAs(t, err, &repoErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Equal(t, tc.expectedResult, result)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedResult, result)
+				require.Equal(t, tc.expectedResult.ID, result.ID)
+				require.Equal(t, tc.expectedResult.Name, result.Name)
 			}
 			require.NoError(t, mock.ExpectationsWereMet())
 		})

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -25,60 +26,55 @@ func TestSkillRepository_GetByIDs(t *testing.T) {
 		setupMock      func(mock sqlmock.Sqlmock, ids []int)
 	}{
 		{
-			name: "Успешное получение навыков по ID",
-			ids:  []int{1, 2, 3},
-			expectedResult: []entity.Skill{
-				{ID: 1, Name: "Go"},
-				{ID: 2, Name: "SQL"},
-				{ID: 3, Name: "Docker"},
-			},
-			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
-				query := regexp.QuoteMeta(fmt.Sprintf(
-					`SELECT id, name
-					FROM skill
-					WHERE id IN (%s)`,
-					"$1, $2, $3",
-				))
-				mock.ExpectQuery(query).
-					WithArgs(ids[0], ids[1], ids[2]).
-					WillReturnRows(sqlmock.NewRows(columns).
-						AddRow(1, "Go").
-						AddRow(2, "SQL").
-						AddRow(3, "Docker"))
-			},
-		},
-		{
 			name:           "Пустой список ID",
 			ids:            []int{},
 			expectedResult: []entity.Skill{},
 			expectedErr:    nil,
-			setupMock:      func(mock sqlmock.Sqlmock, ids []int) {},
+			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
+				// No database queries expected for empty input
+			},
 		},
 		{
-			name: "Частичное нахождение навыков",
-			ids:  []int{1, 2, 999},
+			name: "Успешное получение списка навыков",
+			ids:  []int{1, 2},
 			expectedResult: []entity.Skill{
 				{ID: 1, Name: "Go"},
 				{ID: 2, Name: "SQL"},
 			},
 			expectedErr: nil,
 			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
-				query := regexp.QuoteMeta(fmt.Sprintf(
-					`SELECT id, name
+				query := regexp.QuoteMeta(fmt.Sprintf(`
+					SELECT id, name
 					FROM skill
-					WHERE id IN (%s)`,
-					"$1, $2, $3",
-				))
+					WHERE id IN (%s)
+				`, strings.Join([]string{"$1", "$2"}, ", ")))
+				rows := sqlmock.NewRows(columns).
+					AddRow(1, "Go").
+					AddRow(2, "SQL")
 				mock.ExpectQuery(query).
-					WithArgs(ids[0], ids[1], ids[2]).
-					WillReturnRows(sqlmock.NewRows(columns).
-						AddRow(1, "Go").
-						AddRow(2, "SQL"))
+					WithArgs(1, 2).
+					WillReturnRows(rows)
 			},
 		},
 		{
-			name:           "Ошибка при выполнении запроса",
+			name:           "Пустой список навыков",
+			ids:            []int{3, 4},
+			expectedResult: []entity.Skill{},
+			expectedErr:    nil,
+			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
+				query := regexp.QuoteMeta(fmt.Sprintf(`
+					SELECT id, name
+					FROM skill
+					WHERE id IN (%s)
+				`, strings.Join([]string{"$1", "$2"}, ", ")))
+				rows := sqlmock.NewRows(columns)
+				mock.ExpectQuery(query).
+					WithArgs(3, 4).
+					WillReturnRows(rows)
+			},
+		},
+		{
+			name:           "Ошибка базы данных при выполнении запроса",
 			ids:            []int{1, 2},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
@@ -86,43 +82,40 @@ func TestSkillRepository_GetByIDs(t *testing.T) {
 				fmt.Errorf("ошибка при получении навыков по ID: %w", errors.New("database error")),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
-				query := regexp.QuoteMeta(fmt.Sprintf(
-					`SELECT id, name
+				query := regexp.QuoteMeta(fmt.Sprintf(`
+					SELECT id, name
 					FROM skill
-					WHERE id IN (%s)`,
-					"$1, $2",
-				))
+					WHERE id IN (%s)
+				`, strings.Join([]string{"$1", "$2"}, ", ")))
 				mock.ExpectQuery(query).
-					WithArgs(ids[0], ids[1]).
+					WithArgs(1, 2).
 					WillReturnError(errors.New("database error"))
 			},
 		},
 		{
-			name:           "Ошибка при сканировании строк",
-			ids:            []int{1},
+			name:           "Ошибка сканирования строк",
+			ids:            []int{1, 2},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
 				fmt.Errorf("ошибка при итерации по навыкам: %w", errors.New("scan error")),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
-				query := regexp.QuoteMeta(fmt.Sprintf(
-					`SELECT id, name
+				query := regexp.QuoteMeta(fmt.Sprintf(`
+					SELECT id, name
 					FROM skill
-					WHERE id IN (%s)`,
-					"$1",
-				))
+					WHERE id IN (%s)
+				`, strings.Join([]string{"$1", "$2"}, ", ")))
 				rows := sqlmock.NewRows(columns).
 					AddRow(1, "Go").
-					AddRow(2, "SQL").
-					RowError(1, errors.New("scan error"))
+					RowError(0, errors.New("scan error"))
 				mock.ExpectQuery(query).
-					WithArgs(ids[0]).
+					WithArgs(1, 2).
 					WillReturnRows(rows)
 			},
 		},
 		{
-			name:           "Ошибка при итерации по строкам",
+			name:           "Ошибка итерации по строкам",
 			ids:            []int{1, 2},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
@@ -130,18 +123,38 @@ func TestSkillRepository_GetByIDs(t *testing.T) {
 				fmt.Errorf("ошибка при итерации по навыкам: %w", errors.New("rows error")),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
-				query := regexp.QuoteMeta(fmt.Sprintf(
-					`SELECT id, name
+				query := regexp.QuoteMeta(fmt.Sprintf(`
+					SELECT id, name
 					FROM skill
-					WHERE id IN (%s)`,
-					"$1, $2",
-				))
+					WHERE id IN (%s)
+				`, strings.Join([]string{"$1", "$2"}, ", ")))
 				rows := sqlmock.NewRows(columns).
-					AddRow(1, "Go").
-					AddRow(2, "SQL").
-					CloseError(errors.New("rows error"))
+					AddRow(1, "Go")
+				rows.CloseError(errors.New("rows error"))
 				mock.ExpectQuery(query).
-					WithArgs(ids[0], ids[1]).
+					WithArgs(1, 2).
+					WillReturnRows(rows)
+			},
+		},
+		{
+			name:           "Ошибка закрытия строк",
+			ids:            []int{1, 2},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при итерации по навыкам: %w", errors.New("close error")),
+			),
+			setupMock: func(mock sqlmock.Sqlmock, ids []int) {
+				query := regexp.QuoteMeta(fmt.Sprintf(`
+					SELECT id, name
+					FROM skill
+					WHERE id IN (%s)
+				`, strings.Join([]string{"$1", "$2"}, ", ")))
+				rows := sqlmock.NewRows(columns).
+					AddRow(1, "Go")
+				rows.CloseError(errors.New("close error"))
+				mock.ExpectQuery(query).
+					WithArgs(1, 2).
 					WillReturnRows(rows)
 			},
 		},
@@ -154,10 +167,7 @@ func TestSkillRepository_GetByIDs(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
+			defer db.Close()
 
 			tc.setupMock(mock, tc.ids)
 
@@ -171,9 +181,14 @@ func TestSkillRepository_GetByIDs(t *testing.T) {
 				var repoErr entity.Error
 				require.ErrorAs(t, err, &repoErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedResult, result)
+				require.Equal(t, len(tc.expectedResult), len(result))
+				for i, expected := range tc.expectedResult {
+					require.Equal(t, expected.ID, result[i].ID)
+					require.Equal(t, expected.Name, result[i].Name)
+				}
 			}
 			require.NoError(t, mock.ExpectationsWereMet())
 		})

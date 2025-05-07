@@ -505,7 +505,11 @@ func TestVacancyRepository_Create(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.inputVacancy)
 
@@ -733,7 +737,11 @@ func TestVacancyRepository_AddSkills(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID, tc.skillIDs)
 
@@ -963,7 +971,11 @@ func TestVacancyRepository_AddCity(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID, tc.cityIDs)
 
@@ -1159,7 +1171,11 @@ func TestVacancyRepository_CreateSkillIfNotExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.skillName)
 
@@ -1318,7 +1334,11 @@ func TestVacancyRepository_GetByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -1874,7 +1894,11 @@ func TestVacancyRepository_Update(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.inputVacancy)
 
@@ -2319,7 +2343,11 @@ func TestVacancyRepository_GetAll(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.limit, tc.offset)
 
@@ -2437,7 +2465,11 @@ func TestVacancyRepository_Delete(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -2565,7 +2597,11 @@ func TestVacancyRepository_GetSkillsByVacancyID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -2699,7 +2735,11 @@ func TestVacancyRepository_GetCityByVacancyID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -2781,7 +2821,11 @@ func TestVacancyRepository_DeleteSkills(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -2856,7 +2900,11 @@ func TestVacancyRepository_DeleteCity(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID)
 
@@ -2981,7 +3029,11 @@ func TestVacancyRepository_FindSkillIDsByNames(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.skillNames)
 
@@ -3122,7 +3174,11 @@ func TestVacancyRepository_FindCityIDsByNames(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.cityNames)
 
@@ -3203,7 +3259,11 @@ func TestVacancyRepository_ResponseExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID, tc.applicantID)
 
@@ -3340,7 +3400,11 @@ func TestVacancyRepository_CreateResponse(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID, tc.applicantID)
 
@@ -3456,7 +3520,11 @@ func TestVacancyRepository_FindSpecializationIDByName(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.specializationName)
 
@@ -3603,7 +3671,11 @@ func TestVacancyRepository_CreateSpecializationIfNotExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.specializationName)
 
@@ -3812,7 +3884,11 @@ func TestVacancyRepository_GetActiveVacanciesByEmployerID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.employerID, tc.limit, tc.offset)
 
@@ -4049,7 +4125,11 @@ func TestVacancyRepository_SearchVacancies(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.searchQuery, tc.limit, tc.offset)
 
@@ -4258,7 +4338,11 @@ func TestVacancyRepository_GetVacanciesByApplicantID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.applicantID)
 
@@ -4499,7 +4583,11 @@ func TestVacancyRepository_SearchVacanciesByEmployerID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.employerID, tc.searchQuery, tc.limit, tc.offset)
 
@@ -4672,7 +4760,11 @@ func TestVacancyRepository_FindSpecializationIDsByNames(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.specializationNames)
 
@@ -5050,7 +5142,11 @@ func TestVacancyRepository_SearchVacanciesBySpecializations(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.specializationIDs, tc.limit, tc.offset)
 
@@ -5476,7 +5572,11 @@ func TestVacancyRepository_SearchVacanciesByQueryAndSpecializations(t *testing.T
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.searchQuery, tc.specializationIDs, tc.limit, tc.offset)
 
@@ -5598,7 +5698,11 @@ func TestVacancyRepository_CreateLike(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID, tc.applicantID)
 
@@ -5695,7 +5799,11 @@ func TestVacancyRepository_DeleteLike(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID, tc.applicantID)
 
@@ -5956,7 +6064,11 @@ func TestVacancyRepository_GetlikedVacancies(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.applicantID, tc.limit, tc.offset)
 
@@ -6061,7 +6173,11 @@ func TestVacancyRepository_LikeExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.vacancyID, tc.applicantID)
 

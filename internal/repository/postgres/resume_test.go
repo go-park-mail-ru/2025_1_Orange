@@ -304,8 +304,11 @@ func TestResumeRepository_Create(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			//nolint:errcheck
-			defer db.Close() //nolint:errcheck
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.inputResume)
 
@@ -510,8 +513,11 @@ func TestResumeRepository_AddSkills(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			//nolint:errcheck
-			defer db.Close() //nolint:errcheck
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID, tc.skillIDs)
 
@@ -843,8 +849,11 @@ func TestResumeRepository_AddWorkExperience(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			//nolint:errcheck
-			defer db.Close() //nolint:errcheck
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.inputWorkExperience)
 
@@ -977,8 +986,11 @@ func TestResumeRepository_GetByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			//nolint:errcheck
-			defer db.Close() //nolint:errcheck
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -1119,7 +1131,11 @@ func TestResumeRepository_GetSkillsByResumeID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -1325,7 +1341,11 @@ func TestResumeRepository_GetWorkExperienceByResumeID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -1532,7 +1552,11 @@ func TestResumeRepository_AddSpecializations(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID, tc.specializationIDs)
 
@@ -1661,7 +1685,11 @@ func TestResumeRepository_GetSpecializationsByResumeID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -1979,7 +2007,11 @@ func TestResumeRepository_Update(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.inputResume)
 
@@ -2084,7 +2116,11 @@ func TestResumeRepository_Delete(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -2159,7 +2195,11 @@ func TestResumeRepository_DeleteSkills(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -2235,7 +2275,11 @@ func TestResumeRepository_DeleteSpecializations(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -2311,7 +2355,11 @@ func TestResumeRepository_DeleteWorkExperiences(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.resumeID)
 
@@ -2698,7 +2746,11 @@ func TestResumeRepository_UpdateWorkExperience(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.inputWorkExperience)
 
@@ -2803,7 +2855,11 @@ func TestResumeRepository_DeleteWorkExperience(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.workExpID)
 
@@ -3010,7 +3066,11 @@ func TestResumeRepository_GetAll(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.limit, tc.offset)
 
@@ -3267,7 +3327,11 @@ func TestResumeRepository_GetAllResumesByApplicantID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.applicantID, tc.limit, tc.offset)
 
@@ -3415,7 +3479,11 @@ func TestResumeRepository_FindSkillIDsByNames(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.skillNames)
 
@@ -3518,7 +3586,11 @@ func TestResumeRepository_FindSpecializationIDByName(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.specializationName)
 
@@ -3653,7 +3725,11 @@ func TestResumeRepository_FindSpecializationIDsByNames(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.specializationNames)
 
@@ -3794,7 +3870,11 @@ func TestResumeRepository_CreateSkillIfNotExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.skillName)
 
@@ -3934,7 +4014,11 @@ func TestResumeRepository_CreateSpecializationIfNotExists(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.specializationName)
 
@@ -4179,7 +4263,11 @@ func TestResumeRepository_SearchResumesByProfession(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.profession, tc.limit, tc.offset)
 
@@ -4443,7 +4531,11 @@ func TestResumeRepository_SearchResumesByProfessionForApplicant(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.applicantID, tc.profession, tc.limit, tc.offset)
 

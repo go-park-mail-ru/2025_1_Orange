@@ -4,7 +4,6 @@ import (
 	"ResuMatch/internal/entity"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 )
 
@@ -25,7 +24,6 @@ var errorToStatus = map[error]int{
 func ToAPIError(err error) APIError {
 	var apiError APIError
 	var customError entity.Error
-	fmt.Println(err.Error())
 	if errors.As(err, &customError) {
 		apiError.Message = customError.InternalErr().Error()
 		svcError := customError.ClientErr()

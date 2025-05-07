@@ -510,7 +510,8 @@ func TestResumeRepository_AddSkills(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			//nolint:errcheck
+			defer db.Close() //nolint:errcheck
 
 			tc.setupMock(mock, tc.resumeID, tc.skillIDs)
 
@@ -842,7 +843,8 @@ func TestResumeRepository_AddWorkExperience(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			//nolint:errcheck
+			defer db.Close() //nolint:errcheck
 
 			tc.setupMock(mock, tc.inputWorkExperience)
 
@@ -975,7 +977,8 @@ func TestResumeRepository_GetByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			//nolint:errcheck
+			defer db.Close() //nolint:errcheck
 
 			tc.setupMock(mock, tc.resumeID)
 

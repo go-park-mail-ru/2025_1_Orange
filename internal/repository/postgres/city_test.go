@@ -78,6 +78,7 @@ func TestCityRepository_GetCityByID(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
+			//nolint:errcheck
 			defer db.Close() //nolint:errcheck
 
 			tc.setupMock(mock, tc.id)
@@ -168,6 +169,7 @@ func TestCityRepository_GetCityByName(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
+			//nolint:errcheck
 			defer db.Close() //nolint:errcheck
 
 			tc.setupMock(mock, tc.cityName)

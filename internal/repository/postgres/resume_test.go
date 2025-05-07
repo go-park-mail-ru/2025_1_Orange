@@ -304,6 +304,7 @@ func TestResumeRepository_Create(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
+			//nolint:errcheck
 			defer db.Close() //nolint:errcheck
 
 			tc.setupMock(mock, tc.inputResume)

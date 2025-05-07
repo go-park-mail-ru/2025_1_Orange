@@ -261,9 +261,9 @@ ResuMatch/internal/transport/http/resume.go:503.2,505.59 3 1
 ResuMatch/internal/transport/http/resume.go:505.59,508.3 2 0
 ResuMatch/internal/transport/http/specialization.go:17.99,19.2 1 0
 ResuMatch/internal/transport/http/specialization.go:21.61,26.2 3 0
-ResuMatch/internal/transport/http/specialization.go:36.99,41.16 3 0
-ResuMatch/internal/transport/http/specialization.go:41.16,44.3 2 0
-ResuMatch/internal/transport/http/specialization.go:47.2,49.71 3 0
+ResuMatch/internal/transport/http/specialization.go:36.99,41.16 3 1
+ResuMatch/internal/transport/http/specialization.go:41.16,44.3 2 1
+ResuMatch/internal/transport/http/specialization.go:47.2,49.71 3 1
 ResuMatch/internal/transport/http/specialization.go:49.71,52.3 2 0
 ResuMatch/internal/transport/http/vacancy.go:22.102,28.2 1 0
 ResuMatch/internal/transport/http/vacancy.go:30.54,46.2 15 0

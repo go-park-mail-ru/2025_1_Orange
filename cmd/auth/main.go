@@ -10,8 +10,10 @@ import (
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -47,6 +49,13 @@ func main() {
 
 	authGRPC := auth.NewGRPC(authService)
 	authPROTO.RegisterAuthServiceServer(grpcServer, authGRPC)
+
+	http.Handle("/metrics", promhttp.Handler())
+	go func() {
+		if err := http.ListenAndServe(cfg.MetricPort, nil); err != nil {
+			l.Log.Fatalf("Ошибка запуска HTTP-сервера для метрик авторизации: %v", err)
+		}
+	}()
 
 	listener, err := net.Listen("tcp", cfg.Addr())
 	if err != nil {

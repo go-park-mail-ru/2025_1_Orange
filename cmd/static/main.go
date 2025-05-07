@@ -10,7 +10,9 @@ import (
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -44,6 +46,13 @@ func main() {
 
 	staticGRPC := static.NewGRPC(staticService)
 	staticPROTO.RegisterStaticServiceServer(grpcServer, staticGRPC)
+
+	http.Handle("/metrics", promhttp.Handler())
+	go func() {
+		if err := http.ListenAndServe(cfg.MetricPort, nil); err != nil {
+			l.Log.Fatalf("Ошибка запуска HTTP-сервера для метрик статики: %v", err)
+		}
+	}()
 
 	listener, err := net.Listen("tcp", cfg.Addr())
 	if err != nil {

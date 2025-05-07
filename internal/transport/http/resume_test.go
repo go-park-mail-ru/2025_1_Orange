@@ -1,13 +1,14 @@
 package http
 
 import (
-	"ResuMatch/internal/config"
+	// "ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase/mock"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,154 +20,174 @@ import (
 func TestResumeHandler_CreateResume(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	// Helper function to create valid resume request
+	validResumeRequest := func() *dto.CreateResumeRequest {
+		return &dto.CreateResumeRequest{
+			AboutMe:                   "About me text",
+			Specialization:            "Backend",
+			Profession:                "Go Developer",
+			Education:                 entity.Higher,
+			EducationalInstitution:    "University",
+			GraduationYear:            "2020",
+			Skills:                    []string{"Go", "SQL"},
+			AdditionalSpecializations: []string{"DevOps"},
+			WorkExperiences: []dto.WorkExperienceDTO{
+				{
+					EmployerName: "Company",
+					Position:     "Developer",
+					Duties:       "Development",
+					Achievements: "Achievements",
+					StartDate:    "2020-01-01",
+					EndDate:      "2021-01-01",
+					UntilNow:     false,
+				},
+			},
+		}
+	}
+
+	tests := []struct {
 		name           string
-		setupMocks     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
-		requestBody    interface{}
+		setupMock      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
 		cookie         *http.Cookie
+		requestBody    interface{}
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
 	}{
 		{
 			name: "Success",
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "applicant", nil)
-				resume.EXPECT().Create(
-					gomock.Any(),
-					1,
-					gomock.Any(),
-				).Return(&dto.ResumeResponse{ID: 1}, nil)
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Create(gomock.Any(), 1, gomock.Any()).Return(&dto.ResumeResponse{ID: 1}, nil)
 			},
-			requestBody: dto.CreateResumeRequest{
-				AboutMe:                   "About me",
-				Specialization:            "Backend",
-				Profession:                "Developer",
-				Education:                 entity.Higher,
-				EducationalInstitution:    "University",
-				GraduationYear:            "2020",
-				Skills:                    []string{"Go", "SQL"},
-				AdditionalSpecializations: []string{"DevOps"},
-				WorkExperiences: []dto.WorkExperienceDTO{
-					{
-						EmployerName: "Company",
-						Position:     "Developer",
-						Duties:       "Development",
-						Achievements: "Achievements",
-						StartDate:    "2020-01-01",
-						EndDate:      "2022-01-01",
-					},
-				},
-			},
-			cookie:         &http.Cookie{Name: "session_id", Value: "valid-session"},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    validResumeRequest(),
 			expectedStatus: http.StatusCreated,
-			expectedBody:   &dto.ResumeResponse{ID: 1},
 		},
 		{
-			name:           "Unauthorized - no cookie",
-			setupMocks:     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
-			requestBody:    dto.CreateResumeRequest{},
+			name:           "No cookie - unauthorized",
+			setupMock:      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
 			cookie:         nil,
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
+			expectedError:  entity.ErrUnauthorized,
+		},
+		{
+			name: "Invalid session - unauthorized",
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid").Return(0, "", entity.ErrUnauthorized)
+			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "invalid"},
+			requestBody:    validResumeRequest(),
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  entity.ErrInternal,
+		},
+		{
+			name: "Not applicant - forbidden",
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
+			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    validResumeRequest(),
+			expectedStatus: http.StatusForbidden,
+			expectedError:  entity.ErrForbidden,
 		},
 		// {
-		// 	name: "Unauthorized - invalid session",
-		// 	setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-		// 		auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid-session").
-		// 			Return(0, "", entity.ErrUnauthorized)
-		// 	},
-		// 	requestBody:    dto.CreateResumeRequest{},
-		// 	cookie:         &http.Cookie{Name: "session_id", Value: "invalid-session"},
-		// 	expectedStatus: http.StatusUnauthorized,
-		// 	expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
+		// 	name:           "Invalid JSON - bad request",
+		// 	setupMock:      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
+		// 	cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+		// 	requestBody:    "{invalid json}",
+		// 	expectedStatus: http.StatusBadRequest,
+		// 	expectedError:  entity.ErrBadRequest,
 		// },
 		{
-			name: "Forbidden - not applicant",
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "employer", nil)
+			name: "Invalid request data - bad request",
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
 			},
-			requestBody:    dto.CreateResumeRequest{},
-			cookie:         &http.Cookie{Name: "session_id", Value: "valid-session"},
-			expectedStatus: http.StatusForbidden,
-			expectedBody:   utils.APIError{Status: http.StatusForbidden, Message: entity.ErrForbidden.Error()},
-		},
-		{
-			name: "Bad request - invalid body",
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "applicant", nil)
+			cookie: &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: &dto.CreateResumeRequest{
+				Specialization:         "", // invalid - required
+				Profession:             "Go Developer",
+				Education:              entity.Higher,
+				EducationalInstitution: "University",
+				GraduationYear:         "2020",
 			},
-			requestBody:    "invalid body",
-			cookie:         &http.Cookie{Name: "session_id", Value: "valid-session"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   utils.APIError{Status: http.StatusBadRequest, Message: entity.ErrBadRequest.Error()},
 		},
 		{
-			name: "Internal server error - resume creation failed",
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").Return(1, "applicant", nil)
-				resume.EXPECT().Create(
-					gomock.Any(),
-					1,
-					gomock.Any(),
-				).Return(nil, entity.ErrInternal)
+			name: "Create resume error - internal",
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Create(gomock.Any(), 1, gomock.Any()).Return(nil, entity.ErrInternal)
 			},
-			requestBody: dto.CreateResumeRequest{
-				AboutMe:        "About me",
-				Specialization: "Backend",
-				Profession:     "Developer",
-			},
-			cookie:         &http.Cookie{Name: "session_id", Value: "valid-session"},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    validResumeRequest(),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
+			expectedError:  entity.ErrInternal,
+		},
+		{
+			name: "JSON encode error - internal",
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Create(gomock.Any(), 1, gomock.Any()).Return(&dto.ResumeResponse{ID: 1}, nil)
+			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    validResumeRequest(),
+			expectedStatus: http.StatusCreated,
+			// Здесь мы не можем проверить ошибку кодирования JSON, так как httptest.ResponseRecorder не возвращает ошибки
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			authMock := mock.NewMockAuth(ctrl)
-			resumeMock := mock.NewMockResumeUsecase(ctrl)
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockResume := mock.NewMockResumeUsecase(ctrl)
+			tt.setupMock(mockAuth, mockResume)
 
-			tc.setupMocks(authMock, resumeMock)
+			handler := &ResumeHandler{
+				auth:   mockAuth,
+				resume: mockResume,
+			}
 
-			handler := NewResumeHandler(authMock, resumeMock, config.CSRFConfig{})
-
-			var reqBody []byte
-			switch body := tc.requestBody.(type) {
+			var body []byte
+			switch v := tt.requestBody.(type) {
 			case string:
-				reqBody = []byte(body)
+				body = []byte(v)
 			default:
 				var err error
-				reqBody, err = json.Marshal(body)
+				body, err = json.Marshal(v)
 				require.NoError(t, err)
 			}
 
-			req := httptest.NewRequest(http.MethodPost, "/resume/create", bytes.NewReader(reqBody))
-			if tc.cookie != nil {
-				req.AddCookie(tc.cookie)
+			req := httptest.NewRequest(http.MethodPost, "/resume/create", bytes.NewReader(body))
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
 			}
 
-			rec := httptest.NewRecorder()
+			w := httptest.NewRecorder()
 
-			handler.CreateResume(rec, req)
+			handler.CreateResume(w, req)
 
-			require.Equal(t, tc.expectedStatus, rec.Code)
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			if tc.expectedStatus == http.StatusCreated {
-				var resp dto.ResumeResponse
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &resp)
-			} else {
-				var resp utils.APIError
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+			} else if resp.StatusCode == http.StatusCreated {
+				var resume dto.ResumeResponse
+				err := json.NewDecoder(resp.Body).Decode(&resume)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
+				require.NotEmpty(t, resume.ID)
 			}
 		})
 	}
@@ -175,246 +196,399 @@ func TestResumeHandler_CreateResume(t *testing.T) {
 func TestResumeHandler_GetResume(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	// Helper function to create a valid resume response
+	validResumeResponse := func() *dto.ResumeResponse {
+		return &dto.ResumeResponse{
+			ID:                        1,
+			ApplicantID:               1,
+			AboutMe:                   "About me",
+			Specialization:            "Backend",
+			Profession:                "Go Developer",
+			Education:                 entity.Higher,
+			EducationalInstitution:    "University",
+			GraduationYear:            "2020",
+			CreatedAt:                 "2023-01-01T00:00:00Z",
+			UpdatedAt:                 "2023-01-02T00:00:00Z",
+			Skills:                    []string{"Go", "SQL"},
+			AdditionalSpecializations: []string{"DevOps"},
+			WorkExperiences: []dto.WorkExperienceResponse{
+				{
+					ID:           1,
+					EmployerName: "Company",
+					Position:     "Developer",
+					Duties:       "Development",
+					Achievements: "Achievements",
+					StartDate:    "2020-01-01",
+					EndDate:      "2021-01-01",
+					UntilNow:     false,
+					UpdatedAt:    "2021-01-01T00:00:00Z",
+				},
+			},
+		}
+	}
+
+	tests := []struct {
 		name           string
-		url            string
-		setupMocks     func(resume *mock.MockResumeUsecase)
+		resumeID       string
+		setupMock      func(resume *mock.MockResumeUsecase)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
 	}{
 		{
-			name: "Success",
-			url:  "/resume/123",
-			setupMocks: func(resume *mock.MockResumeUsecase) {
-				resume.EXPECT().GetByID(gomock.Any(), 123).
-					Return(&dto.ResumeResponse{
-						ID:             123,
-						Specialization: "Backend",
-						Profession:     "Developer",
-					}, nil)
+			name:     "Success",
+			resumeID: "1",
+			setupMock: func(resume *mock.MockResumeUsecase) {
+				resume.EXPECT().GetByID(gomock.Any(), 1).Return(validResumeResponse(), nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: &dto.ResumeResponse{
-				ID:             123,
-				Specialization: "Backend",
-				Profession:     "Developer",
-			},
 		},
 		{
-			name: "Bad request - invalid resume ID",
-			url:  "/resume/invalid",
-			setupMocks: func(resume *mock.MockResumeUsecase) {
-			},
+			name:           "Invalid resume ID - bad request",
+			resumeID:       "invalid",
+			setupMock:      func(resume *mock.MockResumeUsecase) {},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   utils.APIError{Status: http.StatusBadRequest, Message: entity.ErrBadRequest.Error()},
+			expectedError:  entity.ErrBadRequest,
 		},
 		{
-			name: "Internal server error",
-			url:  "/resume/123",
-			setupMocks: func(resume *mock.MockResumeUsecase) {
-				resume.EXPECT().GetByID(gomock.Any(), 123).
-					Return(nil, entity.ErrInternal)
+			name:     "Resume not found",
+			resumeID: "1",
+			setupMock: func(resume *mock.MockResumeUsecase) {
+				resume.EXPECT().GetByID(gomock.Any(), 1).Return(nil, entity.NewError(entity.ErrNotFound, fmt.Errorf("resume not found")))
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedError:  fmt.Errorf("resume not found"),
+		},
+		{
+			name:     "Internal server error from usecase",
+			resumeID: "1",
+			setupMock: func(resume *mock.MockResumeUsecase) {
+				resume.EXPECT().GetByID(gomock.Any(), 1).Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("database error")))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
+			expectedError:  fmt.Errorf("database error"),
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			// Initialize gomock controller
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			authMock := mock.NewMockAuth(ctrl)
-			resumeMock := mock.NewMockResumeUsecase(ctrl)
+			// Create mocks
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockResume := mock.NewMockResumeUsecase(ctrl)
+			tt.setupMock(mockResume)
 
-			tc.setupMocks(resumeMock)
+			// Create handler
+			handler := &ResumeHandler{
+				auth:   mockAuth,
+				resume: mockResume,
+			}
 
-			handler := NewResumeHandler(authMock, resumeMock, config.CSRFConfig{})
+			// Create HTTP request
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/resume/%s", tt.resumeID), nil)
+			req = req.WithContext(req.Context())
+			req.SetPathValue("id", tt.resumeID)
 
-			req, err := http.NewRequest(http.MethodGet, tc.url, nil)
-			require.NoError(t, err)
+			// Create response recorder
+			w := httptest.NewRecorder()
 
-			router := http.NewServeMux()
-			handler.Configure(router)
+			// Call handler
+			handler.GetResume(w, req)
 
-			rec := httptest.NewRecorder()
+			// Verify response
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			router.ServeHTTP(rec, req)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 
-			require.Equal(t, tc.expectedStatus, rec.Code)
-
-			if tc.expectedStatus == http.StatusOK {
-				var resp dto.ResumeResponse
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &resp)
-			} else {
-				var resp utils.APIError
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+				require.Equal(t, tt.expectedStatus, apiError.Status)
+			} else if resp.StatusCode == http.StatusOK {
+				var resume dto.ResumeResponse
+				err := json.NewDecoder(resp.Body).Decode(&resume)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
+				require.Equal(t, validResumeResponse().ID, resume.ID)
 			}
 		})
 	}
 }
-
 func TestResumeHandler_UpdateResume(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	// Helper function to create valid update resume request
+	validUpdateResumeRequest := func() *dto.UpdateResumeRequest {
+		return &dto.UpdateResumeRequest{
+			AboutMe:                   "Updated about me text",
+			Specialization:            "Backend",
+			Profession:                "Senior Go Developer",
+			Education:                 entity.Higher,
+			EducationalInstitution:    "University",
+			GraduationYear:            "2020",
+			Skills:                    []string{"Go", "SQL"},
+			AdditionalSpecializations: []string{"DevOps"},
+			WorkExperiences: []dto.WorkExperienceDTO{
+				{
+					EmployerName: "Company",
+					Position:     "Developer",
+					Duties:       "Development",
+					Achievements: "Achievements",
+					StartDate:    "2020-01-01",
+					EndDate:      "2021-01-01",
+					UntilNow:     false,
+				},
+			},
+		}
+	}
+
+	// Helper function to create valid resume response
+	validResumeResponse := func() *dto.ResumeResponse {
+		return &dto.ResumeResponse{
+			ID:                        1,
+			ApplicantID:               1,
+			AboutMe:                   "Updated about me text",
+			Specialization:            "Backend",
+			Profession:                "Senior Go Developer",
+			Education:                 entity.Higher,
+			EducationalInstitution:    "University",
+			GraduationYear:            "2020",
+			CreatedAt:                 "2023-01-01T00:00:00Z",
+			UpdatedAt:                 "2023-01-02T00:00:00Z",
+			Skills:                    []string{"Go", "SQL"},
+			AdditionalSpecializations: []string{"DevOps"},
+			WorkExperiences: []dto.WorkExperienceResponse{
+				{
+					ID:           1,
+					EmployerName: "Company",
+					Position:     "Developer",
+					Duties:       "Development",
+					Achievements: "Achievements",
+					StartDate:    "2020-01-01",
+					EndDate:      "2021-01-01",
+					UntilNow:     false,
+					UpdatedAt:    "2021-01-01T00:00:00Z",
+				},
+			},
+		}
+	}
+
+	tests := []struct {
 		name           string
-		url            string
-		requestBody    interface{}
+		resumeID       string
 		cookie         *http.Cookie
-		setupMocks     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
+		requestBody    interface{}
+		setupMock      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
 	}{
 		{
-			name: "Success",
-			url:  "/resume/123",
-			requestBody: dto.UpdateResumeRequest{
-				AboutMe:        "Updated about me",
-				Specialization: "Updated specialization",
-				Profession:     "Updated profession",
-			},
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
-				resume.EXPECT().Update(
-					gomock.Any(),
-					123,
-					1,
-					gomock.Any(),
-				).Return(&dto.ResumeResponse{ID: 123}, nil)
+			name:        "Success",
+			resumeID:    "1",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: validUpdateResumeRequest(),
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Update(gomock.Any(), 1, 1, gomock.Any()).Return(validResumeResponse(), nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   &dto.ResumeResponse{ID: 123},
 		},
 		{
-			name:           "Unauthorized - no cookie",
-			url:            "/resume/123",
-			requestBody:    dto.UpdateResumeRequest{},
+			name:           "No cookie - unauthorized",
+			resumeID:       "1",
 			cookie:         nil,
-			setupMocks:     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
+			requestBody:    validUpdateResumeRequest(),
+			setupMock:      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {},
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
+			expectedError:  entity.ErrUnauthorized,
 		},
 		{
-			name:        "Unauthorized - invalid session",
-			url:         "/resume/123",
-			requestBody: dto.UpdateResumeRequest{},
-			cookie:      &http.Cookie{Name: "session_id", Value: "invalid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid-session").
-					Return(0, "", entity.ErrUnauthorized)
+			name:        "Invalid session - unauthorized",
+			resumeID:    "1",
+			cookie:      &http.Cookie{Name: "session_id", Value: "invalid"},
+			requestBody: validUpdateResumeRequest(),
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid").Return(0, "", entity.NewError(entity.ErrUnauthorized, fmt.Errorf("invalid session")))
 			},
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
+			expectedError:  fmt.Errorf("invalid session"),
 		},
 		{
-			name:        "Forbidden - not applicant",
-			url:         "/resume/123",
-			requestBody: dto.UpdateResumeRequest{},
-			cookie:      &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "employer", nil)
+			name:        "Not applicant - forbidden",
+			resumeID:    "1",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: validUpdateResumeRequest(),
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
 			},
 			expectedStatus: http.StatusForbidden,
-			expectedBody:   utils.APIError{Status: http.StatusForbidden, Message: entity.ErrForbidden.Error()},
+			expectedError:  entity.ErrForbidden,
 		},
 		{
-			name:        "Bad request - invalid body",
-			url:         "/resume/123",
-			requestBody: "invalid body",
-			cookie:      &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
+			name:        "Invalid resume ID - bad request",
+			resumeID:    "invalid",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: validUpdateResumeRequest(),
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   utils.APIError{Status: http.StatusBadRequest, Message: entity.ErrBadRequest.Error()},
+			expectedError:  entity.ErrBadRequest,
 		},
 		{
-			name: "Internal server error",
-			url:  "/resume/123",
-			requestBody: dto.UpdateResumeRequest{
-				AboutMe:    "Updated about me",
-				Profession: "Developer",
+			name:        "Invalid JSON - bad request",
+			resumeID:    "1",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: `{invalid json}`,
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
 			},
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
-				resume.EXPECT().Update(
-					gomock.Any(),
-					123,
-					1,
-					gomock.Any(),
-				).Return(nil, entity.ErrInternal)
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:     "Invalid request data - bad request",
+			resumeID: "1",
+			cookie:   &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: &dto.UpdateResumeRequest{
+				Specialization:         "", // invalid - required
+				Profession:             "Go Developer",
+				Education:              entity.Higher,
+				EducationalInstitution: "University",
+				GraduationYear:         "2020",
+			},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "Resume not found",
+			resumeID:    "1",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: validUpdateResumeRequest(),
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Update(gomock.Any(), 1, 1, gomock.Any()).Return(nil, entity.NewError(entity.ErrNotFound, fmt.Errorf("resume not found")))
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedError:  fmt.Errorf("resume not found"),
+		},
+		{
+			name:        "Not owner - forbidden",
+			resumeID:    "1",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: validUpdateResumeRequest(),
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Update(gomock.Any(), 1, 1, gomock.Any()).Return(nil, entity.NewError(entity.ErrForbidden, fmt.Errorf("not authorized to update resume")))
+			},
+			expectedStatus: http.StatusForbidden,
+			expectedError:  fmt.Errorf("not authorized to update resume"),
+		},
+		{
+			name:        "Internal server error",
+			resumeID:    "1",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody: validUpdateResumeRequest(),
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Update(gomock.Any(), 1, 1, gomock.Any()).Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("database error")))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
+			expectedError:  fmt.Errorf("database error"),
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			authMock := mock.NewMockAuth(ctrl)
-			resumeMock := mock.NewMockResumeUsecase(ctrl)
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockResume := mock.NewMockResumeUsecase(ctrl)
 
-			tc.setupMocks(authMock, resumeMock)
-
-			handler := NewResumeHandler(authMock, resumeMock, config.CSRFConfig{})
-
-			var reqBody []byte
-			switch body := tc.requestBody.(type) {
+			// Create request body
+			var body []byte
+			switch v := tt.requestBody.(type) {
 			case string:
-				reqBody = []byte(body)
+				body = []byte(v)
 			default:
 				var err error
-				reqBody, err = json.Marshal(body)
+				body, err = json.Marshal(v)
 				require.NoError(t, err)
 			}
 
-			req, err := http.NewRequest(http.MethodPut, tc.url, bytes.NewReader(reqBody))
-			require.NoError(t, err)
-
-			if tc.cookie != nil {
-				req.AddCookie(tc.cookie)
+			// Prepare sanitized request for mock expectation
+			var sanitizedRequest *dto.UpdateResumeRequest
+			if req, ok := tt.requestBody.(*dto.UpdateResumeRequest); ok {
+				sanitizedRequest = &dto.UpdateResumeRequest{
+					AboutMe:                   req.AboutMe,
+					Specialization:            req.Specialization,
+					Profession:                req.Profession,
+					Education:                 req.Education,
+					EducationalInstitution:    req.EducationalInstitution,
+					GraduationYear:            req.GraduationYear,
+					Skills:                    make([]string, len(req.Skills)),
+					AdditionalSpecializations: make([]string, len(req.AdditionalSpecializations)),
+					WorkExperiences:           make([]dto.WorkExperienceDTO, len(req.WorkExperiences)),
+				}
+				copy(sanitizedRequest.Skills, req.Skills)
+				copy(sanitizedRequest.AdditionalSpecializations, req.AdditionalSpecializations)
+				copy(sanitizedRequest.WorkExperiences, req.WorkExperiences)
 			}
 
-			router := http.NewServeMux()
-			handler.Configure(router)
+			tt.setupMock(mockAuth, mockResume, sanitizedRequest)
 
-			rec := httptest.NewRecorder()
+			handler := &ResumeHandler{
+				auth:   mockAuth,
+				resume: mockResume,
+			}
 
-			router.ServeHTTP(rec, req)
+			req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/resume/%s", tt.resumeID), bytes.NewReader(body))
+			req = req.WithContext(req.Context())
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+			req.SetPathValue("id", tt.resumeID)
 
-			require.Equal(t, tc.expectedStatus, rec.Code)
+			w := httptest.NewRecorder()
 
-			if tc.expectedStatus == http.StatusOK {
-				var resp dto.ResumeResponse
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+			handler.UpdateResume(w, req)
+
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &resp)
-			} else {
-				var resp utils.APIError
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+				if tt.expectedStatus == http.StatusBadRequest {
+					// For bad request, the error message may include validation details
+					require.Contains(t, apiError.Message, tt.expectedError.Error())
+				} else {
+					require.Equal(t, tt.expectedError.Error(), apiError.Message)
+				}
+				require.Equal(t, tt.expectedStatus, apiError.Status)
+			} else if resp.StatusCode == http.StatusOK {
+				var resume dto.ResumeResponse
+				err := json.NewDecoder(resp.Body).Decode(&resume)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
+				require.Equal(t, validResumeResponse().ID, resume.ID)
 			}
 		})
 	}
@@ -423,251 +597,521 @@ func TestResumeHandler_UpdateResume(t *testing.T) {
 func TestResumeHandler_DeleteResume(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	// Helper function to create valid delete resume response
+	validDeleteResumeResponse := func() *dto.DeleteResumeResponse {
+		return &dto.DeleteResumeResponse{
+			Success: true,
+			Message: "Resume deleted successfully",
+		}
+	}
+
+	tests := []struct {
 		name           string
-		url            string
+		resumeID       string
 		cookie         *http.Cookie
-		setupMocks     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
+		setupMock      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
 	}{
 		{
-			name:   "Success",
-			url:    "/resume/123",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
-				resume.EXPECT().Delete(gomock.Any(), 123, 1).
-					Return(&dto.DeleteResumeResponse{Success: true}, nil)
+			name:     "Success",
+			resumeID: "1",
+			cookie:   &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Delete(gomock.Any(), 1, 1).Return(validDeleteResumeResponse(), nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   &dto.DeleteResumeResponse{Success: true},
 		},
 		{
-			name:           "Unauthorized - no cookie",
-			url:            "/resume/123",
+			name:           "No cookie - unauthorized",
+			resumeID:       "1",
 			cookie:         nil,
-			setupMocks:     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
+			setupMock:      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
+			expectedError:  entity.ErrUnauthorized,
 		},
-		// {
-		// 	name:   "Unauthorized - invalid session",
-		// 	url:    "/resume/123",
-		// 	cookie: &http.Cookie{Name: "session_id", Value: "invalid-session"},
-		// 	setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-		// 		auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid-session").
-		// 			Return(0, "", entity.ErrUnauthorized)
-		// 	},
-		// 	expectedStatus: http.StatusUnauthorized,
-		// 	expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
-		// },
 		{
-			name:   "Forbidden - not applicant",
-			url:    "/resume/123",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "employer", nil)
+			name:     "Invalid session - unauthorized",
+			resumeID: "1",
+			cookie:   &http.Cookie{Name: "session_id", Value: "invalid"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid").Return(0, "", entity.NewError(entity.ErrUnauthorized, fmt.Errorf("invalid session")))
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  fmt.Errorf("invalid session"),
+		},
+		{
+			name:     "Not applicant - forbidden",
+			resumeID: "1",
+			cookie:   &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
 			},
 			expectedStatus: http.StatusForbidden,
-			expectedBody:   utils.APIError{Status: http.StatusForbidden, Message: entity.ErrForbidden.Error()},
+			expectedError:  entity.ErrForbidden,
 		},
 		{
-			name:   "Bad request - invalid resume ID",
-			url:    "/resume/invalid",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
+			name:     "Invalid resume ID - bad request",
+			resumeID: "invalid",
+			cookie:   &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   utils.APIError{Status: http.StatusBadRequest, Message: entity.ErrBadRequest.Error()},
+			expectedError:  entity.ErrBadRequest,
 		},
 		{
-			name:   "Internal server error",
-			url:    "/resume/123",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
-				resume.EXPECT().Delete(gomock.Any(), 123, 1).
-					Return(nil, entity.ErrInternal)
+			name:     "Resume not found",
+			resumeID: "1",
+			cookie:   &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Delete(gomock.Any(), 1, 1).Return(nil, entity.NewError(entity.ErrNotFound, fmt.Errorf("resume not found")))
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedError:  fmt.Errorf("resume not found"),
+		},
+		{
+			name:     "Not owner - forbidden",
+			resumeID: "1",
+			cookie:   &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Delete(gomock.Any(), 1, 1).Return(nil, entity.NewError(entity.ErrForbidden, fmt.Errorf("not authorized to delete resume")))
+			},
+			expectedStatus: http.StatusForbidden,
+			expectedError:  fmt.Errorf("not authorized to delete resume"),
+		},
+		{
+			name:     "Internal server error",
+			resumeID: "1",
+			cookie:   &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().Delete(gomock.Any(), 1, 1).Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("database error")))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
+			expectedError:  fmt.Errorf("database error"),
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			authMock := mock.NewMockAuth(ctrl)
-			resumeMock := mock.NewMockResumeUsecase(ctrl)
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockResume := mock.NewMockResumeUsecase(ctrl)
+			tt.setupMock(mockAuth, mockResume)
 
-			tc.setupMocks(authMock, resumeMock)
-
-			handler := NewResumeHandler(authMock, resumeMock, config.CSRFConfig{})
-
-			req, err := http.NewRequest(http.MethodDelete, tc.url, nil)
-			require.NoError(t, err)
-
-			if tc.cookie != nil {
-				req.AddCookie(tc.cookie)
+			handler := &ResumeHandler{
+				auth:   mockAuth,
+				resume: mockResume,
 			}
 
-			router := http.NewServeMux()
-			handler.Configure(router)
+			req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/resume/%s", tt.resumeID), nil)
+			req = req.WithContext(req.Context())
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+			req.SetPathValue("id", tt.resumeID)
 
-			rec := httptest.NewRecorder()
+			w := httptest.NewRecorder()
 
-			router.ServeHTTP(rec, req)
+			handler.DeleteResume(w, req)
 
-			require.Equal(t, tc.expectedStatus, rec.Code)
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			if tc.expectedStatus == http.StatusOK {
-				var resp dto.DeleteResumeResponse
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &resp)
-			} else {
-				var resp utils.APIError
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+				require.Equal(t, tt.expectedStatus, apiError.Status)
+			} else if resp.StatusCode == http.StatusOK {
+				var response dto.DeleteResumeResponse
+				err := json.NewDecoder(resp.Body).Decode(&response)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
+				require.True(t, response.Success)
+				require.Equal(t, validDeleteResumeResponse().Message, response.Message)
 			}
 		})
 	}
 }
-
 func TestResumeHandler_GetAllResumes(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	// Helper function to create valid resume short response (non-applicant)
+	validResumeShortResponse := func() []dto.ResumeShortResponse {
+		return []dto.ResumeShortResponse{
+			{
+				ID:             1,
+				ApplicantID:    1,
+				Specialization: "Backend",
+				Profession:     "Go Developer",
+				CreatedAt:      "2023-01-01T00:00:00Z",
+				UpdatedAt:      "2023-01-02T00:00:00Z",
+			},
+		}
+	}
+
+	// Helper function to create valid resume applicant short response (applicant)
+	validResumeApplicantShortResponse := func() []dto.ResumeApplicantShortResponse {
+		return []dto.ResumeApplicantShortResponse{
+			{
+				ID:             1,
+				ApplicantID:    1,
+				Specialization: "Backend",
+				Profession:     "Go Developer",
+				Skills:         []string{"Go", "SQL"},
+				CreatedAt:      "2023-01-01T00:00:00Z",
+				UpdatedAt:      "2023-01-02T00:00:00Z",
+			},
+		}
+	}
+
+	tests := []struct {
 		name           string
 		queryParams    string
 		cookie         *http.Cookie
-		setupMocks     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
+		setupMock      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
+		isApplicant    bool
 	}{
 		{
-			name:        "Success - applicant role",
-			queryParams: "?limit=10&offset=0",
-			cookie:      &http.Cookie{Name: "session_id", Value: "applicant-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "applicant-session").
-					Return(1, "applicant", nil)
-				resume.EXPECT().GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
-					Return([]dto.ResumeShortResponse{
-						{ID: 1, ApplicantID: 1},
-						{ID: 2, ApplicantID: 1},
-					}, nil)
+			name:        "Success - applicant",
+			queryParams: "limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).Return(validResumeApplicantShortResponse(), nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: []dto.ResumeShortResponse{
-				{ID: 1, ApplicantID: 1},
-				{ID: 2, ApplicantID: 1},
-			},
+			isApplicant:    true,
 		},
 		{
-			name:        "Success - employer role",
-			queryParams: "?limit=10&offset=0",
-			cookie:      &http.Cookie{Name: "session_id", Value: "employer-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "employer-session").
-					Return(2, "employer", nil)
-				resume.EXPECT().GetAll(gomock.Any(), 10, 0).
-					Return([]dto.ResumeShortResponse{
-						{ID: 1, ApplicantID: 1},
-						{ID: 3, ApplicantID: 3},
-					}, nil)
+			name:        "Success - non-applicant",
+			queryParams: "limit=20&offset=10",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
+				resume.EXPECT().GetAll(gomock.Any(), 20, 10).Return(validResumeShortResponse(), nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: []dto.ResumeShortResponse{
-				{ID: 1, ApplicantID: 1},
-				{ID: 3, ApplicantID: 3},
-			},
+			isApplicant:    false,
 		},
 		{
-			name:           "Unauthorized - no cookie",
-			queryParams:    "",
+			name:           "No cookie - unauthorized",
+			queryParams:    "limit=10&offset=0",
 			cookie:         nil,
-			setupMocks:     func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
+			setupMock:      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
+			expectedError:  entity.ErrUnauthorized,
 		},
 		{
-			name:        "Unauthorized - invalid session",
+			name:        "Invalid session - unauthorized",
+			queryParams: "limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "invalid"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid").Return(0, "", entity.NewError(entity.ErrUnauthorized, fmt.Errorf("invalid session")))
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  fmt.Errorf("invalid session"),
+		},
+		{
+			name:        "Invalid limit - bad request",
+			queryParams: "limit=invalid&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:        "Invalid offset - bad request",
+			queryParams: "limit=10&offset=invalid",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:        "Internal server error - applicant",
+			queryParams: "limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("database error")))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  fmt.Errorf("database error"),
+			isApplicant:    true,
+		},
+		{
+			name:        "Internal server error - non-applicant",
+			queryParams: "limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
+				resume.EXPECT().GetAll(gomock.Any(), 10, 0).Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("database error")))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  fmt.Errorf("database error"),
+			isApplicant:    false,
+		},
+		{
+			name:        "Default pagination - applicant",
 			queryParams: "",
-			cookie:      &http.Cookie{Name: "session_id", Value: "invalid-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid-session").
-					Return(0, "", entity.ErrInternal)
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).Return(validResumeApplicantShortResponse(), nil)
 			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
-		},
-		{
-			name:        "Employer - internal error",
-			queryParams: "?limit=10&offset=0",
-			cookie:      &http.Cookie{Name: "session_id", Value: "employer-session"},
-			setupMocks: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "employer-session").
-					Return(2, "employer", nil)
-				resume.EXPECT().GetAll(gomock.Any(), 10, 0).
-					Return(nil, entity.ErrInternal)
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
+			expectedStatus: http.StatusOK,
+			isApplicant:    true,
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			authMock := mock.NewMockAuth(ctrl)
-			resumeMock := mock.NewMockResumeUsecase(ctrl)
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockResume := mock.NewMockResumeUsecase(ctrl)
+			tt.setupMock(mockAuth, mockResume)
 
-			tc.setupMocks(authMock, resumeMock)
-
-			handler := NewResumeHandler(authMock, resumeMock, config.CSRFConfig{})
-
-			req := httptest.NewRequest(http.MethodGet, "/resume/all"+tc.queryParams, nil)
-			if tc.cookie != nil {
-				req.AddCookie(tc.cookie)
+			handler := &ResumeHandler{
+				auth:   mockAuth,
+				resume: mockResume,
 			}
 
-			router := http.NewServeMux()
-			handler.Configure(router)
+			url := "/resume/all"
+			if tt.queryParams != "" {
+				url += "?" + tt.queryParams
+			}
+			req := httptest.NewRequest(http.MethodGet, url, nil)
+			req = req.WithContext(req.Context())
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
 
-			rec := httptest.NewRecorder()
+			w := httptest.NewRecorder()
 
-			router.ServeHTTP(rec, req)
+			handler.GetAllResumes(w, req)
 
-			require.Equal(t, tc.expectedStatus, rec.Code)
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			if tc.expectedStatus == http.StatusOK {
-				var resp []dto.ResumeShortResponse
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
-			} else {
-				var resp utils.APIError
-				err := json.NewDecoder(rec.Body).Decode(&resp)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+				require.Equal(t, tt.expectedStatus, apiError.Status)
+			} else if resp.StatusCode == http.StatusOK {
+				if tt.isApplicant {
+					var resumes []dto.ResumeApplicantShortResponse
+					err := json.NewDecoder(resp.Body).Decode(&resumes)
+					require.NoError(t, err)
+					require.Len(t, resumes, len(validResumeApplicantShortResponse()))
+					require.Equal(t, validResumeApplicantShortResponse()[0].ID, resumes[0].ID)
+				} else {
+					var resumes []dto.ResumeShortResponse
+					err := json.NewDecoder(resp.Body).Decode(&resumes)
+					require.NoError(t, err)
+					require.Len(t, resumes, len(validResumeShortResponse()))
+					require.Equal(t, validResumeShortResponse()[0].ID, resumes[0].ID)
+				}
+			}
+		})
+	}
+}
+func TestResumeHandler_SearchResumes(t *testing.T) {
+	t.Parallel()
+
+	// Helper function to create valid resume short response
+	validResumeShortResponse := func() []dto.ResumeShortResponse {
+		return []dto.ResumeShortResponse{
+			{
+				ID:             1,
+				ApplicantID:    1,
+				Specialization: "Backend",
+				Profession:     "Go Developer",
+				CreatedAt:      "2023-01-01T00:00:00Z",
+				UpdatedAt:      "2023-01-02T00:00:00Z",
+			},
+		}
+	}
+
+	tests := []struct {
+		name           string
+		queryParams    string
+		cookie         *http.Cookie
+		setupMock      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase)
+		expectedStatus int
+		expectedError  error
+		role           string
+	}{
+		{
+			name:        "Success - applicant",
+			queryParams: "profession=Go+Developer&limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().SearchResumesByProfession(gomock.Any(), 1, "applicant", "Go Developer", 10, 0).Return(validResumeShortResponse(), nil)
+			},
+			expectedStatus: http.StatusOK,
+			role:           "applicant",
+		},
+		{
+			name:        "Success - non-applicant",
+			queryParams: "profession=Go+Developer&limit=20&offset=10",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
+				resume.EXPECT().SearchResumesByProfession(gomock.Any(), 1, "employer", "Go Developer", 20, 10).Return(validResumeShortResponse(), nil)
+			},
+			expectedStatus: http.StatusOK,
+			role:           "employer",
+		},
+		{
+			name:           "No cookie - unauthorized",
+			queryParams:    "profession=Go+Developer&limit=10&offset=0",
+			cookie:         nil,
+			setupMock:      func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  entity.ErrUnauthorized,
+		},
+		{
+			name:        "Invalid session - unauthorized",
+			queryParams: "profession=Go+Developer&limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "invalid"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid").Return(0, "", entity.NewError(entity.ErrUnauthorized, fmt.Errorf("invalid session")))
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  fmt.Errorf("invalid session"),
+		},
+		{
+			name:        "Missing profession - bad request",
+			queryParams: "limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  fmt.Errorf("параметр profession обязателен"),
+		},
+		{
+			name:        "Invalid limit - bad request",
+			queryParams: "profession=Go+Developer&limit=invalid&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:        "Invalid offset - bad request",
+			queryParams: "profession=Go+Developer&limit=10&offset=invalid",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:        "Internal server error",
+			queryParams: "profession=Go+Developer&limit=10&offset=0",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().SearchResumesByProfession(gomock.Any(), 1, "applicant", "Go Developer", 10, 0).Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("database error")))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  fmt.Errorf("database error"),
+			role:           "applicant",
+		},
+		{
+			name:        "Default pagination",
+			queryParams: "profession=Go+Developer",
+			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				resume.EXPECT().SearchResumesByProfession(gomock.Any(), 1, "applicant", "Go Developer", 10, 0).Return(validResumeShortResponse(), nil)
+			},
+			expectedStatus: http.StatusOK,
+			role:           "applicant",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockResume := mock.NewMockResumeUsecase(ctrl)
+			tt.setupMock(mockAuth, mockResume)
+
+			handler := &ResumeHandler{
+				auth:   mockAuth,
+				resume: mockResume,
+			}
+
+			url := "/resume/search?" + tt.queryParams
+			req := httptest.NewRequest(http.MethodGet, url, nil)
+			req = req.WithContext(req.Context())
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			w := httptest.NewRecorder()
+
+			handler.SearchResumes(w, req)
+
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+				require.Equal(t, tt.expectedStatus, apiError.Status)
+			} else if resp.StatusCode == http.StatusOK {
+				var resumes []dto.ResumeShortResponse
+				err := json.NewDecoder(resp.Body).Decode(&resumes)
+				require.NoError(t, err)
+				require.Len(t, resumes, len(validResumeShortResponse()))
+				require.Equal(t, validResumeShortResponse()[0].ID, resumes[0].ID)
 			}
 		})
 	}

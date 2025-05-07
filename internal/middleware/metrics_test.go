@@ -31,7 +31,8 @@ func TestMetricsMiddleware(t *testing.T) {
 
 		handler := MetricsMiddleware(metrics)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Hello, world!"))
+			_, err := w.Write([]byte("Hello, world!"))
+			require.NoError(t, err)
 		}))
 
 		//start := time.Now()

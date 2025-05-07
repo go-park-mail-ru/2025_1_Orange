@@ -998,7 +998,6 @@ func TestVacancyRepository_AddCity(t *testing.T) {
 }
 func TestVacancyRepository_CreateSkillIfNotExists(t *testing.T) {
 	t.Parallel()
-
 	selectQuery := regexp.QuoteMeta(`
         SELECT id
         FROM skill
@@ -1104,6 +1103,118 @@ func TestVacancyRepository_CreateSkillIfNotExists(t *testing.T) {
 					WithArgs(skillName).
 					WillReturnError(sql.ErrNoRows)
 				mock.ExpectQuery(insertQuery).
+					WithArgs(skillName).
+					WillReturnError(&pq.Error{Code: entity.PSQLUniqueViolation})
+				mock.ExpectQuery(selectQuery).
+					WithArgs(skillName).
+					WillReturnError(errors.New("retry select error"))
+			},
+		},
+		{
+			name:       "Пустое имя навыка",
+			skillName:  "",
+			expectedID: 0,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при создании навыка: %w", errors.New("empty skill name error")),
+			),
+			setupMock: func(mock sqlmock.Sqlmock, skillName string) {
+				mock.ExpectQuery(selectQuery).
+					WithArgs(skillName).
+					WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery(insertQuery).
+					WithArgs(skillName).
+					WillReturnError(errors.New("empty skill name error"))
+			},
+		},
+		{
+			name:       "Ошибка - нарушение ограничения not-null при создании",
+			skillName:  "Kotlin",
+			expectedID: 0,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при создании навыка: %w", &pq.Error{Code: entity.PSQLNotNullViolation}),
+			),
+			setupMock: func(mock sqlmock.Sqlmock, skillName string) {
+				mock.ExpectQuery(selectQuery).
+					WithArgs(skillName).
+					WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery(insertQuery).
+					WithArgs(skillName).
+					WillReturnError(&pq.Error{Code: entity.PSQLNotNullViolation})
+			},
+		},
+		{
+			name:       "Ошибка - нарушение ограничения данных при создании",
+			skillName:  "SQL",
+			expectedID: 0,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при создании навыка: %w", &pq.Error{Code: entity.PSQLCheckViolation}),
+			),
+			setupMock: func(mock sqlmock.Sqlmock, skillName string) {
+				mock.ExpectQuery(selectQuery).
+					WithArgs(skillName).
+					WillReturnError(sql.ErrNoRows)
+				mock.ExpectQuery(insertQuery).
+					WithArgs(skillName).
+					WillReturnError(&pq.Error{Code: entity.PSQLCheckViolation})
+			},
+		},
+		{
+			name:        "Успешное создание нового навыка",
+			skillName:   "Go Programming",
+			expectedID:  1,
+			expectedErr: nil,
+			setupMock: func(mock sqlmock.Sqlmock, skillName string) {
+				queryCheck := regexp.QuoteMeta(`SELECT id FROM skill WHERE name = $1`)
+				mock.ExpectQuery(queryCheck).
+					WithArgs(skillName).
+					WillReturnError(sql.ErrNoRows)
+
+				queryInsert := regexp.QuoteMeta(`INSERT INTO skill (name) VALUES ($1) RETURNING id`)
+				mock.ExpectQuery(queryInsert).
+					WithArgs(skillName).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+			},
+		},
+		{
+			name:        "Навык уже существует",
+			skillName:   "Python Programming",
+			expectedID:  2,
+			expectedErr: nil,
+			setupMock: func(mock sqlmock.Sqlmock, skillName string) {
+				queryCheck := regexp.QuoteMeta(`SELECT id FROM skill WHERE name = $1`)
+				mock.ExpectQuery(queryCheck).
+					WithArgs(skillName).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
+			},
+		},
+		{
+			name:        "Ошибка при проверке существования навыка",
+			skillName:   "JavaScript",
+			expectedID:  0,
+			expectedErr: entity.NewError(entity.ErrInternal, fmt.Errorf("ошибка при проверке существования навыка")),
+			setupMock: func(mock sqlmock.Sqlmock, skillName string) {
+				queryCheck := regexp.QuoteMeta(`SELECT id FROM skill WHERE name = $1`)
+				mock.ExpectQuery(queryCheck).
+					WithArgs(skillName).
+					WillReturnError(fmt.Errorf("database error"))
+			},
+		},
+		{
+			name:        "Ошибка при создании навыка - уникальное нарушение",
+			skillName:   "Ruby Programming",
+			expectedID:  3,
+			expectedErr: nil,
+			setupMock: func(mock sqlmock.Sqlmock, skillName string) {
+				queryCheck := regexp.QuoteMeta(`SELECT id FROM skill WHERE name = $1`)
+				mock.ExpectQuery(queryCheck).
+					WithArgs(skillName).
+					WillReturnError(sql.ErrNoRows)
+
+				queryInsert := regexp.QuoteMeta(`INSERT INTO skill (name) VALUES ($1) RETURNING id`)
+				mock.ExpectQuery(queryInsert).
 					WithArgs(skillName).
 					WillReturnError(&pq.Error{Code: entity.PSQLUniqueViolation})
 				mock.ExpectQuery(selectQuery).

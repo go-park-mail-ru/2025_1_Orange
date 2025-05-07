@@ -174,7 +174,12 @@ func TestResumeHandler_CreateResume(t *testing.T) {
 			handler.CreateResume(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			// defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -302,7 +307,12 @@ func TestResumeHandler_GetResume(t *testing.T) {
 
 			// Verify response
 			resp := w.Result()
-			defer resp.Body.Close()
+			// defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -568,7 +578,12 @@ func TestResumeHandler_UpdateResume(t *testing.T) {
 			handler.UpdateResume(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			// defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -725,7 +740,12 @@ func TestResumeHandler_DeleteResume(t *testing.T) {
 			handler.DeleteResume(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			// defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -916,7 +936,12 @@ func TestResumeHandler_GetAllResumes(t *testing.T) {
 			handler.GetAllResumes(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			// defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -1095,7 +1120,12 @@ func TestResumeHandler_SearchResumes(t *testing.T) {
 			handler.SearchResumes(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			// defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))

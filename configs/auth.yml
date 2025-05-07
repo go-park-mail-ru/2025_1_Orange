@@ -1,5 +1,6 @@
 host: "0.0.0.0"
 port: "8081"
+metric_port: ":8095"
 redis:
   host: "redis"
   port: "6379"

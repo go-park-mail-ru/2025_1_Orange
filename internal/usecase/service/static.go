@@ -3,6 +3,7 @@ package service
 import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"bytes"
@@ -34,16 +35,19 @@ func NewStaticService(staticRepository repository.StaticRepository) usecase.Stat
 func (s *StaticService) UploadStatic(ctx context.Context, data []byte) (*dto.UploadStaticResponse, error) {
 	const maxFileSize = 5 << 20
 	if len(data) > maxFileSize {
+		metrics.LayerErrorCounter.WithLabelValues("Static Service", "UploadStatic").Inc()
 		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("размер файла превышает 5MB"))
 	}
 
 	contentType := http.DetectContentType(data)
 	ext, allowed := allowedTypes[contentType]
 	if !allowed {
+		metrics.LayerErrorCounter.WithLabelValues("Static Service", "UploadStatic").Inc()
 		return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("недопустимый формат файла"))
 	}
 
 	if err := s.validateImageContent(data, contentType); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Static Service", "UploadStatic").Inc()
 		return nil, err
 	}
 

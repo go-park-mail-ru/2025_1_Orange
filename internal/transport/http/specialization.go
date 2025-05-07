@@ -2,6 +2,7 @@ package http
 
 import (
 	"ResuMatch/internal/entity"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"encoding/json"
@@ -47,6 +48,7 @@ func (h *SpecializationHandler) GetAllSpecializationNames(w http.ResponseWriter,
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(specializationNames); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Specialization Handler", "GetAllSpecializationNames").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

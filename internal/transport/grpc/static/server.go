@@ -2,6 +2,7 @@ package static
 
 import (
 	staticPROTO "ResuMatch/internal/transport/grpc/static/proto"
+	"ResuMatch/internal/transport/grpc/utils"
 	"ResuMatch/internal/usecase"
 	"context"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -21,7 +22,7 @@ func NewGRPC(staticUC usecase.Static) *GRPC {
 func (service *GRPC) UploadStatic(ctx context.Context, req *staticPROTO.UploadStaticRequest) (*staticPROTO.UploadStaticResponse, error) {
 	staticDTO, err := service.staticUC.UploadStatic(ctx, req.Data)
 	if err != nil {
-		return nil, err
+		return nil, utils.ToGRPCError(err)
 	}
 
 	return &staticPROTO.UploadStaticResponse{
@@ -33,7 +34,7 @@ func (service *GRPC) UploadStatic(ctx context.Context, req *staticPROTO.UploadSt
 func (service *GRPC) GetStatic(ctx context.Context, req *staticPROTO.FileID) (*staticPROTO.StaticURL, error) {
 	staticPath, err := service.staticUC.GetStatic(ctx, int(req.Id))
 	if err != nil {
-		return nil, err
+		return nil, utils.ToGRPCError(err)
 	}
 
 	return &staticPROTO.StaticURL{
@@ -44,7 +45,7 @@ func (service *GRPC) GetStatic(ctx context.Context, req *staticPROTO.FileID) (*s
 func (service *GRPC) DeleteStatic(ctx context.Context, req *staticPROTO.FileID) (*emptypb.Empty, error) {
 	err := service.staticUC.DeleteStatic(ctx, int(req.Id))
 	if err != nil {
-		return nil, err
+		return nil, utils.ToGRPCError(err)
 	}
 
 	return &emptypb.Empty{}, nil

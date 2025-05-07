@@ -66,10 +66,11 @@ func (s3 *S3ClientConfig) Addr() string {
 }
 
 type S3Config struct {
-	Host     string         `yaml:"host"`
-	Port     string         `yaml:"port"`
-	Minio    MinioConfig    `yaml:"minio"`
-	Postgres PostgresConfig `yaml:"postgres"`
+	Host       string         `yaml:"host"`
+	Port       string         `yaml:"port"`
+	MetricPort string         `yaml:"metric_port"`
+	Minio      MinioConfig    `yaml:"minio"`
+	Postgres   PostgresConfig `yaml:"postgres"`
 }
 
 func (s3 *S3Config) Addr() string {
@@ -90,9 +91,10 @@ type MicroservicesConfig struct {
 }
 
 type AuthConfig struct {
-	Host  string      `yaml:"host"`
-	Port  string      `yaml:"port"`
-	Redis RedisConfig `yaml:"redis"`
+	Host       string      `yaml:"host"`
+	Port       string      `yaml:"port"`
+	MetricPort string      `yaml:"metric_port"`
+	Redis      RedisConfig `yaml:"redis"`
 }
 
 func (a *AuthConfig) Addr() string {

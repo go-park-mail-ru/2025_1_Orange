@@ -1,0 +1,51 @@
+services:
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.55.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - resumatch-network
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:11.3.0
+    depends_on:
+      - prometheus
+    volumes:
+      - ./grafana.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    networks:
+      - resumatch-network
+
+  nodeexporter:
+    container_name: node_exporter
+    image: prom/node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'
+    ports:
+      - "9100:9100"
+    networks:
+      - resumatch-network
+
+volumes:
+  grafana_data:
+
+networks:
+  resumatch-network:
+    external: true
+    name: 2025_1_orange_resumatch-network

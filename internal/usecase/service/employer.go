@@ -3,6 +3,7 @@ package service
 import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"ResuMatch/pkg/sanitizer"
@@ -70,6 +71,7 @@ func (e *EmployerService) Register(ctx context.Context, registerDTO *dto.Employe
 
 	salt, hash, err := entity.HashPassword(registerDTO.Password)
 	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Employer Service", "Register_HashPassword").Inc()
 		return -1, err
 	}
 

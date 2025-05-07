@@ -2,6 +2,7 @@ package main
 
 import (
 	"ResuMatch/internal/config"
+	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository/redis"
 	"ResuMatch/internal/transport/grpc/auth"
 	authPROTO "ResuMatch/internal/transport/grpc/auth/proto"
@@ -9,8 +10,10 @@ import (
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +24,8 @@ func main() {
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}
+
+	metrics.Init("resumatch")
 
 	// Redis Connection
 	sessionConn, err := connector.NewRedisConnection(cfg.Redis)
@@ -44,6 +49,13 @@ func main() {
 
 	authGRPC := auth.NewGRPC(authService)
 	authPROTO.RegisterAuthServiceServer(grpcServer, authGRPC)
+
+	http.Handle("/metrics", promhttp.Handler())
+	go func() {
+		if err := http.ListenAndServe(cfg.MetricPort, nil); err != nil {
+			l.Log.Fatalf("Ошибка запуска HTTP-сервера для метрик авторизации: %v", err)
+		}
+	}()
 
 	listener, err := net.Listen("tcp", cfg.Addr())
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository/mock"
+
 	m "ResuMatch/internal/usecase/mock"
 	"context"
 
@@ -24,6 +25,8 @@ func TestResumeService_Create(t *testing.T) {
 	gradYearStr := gradYear.Format("2006-01-02")
 	startDate := time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC)
 	startDateStr := startDate.Format("2006-01-02")
+	endDate := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	endDateStr := endDate.Format("2006-01-02")
 
 	testCases := []struct {
 		name           string
@@ -168,9 +171,51 @@ func TestResumeService_Create(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "Ошибка при парсинге даты окончания",
+			name:        "Успешное создание резюме с минимальными полями",
 			applicantID: 1,
 			request: &dto.CreateResumeRequest{
+				Profession: "Developer",
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					Create(gomock.Any(), &entity.Resume{
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          2,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 2).
+					Return([]entity.Skill{}, nil)
+
+				rr.EXPECT().
+					GetSpecializationsByResumeID(gomock.Any(), 2).
+					Return([]entity.Specialization{}, nil)
+			},
+			expectedResult: &dto.ResumeResponse{
+				ID: 2,
+
+				ApplicantID:               1,
+				Profession:                "Developer",
+				CreatedAt:                 now.Format(time.RFC3339),
+				UpdatedAt:                 now.Format(time.RFC3339),
+				Skills:                    []string{},
+				AdditionalSpecializations: []string{},
+				WorkExperiences:           []dto.WorkExperienceResponse{},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "Ошибка парсинга даты окончания учебы",
+			applicantID: 1,
+			request: &dto.CreateResumeRequest{
+				Profession:     "Developer",
 				GraduationYear: "invalid-date",
 			},
 			mockSetup: func(*mock.MockResumeRepository, *mock.MockSkillRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository) {
@@ -178,13 +223,14 @@ func TestResumeService_Create(t *testing.T) {
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("неверный формат даты окончания учебы: parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\""),
+				fmt.Errorf("неверный формат даты окончания учебы: %w", fmt.Errorf("parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\"")),
 			),
 		},
 		{
-			name:        "Ошибка при поиске специализации",
+			name:        "Ошибка поиска специализации",
 			applicantID: 1,
 			request: &dto.CreateResumeRequest{
+				Profession:     "Developer",
 				Specialization: "Backend разработка",
 			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
@@ -202,12 +248,17 @@ func TestResumeService_Create(t *testing.T) {
 			),
 		},
 		{
-			name:        "Ошибка при создании резюме",
+			name:        "Ошибка создания резюме",
 			applicantID: 1,
-			request:     &dto.CreateResumeRequest{},
+			request: &dto.CreateResumeRequest{
+				Profession: "Developer",
+			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
+					Create(gomock.Any(), &entity.Resume{
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при создании резюме"),
@@ -220,43 +271,91 @@ func TestResumeService_Create(t *testing.T) {
 			),
 		},
 		{
-			name:        "Ошибка при парсинге даты начала работы",
+			name:        "Ошибка парсинга даты начала работы",
 			applicantID: 1,
 			request: &dto.CreateResumeRequest{
+				Profession: "Developer",
 				WorkExperiences: []dto.WorkExperienceDTO{
 					{
-						StartDate: "invalid-date",
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    "invalid-date",
 					},
 				},
 			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					Return(&entity.Resume{ID: 1}, nil)
+					Create(gomock.Any(), &entity.Resume{
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{ID: 1, ApplicantID: 1, Profession: "Developer"}, nil)
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("неверный формат даты начала работы: parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\""),
+				fmt.Errorf("неверный формат даты начала работы: %w", fmt.Errorf("parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\"")),
 			),
 		},
 		{
-			name:        "Ошибка при добавлении опыта работы",
+			name:        "Ошибка парсинга даты окончания работы",
 			applicantID: 1,
 			request: &dto.CreateResumeRequest{
+				Profession: "Developer",
 				WorkExperiences: []dto.WorkExperienceDTO{
 					{
-						StartDate: startDateStr,
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    startDateStr,
+						EndDate:      "invalid-date",
+						UntilNow:     false,
 					},
 				},
 			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					Return(&entity.Resume{ID: 1}, nil)
+					Create(gomock.Any(), &entity.Resume{
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{ID: 1, ApplicantID: 1, Profession: "Developer"}, nil)
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("неверный формат даты окончания работы: %w", fmt.Errorf("parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\"")),
+			),
+		},
+		{
+			name:        "Ошибка добавления опыта работы",
+			applicantID: 1,
+			request: &dto.CreateResumeRequest{
+				Profession: "Developer",
+				WorkExperiences: []dto.WorkExperienceDTO{
+					{
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    startDateStr,
+						UntilNow:     true,
+					},
+				},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					Create(gomock.Any(), &entity.Resume{
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{ID: 1, ApplicantID: 1, Profession: "Developer"}, nil)
 
 				rr.EXPECT().
-					AddWorkExperience(gomock.Any(), gomock.Any()).
+					AddWorkExperience(gomock.Any(), &entity.WorkExperience{
+						ResumeID:     1,
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    startDate,
+						UntilNow:     true,
+					}).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при добавлении опыта работы"),
@@ -269,70 +368,153 @@ func TestResumeService_Create(t *testing.T) {
 			),
 		},
 		{
-			name:        "Успешное создание резюме без опыта работы",
+			name:        "Ошибка валидации резюме",
 			applicantID: 1,
 			request: &dto.CreateResumeRequest{
-				AboutMe:                "Начинающий разработчик",
-				Specialization:         "Frontend разработка",
-				Profession:             "Frontend Developer",
-				Education:              entity.Higher,
-				EducationalInstitution: "МГУ",
-				GraduationYear:         gradYearStr,
+				AboutMe: "Опытный разработчик",
+				// Profession is missing, assuming validation fails
 			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "Frontend разработка").
-					Return(2, nil)
-
+					Create(gomock.Any(), &entity.Resume{
+						ApplicantID: 1,
+						AboutMe:     "Опытный разработчик",
+					}).
+					Return(nil, entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("ошибка валидации резюме"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("ошибка валидации резюме"),
+			),
+		},
+		{
+			name:        "Ошибка валидации опыта работы",
+			applicantID: 1,
+			request: &dto.CreateResumeRequest{
+				Profession: "Developer",
+				WorkExperiences: []dto.WorkExperienceDTO{
+					{
+						// Missing EmployerName, assuming validation fails
+						Position:  "Разработчик",
+						StartDate: startDateStr,
+						UntilNow:  true,
+					},
+				},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					Create(gomock.Any(), &entity.Resume{
-						ApplicantID:            1,
-						AboutMe:                "Начинающий разработчик",
-						SpecializationID:       2,
-						Profession:             "Frontend Developer",
-						Education:              entity.Higher,
-						EducationalInstitution: "МГУ",
-						GraduationYear:         gradYear,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{ID: 1, ApplicantID: 1, Profession: "Developer"}, nil)
+
+				rr.EXPECT().
+					AddWorkExperience(gomock.Any(), &entity.WorkExperience{
+						ResumeID:  1,
+						Position:  "Разработчик",
+						StartDate: startDate,
+						UntilNow:  true,
+					}).
+					Return(nil, entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("ошибка валидации опыта работы"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("ошибка валидации опыта работы"),
+			),
+		},
+		{
+			name:        "Успешное создание резюме с опытом работы и датой окончания",
+			applicantID: 1,
+			request: &dto.CreateResumeRequest{
+				Profession: "Developer",
+				WorkExperiences: []dto.WorkExperienceDTO{
+					{
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDateStr,
+						EndDate:      endDateStr,
+						UntilNow:     false,
+					},
+				},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					Create(gomock.Any(), &entity.Resume{
+						ApplicantID: 1,
+						Profession:  "Developer",
 					}).
 					Return(&entity.Resume{
-						ID:                     2,
-						ApplicantID:            1,
-						AboutMe:                "Начинающий разработчик",
-						SpecializationID:       2,
-						Profession:             "Frontend Developer",
-						Education:              entity.Higher,
-						EducationalInstitution: "МГУ",
-						GraduationYear:         gradYear,
-						CreatedAt:              now,
-						UpdatedAt:              now,
+						ID:          3,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
 					}, nil)
 
 				rr.EXPECT().
-					GetSkillsByResumeID(gomock.Any(), 2).
+					AddWorkExperience(gomock.Any(), &entity.WorkExperience{
+						ResumeID:     3,
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDate,
+						EndDate:      endDate,
+						UntilNow:     false,
+					}).
+					Return(&entity.WorkExperience{
+						ID:           2,
+						ResumeID:     3,
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDate,
+						EndDate:      endDate,
+						UntilNow:     false,
+						UpdatedAt:    now,
+					}, nil)
+
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 3).
 					Return([]entity.Skill{}, nil)
 
 				rr.EXPECT().
-					GetSpecializationsByResumeID(gomock.Any(), 2).
+					GetSpecializationsByResumeID(gomock.Any(), 3).
 					Return([]entity.Specialization{}, nil)
-
-				spr.EXPECT().
-					GetByID(gomock.Any(), 2).
-					Return(&entity.Specialization{ID: 2, Name: "Frontend разработка"}, nil)
 			},
 			expectedResult: &dto.ResumeResponse{
-				ID:                        2,
+				ID:                        3,
 				ApplicantID:               1,
-				AboutMe:                   "Начинающий разработчик",
-				Specialization:            "Frontend разработка",
-				Profession:                "Frontend Developer",
-				Education:                 entity.Higher,
-				EducationalInstitution:    "МГУ",
-				GraduationYear:            gradYearStr,
+				Profession:                "Developer",
 				CreatedAt:                 now.Format(time.RFC3339),
 				UpdatedAt:                 now.Format(time.RFC3339),
 				Skills:                    []string{},
 				AdditionalSpecializations: []string{},
-				WorkExperiences:           []dto.WorkExperienceResponse{},
+				WorkExperiences: []dto.WorkExperienceResponse{
+					{
+						ID:           2,
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDateStr,
+						EndDate:      endDateStr,
+						UntilNow:     false,
+						UpdatedAt:    now.Format(time.RFC3339),
+					},
+				},
 			},
 			expectedErr: nil,
 		},
@@ -364,6 +546,7 @@ func TestResumeService_Create(t *testing.T) {
 				var serviceErr entity.Error
 				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
@@ -371,25 +554,29 @@ func TestResumeService_Create(t *testing.T) {
 		})
 	}
 }
+
 func TestResumeService_GetByID(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
 	gradYear := time.Date(2020, time.June, 1, 0, 0, 0, 0, time.UTC)
+	gradYearStr := gradYear.Format("2006-01-02")
 	startDate := time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2021, time.December, 31, 0, 0, 0, 0, time.UTC)
+	startDateStr := startDate.Format("2006-01-02")
+	endDate := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	endDateStr := endDate.Format("2006-01-02")
 
 	testCases := []struct {
 		name           string
 		resumeID       int
-		mockSetup      func(*mock.MockResumeRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository)
+		mockSetup      func(*mock.MockResumeRepository, *mock.MockSkillRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository)
 		expectedResult *dto.ResumeResponse
 		expectedErr    error
 	}{
 		{
 			name:     "Успешное получение резюме со всеми полями",
 			resumeID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
@@ -407,10 +594,7 @@ func TestResumeService_GetByID(t *testing.T) {
 
 				spr.EXPECT().
 					GetByID(gomock.Any(), 1).
-					Return(&entity.Specialization{
-						ID:   1,
-						Name: "Backend разработка",
-					}, nil)
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
 
 				rr.EXPECT().
 					GetSkillsByResumeID(gomock.Any(), 1).
@@ -430,10 +614,22 @@ func TestResumeService_GetByID(t *testing.T) {
 					Return([]entity.WorkExperience{
 						{
 							ID:           1,
+							ResumeID:     1,
 							EmployerName: "Яндекс",
 							Position:     "Разработчик",
 							Duties:       "Разработка сервисов",
 							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+						{
+							ID:           2,
+							ResumeID:     1,
+							EmployerName: "Google",
+							Position:     "Engineer",
+							Duties:       "Development",
+							Achievements: "Improved performance",
 							StartDate:    startDate,
 							EndDate:      endDate,
 							UntilNow:     false,
@@ -449,7 +645,7 @@ func TestResumeService_GetByID(t *testing.T) {
 				Profession:                "Backend Developer",
 				Education:                 entity.Higher,
 				EducationalInstitution:    "МГУ",
-				GraduationYear:            gradYear.Format("2006-01-02"),
+				GraduationYear:            gradYearStr,
 				CreatedAt:                 now.Format(time.RFC3339),
 				UpdatedAt:                 now.Format(time.RFC3339),
 				Skills:                    []string{"Go", "SQL"},
@@ -461,8 +657,18 @@ func TestResumeService_GetByID(t *testing.T) {
 						Position:     "Разработчик",
 						Duties:       "Разработка сервисов",
 						Achievements: "Оптимизация запросов",
-						StartDate:    startDate.Format("2006-01-02"),
-						EndDate:      endDate.Format("2006-01-02"),
+						StartDate:    startDateStr,
+						UntilNow:     true,
+						UpdatedAt:    now.Format(time.RFC3339),
+					},
+					{
+						ID:           2,
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDateStr,
+						EndDate:      endDateStr,
 						UntilNow:     false,
 						UpdatedAt:    now.Format(time.RFC3339),
 					},
@@ -471,16 +677,15 @@ func TestResumeService_GetByID(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:     "Резюме без специализации и опыта работы",
+			name:     "Успешное получение резюме с минимальными полями",
 			resumeID: 2,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 2).
 					Return(&entity.Resume{
 						ID:          2,
 						ApplicantID: 1,
-						AboutMe:     "Начинающий разработчик",
-						Profession:  "Junior Developer",
+						Profession:  "Developer",
 						CreatedAt:   now,
 						UpdatedAt:   now,
 					}, nil)
@@ -500,43 +705,45 @@ func TestResumeService_GetByID(t *testing.T) {
 			expectedResult: &dto.ResumeResponse{
 				ID:                        2,
 				ApplicantID:               1,
-				AboutMe:                   "Начинающий разработчик",
-				Profession:                "Junior Developer",
+				Profession:                "Developer",
+				CreatedAt:                 now.Format(time.RFC3339),
+				UpdatedAt:                 now.Format(time.RFC3339),
 				Skills:                    []string{},
 				AdditionalSpecializations: []string{},
 				WorkExperiences:           []dto.WorkExperienceResponse{},
-				CreatedAt:                 now.Format(time.RFC3339),
-				UpdatedAt:                 now.Format(time.RFC3339),
 			},
 			expectedErr: nil,
 		},
 		{
 			name:     "Резюме не найдено",
 			resumeID: 999,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 999).
 					Return(nil, entity.NewError(
 						entity.ErrNotFound,
-						fmt.Errorf("резюме с id=999 не найдено"),
+						fmt.Errorf("резюме с id=%d не найдено", 999),
 					))
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrNotFound,
-				fmt.Errorf("резюме с id=999 не найдено"),
+				fmt.Errorf("резюме с id=%d не найдено", 999),
 			),
 		},
 		{
-			name:     "Ошибка при получении специализации",
-			resumeID: 3,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			name:     "Ошибка получения специализации",
+			resumeID: 1,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					GetByID(gomock.Any(), 3).
+					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
-						ID:               3,
+						ID:               1,
+						ApplicantID:      1,
 						SpecializationID: 1,
-						Profession:       "Backend Developer",
+						Profession:       "Developer",
+						CreatedAt:        now,
+						UpdatedAt:        now,
 					}, nil)
 
 				spr.EXPECT().
@@ -553,18 +760,21 @@ func TestResumeService_GetByID(t *testing.T) {
 			),
 		},
 		{
-			name:     "Ошибка при получении навыков",
-			resumeID: 4,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			name:     "Ошибка получения навыков",
+			resumeID: 1,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					GetByID(gomock.Any(), 4).
+					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
-						ID:         4,
-						Profession: "Frontend Developer",
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
 					}, nil)
 
 				rr.EXPECT().
-					GetSkillsByResumeID(gomock.Any(), 4).
+					GetSkillsByResumeID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при получении навыков"),
@@ -577,54 +787,60 @@ func TestResumeService_GetByID(t *testing.T) {
 			),
 		},
 		{
-			name:     "Ошибка при получении дополнительных специализаций",
-			resumeID: 5,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			name:     "Ошибка получения дополнительных специализаций",
+			resumeID: 1,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					GetByID(gomock.Any(), 5).
+					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
-						ID:         5,
-						Profession: "Fullstack Developer",
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
 					}, nil)
 
 				rr.EXPECT().
-					GetSkillsByResumeID(gomock.Any(), 5).
+					GetSkillsByResumeID(gomock.Any(), 1).
 					Return([]entity.Skill{}, nil)
 
 				rr.EXPECT().
-					GetSpecializationsByResumeID(gomock.Any(), 5).
+					GetSpecializationsByResumeID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении специализаций"),
+						fmt.Errorf("ошибка при получении дополнительных специализаций"),
 					))
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("ошибка при получении специализаций"),
+				fmt.Errorf("ошибка при получении дополнительных специализаций"),
 			),
 		},
 		{
-			name:     "Ошибка при получении опыта работы",
-			resumeID: 6,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			name:     "Ошибка получения опыта работы",
+			resumeID: 1,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
-					GetByID(gomock.Any(), 6).
+					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
-						ID:         6,
-						Profession: "DevOps Engineer",
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
 					}, nil)
 
 				rr.EXPECT().
-					GetSkillsByResumeID(gomock.Any(), 6).
+					GetSkillsByResumeID(gomock.Any(), 1).
 					Return([]entity.Skill{}, nil)
 
 				rr.EXPECT().
-					GetSpecializationsByResumeID(gomock.Any(), 6).
+					GetSpecializationsByResumeID(gomock.Any(), 1).
 					Return([]entity.Specialization{}, nil)
 
 				rr.EXPECT().
-					GetWorkExperienceByResumeID(gomock.Any(), 6).
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при получении опыта работы"),
@@ -635,68 +851,6 @@ func TestResumeService_GetByID(t *testing.T) {
 				entity.ErrInternal,
 				fmt.Errorf("ошибка при получении опыта работы"),
 			),
-		},
-		{
-			name:     "Резюме с опытом работы без даты окончания",
-			resumeID: 7,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
-				rr.EXPECT().
-					GetByID(gomock.Any(), 7).
-					Return(&entity.Resume{
-						ID:          7,
-						ApplicantID: 1,
-						Profession:  "Team Lead",
-						CreatedAt:   now,
-						UpdatedAt:   now,
-					}, nil)
-
-				rr.EXPECT().
-					GetSkillsByResumeID(gomock.Any(), 7).
-					Return([]entity.Skill{
-						{ID: 1, Name: "Leadership"},
-					}, nil)
-
-				rr.EXPECT().
-					GetSpecializationsByResumeID(gomock.Any(), 7).
-					Return([]entity.Specialization{}, nil)
-
-				rr.EXPECT().
-					GetWorkExperienceByResumeID(gomock.Any(), 7).
-					Return([]entity.WorkExperience{
-						{
-							ID:           1,
-							EmployerName: "Яндекс",
-							Position:     "Team Lead",
-							Duties:       "Управление командой",
-							Achievements: "Успешные проекты",
-							StartDate:    startDate,
-							UntilNow:     true,
-							UpdatedAt:    now,
-						},
-					}, nil)
-			},
-			expectedResult: &dto.ResumeResponse{
-				ID:                        7,
-				ApplicantID:               1,
-				Profession:                "Team Lead",
-				Skills:                    []string{"Leadership"},
-				AdditionalSpecializations: []string{},
-				WorkExperiences: []dto.WorkExperienceResponse{
-					{
-						ID:           1,
-						EmployerName: "Яндекс",
-						Position:     "Team Lead",
-						Duties:       "Управление командой",
-						Achievements: "Успешные проекты",
-						StartDate:    startDate.Format("2006-01-02"),
-						UntilNow:     true,
-						UpdatedAt:    now.Format(time.RFC3339),
-					},
-				},
-				CreatedAt: now.Format(time.RFC3339),
-				UpdatedAt: now.Format(time.RFC3339),
-			},
-			expectedErr: nil,
 		},
 	}
 
@@ -714,7 +868,7 @@ func TestResumeService_GetByID(t *testing.T) {
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
 			mockApplicantService := NewApplicantService(mockApplicantRepo, nil, nil)
 
-			tc.mockSetup(mockResumeRepo, mockSpecRepo, mockApplicantRepo)
+			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo)
 
 			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 			ctx := context.Background()
@@ -726,6 +880,7 @@ func TestResumeService_GetByID(t *testing.T) {
 				var serviceErr entity.Error
 				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
@@ -733,6 +888,7 @@ func TestResumeService_GetByID(t *testing.T) {
 		})
 	}
 }
+
 func TestResumeService_Update(t *testing.T) {
 	t.Parallel()
 
@@ -741,6 +897,8 @@ func TestResumeService_Update(t *testing.T) {
 	gradYearStr := gradYear.Format("2006-01-02")
 	startDate := time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC)
 	startDateStr := startDate.Format("2006-01-02")
+	endDate := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	endDateStr := endDate.Format("2006-01-02")
 
 	testCases := []struct {
 		name           string
@@ -752,26 +910,35 @@ func TestResumeService_Update(t *testing.T) {
 		expectedErr    error
 	}{
 		{
-			name:        "Успешное обновление резюме",
+			name:        "Успешное обновление резюме со всеми полями",
 			resumeID:    1,
 			applicantID: 1,
 			request: &dto.UpdateResumeRequest{
-				AboutMe:                   "Обновленный текст",
+				AboutMe:                   "Опытный разработчик",
 				Specialization:            "Backend разработка",
-				Profession:                "Senior Backend Developer",
+				Profession:                "Backend Developer",
 				Education:                 entity.Higher,
 				EducationalInstitution:    "МГУ",
 				GraduationYear:            gradYearStr,
-				Skills:                    []string{"Go", "SQL", "Docker"},
-				AdditionalSpecializations: []string{"DevOps", "Microservices"},
+				Skills:                    []string{"Go", "SQL"},
+				AdditionalSpecializations: []string{"DevOps"},
 				WorkExperiences: []dto.WorkExperienceDTO{
 					{
 						EmployerName: "Яндекс",
-						Position:     "Старший разработчик",
-						Duties:       "Разработка архитектуры",
-						Achievements: "Оптимизация производительности",
+						Position:     "Разработчик",
+						Duties:       "Разработка сервисов",
+						Achievements: "Оптимизация запросов",
 						StartDate:    startDateStr,
 						UntilNow:     true,
+					},
+					{
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDateStr,
+						EndDate:      endDateStr,
+						UntilNow:     false,
 					},
 				},
 			},
@@ -781,8 +948,7 @@ func TestResumeService_Update(t *testing.T) {
 					Return(&entity.Resume{
 						ID:          1,
 						ApplicantID: 1,
-						CreatedAt:   now,
-						UpdatedAt:   now,
+						Profession:  "Old Profession",
 					}, nil)
 
 				rr.EXPECT().
@@ -793,9 +959,9 @@ func TestResumeService_Update(t *testing.T) {
 					Update(gomock.Any(), &entity.Resume{
 						ID:                     1,
 						ApplicantID:            1,
-						AboutMe:                "Обновленный текст",
+						AboutMe:                "Опытный разработчик",
 						SpecializationID:       1,
-						Profession:             "Senior Backend Developer",
+						Profession:             "Backend Developer",
 						Education:              entity.Higher,
 						EducationalInstitution: "МГУ",
 						GraduationYear:         gradYear,
@@ -803,9 +969,9 @@ func TestResumeService_Update(t *testing.T) {
 					Return(&entity.Resume{
 						ID:                     1,
 						ApplicantID:            1,
-						AboutMe:                "Обновленный текст",
+						AboutMe:                "Опытный разработчик",
 						SpecializationID:       1,
-						Profession:             "Senior Backend Developer",
+						Profession:             "Backend Developer",
 						Education:              entity.Higher,
 						EducationalInstitution: "МГУ",
 						GraduationYear:         gradYear,
@@ -818,11 +984,11 @@ func TestResumeService_Update(t *testing.T) {
 					Return(nil)
 
 				rr.EXPECT().
-					FindSkillIDsByNames(gomock.Any(), []string{"Go", "SQL", "Docker"}).
-					Return([]int{1, 2, 3}, nil)
+					FindSkillIDsByNames(gomock.Any(), []string{"Go", "SQL"}).
+					Return([]int{1, 2}, nil)
 
 				rr.EXPECT().
-					AddSkills(gomock.Any(), 1, []int{1, 2, 3}).
+					AddSkills(gomock.Any(), 1, []int{1, 2}).
 					Return(nil)
 
 				rr.EXPECT().
@@ -830,11 +996,11 @@ func TestResumeService_Update(t *testing.T) {
 					Return(nil)
 
 				rr.EXPECT().
-					FindSpecializationIDsByNames(gomock.Any(), []string{"DevOps", "Microservices"}).
-					Return([]int{2, 3}, nil)
+					FindSpecializationIDsByNames(gomock.Any(), []string{"DevOps"}).
+					Return([]int{2}, nil)
 
 				rr.EXPECT().
-					AddSpecializations(gomock.Any(), 1, []int{2, 3}).
+					AddSpecializations(gomock.Any(), 1, []int{2}).
 					Return(nil)
 
 				rr.EXPECT().
@@ -845,9 +1011,9 @@ func TestResumeService_Update(t *testing.T) {
 					AddWorkExperience(gomock.Any(), &entity.WorkExperience{
 						ResumeID:     1,
 						EmployerName: "Яндекс",
-						Position:     "Старший разработчик",
-						Duties:       "Разработка архитектуры",
-						Achievements: "Оптимизация производительности",
+						Position:     "Разработчик",
+						Duties:       "Разработка сервисов",
+						Achievements: "Оптимизация запросов",
 						StartDate:    startDate,
 						UntilNow:     true,
 					}).
@@ -855,11 +1021,35 @@ func TestResumeService_Update(t *testing.T) {
 						ID:           1,
 						ResumeID:     1,
 						EmployerName: "Яндекс",
-						Position:     "Старший разработчик",
-						Duties:       "Разработка архитектуры",
-						Achievements: "Оптимизация производительности",
+						Position:     "Разработчик",
+						Duties:       "Разработка сервисов",
+						Achievements: "Оптимизация запросов",
 						StartDate:    startDate,
 						UntilNow:     true,
+						UpdatedAt:    now,
+					}, nil)
+
+				rr.EXPECT().
+					AddWorkExperience(gomock.Any(), &entity.WorkExperience{
+						ResumeID:     1,
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDate,
+						EndDate:      endDate,
+						UntilNow:     false,
+					}).
+					Return(&entity.WorkExperience{
+						ID:           2,
+						ResumeID:     1,
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDate,
+						EndDate:      endDate,
+						UntilNow:     false,
 						UpdatedAt:    now,
 					}, nil)
 
@@ -872,38 +1062,47 @@ func TestResumeService_Update(t *testing.T) {
 					Return([]entity.Skill{
 						{ID: 1, Name: "Go"},
 						{ID: 2, Name: "SQL"},
-						{ID: 3, Name: "Docker"},
 					}, nil)
 
 				rr.EXPECT().
 					GetSpecializationsByResumeID(gomock.Any(), 1).
 					Return([]entity.Specialization{
 						{ID: 2, Name: "DevOps"},
-						{ID: 3, Name: "Microservices"},
 					}, nil)
 			},
 			expectedResult: &dto.ResumeResponse{
 				ID:                        1,
 				ApplicantID:               1,
-				AboutMe:                   "Обновленный текст",
+				AboutMe:                   "Опытный разработчик",
 				Specialization:            "Backend разработка",
-				Profession:                "Senior Backend Developer",
+				Profession:                "Backend Developer",
 				Education:                 entity.Higher,
 				EducationalInstitution:    "МГУ",
 				GraduationYear:            gradYearStr,
 				CreatedAt:                 now.Format(time.RFC3339),
 				UpdatedAt:                 now.Format(time.RFC3339),
-				Skills:                    []string{"Go", "SQL", "Docker"},
-				AdditionalSpecializations: []string{"DevOps", "Microservices"},
+				Skills:                    []string{"Go", "SQL"},
+				AdditionalSpecializations: []string{"DevOps"},
 				WorkExperiences: []dto.WorkExperienceResponse{
 					{
 						ID:           1,
 						EmployerName: "Яндекс",
-						Position:     "Старший разработчик",
-						Duties:       "Разработка архитектуры",
-						Achievements: "Оптимизация производительности",
+						Position:     "Разработчик",
+						Duties:       "Разработка сервисов",
+						Achievements: "Оптимизация запросов",
 						StartDate:    startDateStr,
 						UntilNow:     true,
+						UpdatedAt:    now.Format(time.RFC3339),
+					},
+					{
+						ID:           2,
+						EmployerName: "Google",
+						Position:     "Engineer",
+						Duties:       "Development",
+						Achievements: "Improved performance",
+						StartDate:    startDateStr,
+						EndDate:      endDateStr,
+						UntilNow:     false,
 						UpdatedAt:    now.Format(time.RFC3339),
 					},
 				},
@@ -911,48 +1110,116 @@ func TestResumeService_Update(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			name:        "Успешное обновление резюме с минимальными полями",
+			resumeID:    2,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 2).
+					Return(&entity.Resume{
+						ID:          2,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          2,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          2,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 2).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 2).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 2).
+					Return(nil)
+
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 2).
+					Return([]entity.Skill{}, nil)
+
+				rr.EXPECT().
+					GetSpecializationsByResumeID(gomock.Any(), 2).
+					Return([]entity.Specialization{}, nil)
+			},
+			expectedResult: &dto.ResumeResponse{
+				ID:                        2,
+				ApplicantID:               1,
+				Profession:                "Developer",
+				CreatedAt:                 now.Format(time.RFC3339),
+				UpdatedAt:                 now.Format(time.RFC3339),
+				Skills:                    []string{},
+				AdditionalSpecializations: []string{},
+				WorkExperiences:           []dto.WorkExperienceResponse{},
+			},
+			expectedErr: nil,
+		},
+		{
 			name:        "Резюме не найдено",
 			resumeID:    999,
 			applicantID: 1,
-			request:     &dto.UpdateResumeRequest{},
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 999).
 					Return(nil, entity.NewError(
 						entity.ErrNotFound,
-						fmt.Errorf("резюме с id=999 не найдено"),
+						fmt.Errorf("резюме с id=%d не найдено", 999),
 					))
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrNotFound,
-				fmt.Errorf("резюме с id=999 не найдено"),
+				fmt.Errorf("резюме с id=%d не найдено", 999),
 			),
 		},
 		{
-			name:        "Резюме не принадлежит пользователю",
+			name:        "Запрещено: резюме не принадлежит соискателю",
 			resumeID:    1,
 			applicantID: 2,
-			request:     &dto.UpdateResumeRequest{},
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
 						ID:          1,
 						ApplicantID: 1,
+						Profession:  "Old Profession",
 					}, nil)
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrForbidden,
-				fmt.Errorf("резюме с id=1 не принадлежит соискателю с id=2"),
+				fmt.Errorf("резюме с id=%d не принадлежит соискателю с id=%d", 1, 2),
 			),
 		},
 		{
-			name:        "Ошибка при парсинге даты окончания",
+			name:        "Ошибка парсинга даты окончания учебы",
 			resumeID:    1,
 			applicantID: 1,
 			request: &dto.UpdateResumeRequest{
+				Profession:     "Developer",
 				GraduationYear: "invalid-date",
 			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
@@ -961,29 +1228,71 @@ func TestResumeService_Update(t *testing.T) {
 					Return(&entity.Resume{
 						ID:          1,
 						ApplicantID: 1,
+						Profession:  "Old Profession",
 					}, nil)
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
-				fmt.Errorf("неверный формат даты окончания учебы: parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\""),
+				fmt.Errorf("неверный формат даты окончания учебы: %w", fmt.Errorf("parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\"")),
 			),
 		},
 		{
-			name:        "Ошибка при обновлении резюме",
+			name:        "Ошибка валидации резюме",
 			resumeID:    1,
 			applicantID: 1,
-			request:     &dto.UpdateResumeRequest{},
+			request: &dto.UpdateResumeRequest{
+				AboutMe: "Опытный разработчик",
+				// Profession is missing, assuming validation fails
+			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
 						ID:          1,
 						ApplicantID: 1,
+						Profession:  "Old Profession",
 					}, nil)
 
 				rr.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						AboutMe:     "Опытный разработчик",
+					}).
+					Return(nil, entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("ошибка валидации резюме"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("ошибка валидации резюме"),
+			),
+		},
+		{
+			name:        "Ошибка обновления резюме",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при обновлении резюме"),
@@ -996,21 +1305,34 @@ func TestResumeService_Update(t *testing.T) {
 			),
 		},
 		{
-			name:        "Ошибка при удалении навыков",
+			name:        "Ошибка удаления навыков",
 			resumeID:    1,
 			applicantID: 1,
-			request:     &dto.UpdateResumeRequest{},
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
 						ID:          1,
 						ApplicantID: 1,
+						Profession:  "Old Profession",
 					}, nil)
 
 				rr.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
-					Return(&entity.Resume{ID: 1}, nil)
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
 
 				rr.EXPECT().
 					DeleteSkills(gomock.Any(), 1).
@@ -1026,11 +1348,12 @@ func TestResumeService_Update(t *testing.T) {
 			),
 		},
 		{
-			name:        "Ошибка при добавлении навыков",
+			name:        "Ошибка поиска ID навыков",
 			resumeID:    1,
 			applicantID: 1,
 			request: &dto.UpdateResumeRequest{
-				Skills: []string{"Go"},
+				Profession: "Developer",
+				Skills:     []string{"Go", "SQL"},
 			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
@@ -1038,22 +1361,81 @@ func TestResumeService_Update(t *testing.T) {
 					Return(&entity.Resume{
 						ID:          1,
 						ApplicantID: 1,
+						Profession:  "Old Profession",
 					}, nil)
 
 				rr.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
-					Return(&entity.Resume{ID: 1}, nil)
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
 
 				rr.EXPECT().
 					DeleteSkills(gomock.Any(), 1).
 					Return(nil)
 
 				rr.EXPECT().
-					FindSkillIDsByNames(gomock.Any(), []string{"Go"}).
-					Return([]int{1}, nil)
+					FindSkillIDsByNames(gomock.Any(), []string{"Go", "SQL"}).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при поиске ID навыков"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при поиске ID навыков"),
+			),
+		},
+		{
+			name:        "Ошибка добавления навыков",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+				Skills:     []string{"Go", "SQL"},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
 
 				rr.EXPECT().
-					AddSkills(gomock.Any(), 1, []int{1}).
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					FindSkillIDsByNames(gomock.Any(), []string{"Go", "SQL"}).
+					Return([]int{1, 2}, nil)
+
+				rr.EXPECT().
+					AddSkills(gomock.Any(), 1, []int{1, 2}).
 					Return(entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при добавлении навыков"),
@@ -1066,16 +1448,11 @@ func TestResumeService_Update(t *testing.T) {
 			),
 		},
 		{
-			name:        "Успешное обновление без опыта работы",
+			name:        "Ошибка удаления специализаций",
 			resumeID:    1,
 			applicantID: 1,
 			request: &dto.UpdateResumeRequest{
-				AboutMe:                "Обновленный текст без опыта",
-				Specialization:         "Frontend разработка",
-				Profession:             "Frontend Developer",
-				Education:              entity.Higher,
-				EducationalInstitution: "МГУ",
-				GraduationYear:         gradYearStr,
+				Profession: "Developer",
 			},
 			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
@@ -1083,36 +1460,483 @@ func TestResumeService_Update(t *testing.T) {
 					Return(&entity.Resume{
 						ID:          1,
 						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
 						CreatedAt:   now,
 						UpdatedAt:   now,
 					}, nil)
 
 				rr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "Frontend разработка").
-					Return(2, nil)
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при удалении специализаций"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при удалении специализаций"),
+			),
+		},
+		{
+			name:        "Ошибка поиска ID специализаций",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession:                "Developer",
+				AdditionalSpecializations: []string{"DevOps"},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
 
 				rr.EXPECT().
 					Update(gomock.Any(), &entity.Resume{
-						ID:                     1,
-						ApplicantID:            1,
-						AboutMe:                "Обновленный текст без опыта",
-						SpecializationID:       2,
-						Profession:             "Frontend Developer",
-						Education:              entity.Higher,
-						EducationalInstitution: "МГУ",
-						GraduationYear:         gradYear,
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
 					}).
 					Return(&entity.Resume{
-						ID:                     1,
-						ApplicantID:            1,
-						AboutMe:                "Обновленный текст без опыта",
-						SpecializationID:       2,
-						Profession:             "Frontend Developer",
-						Education:              entity.Higher,
-						EducationalInstitution: "МГУ",
-						GraduationYear:         gradYear,
-						CreatedAt:              now,
-						UpdatedAt:              now,
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					FindSpecializationIDsByNames(gomock.Any(), []string{"DevOps"}).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при поиске ID специализаций"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при поиске ID специализаций"),
+			),
+		},
+		{
+			name:        "Ошибка добавления специализаций",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession:                "Developer",
+				AdditionalSpecializations: []string{"DevOps"},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					FindSpecializationIDsByNames(gomock.Any(), []string{"DevOps"}).
+					Return([]int{2}, nil)
+
+				rr.EXPECT().
+					AddSpecializations(gomock.Any(), 1, []int{2}).
+					Return(entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при добавлении специализаций"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при добавлении специализаций"),
+			),
+		},
+		{
+			name:        "Ошибка удаления опыта работы",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 1).
+					Return(entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при удалении опыта работы"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при удалении опыта работы"),
+			),
+		},
+		{
+			name:        "Ошибка парсинга даты начала работы",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+				WorkExperiences: []dto.WorkExperienceDTO{
+					{
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    "invalid-date",
+					},
+				},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 1).
+					Return(nil)
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("неверный формат даты начала работы: %w", fmt.Errorf("parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\"")),
+			),
+		},
+		{
+			name:        "Ошибка парсинга даты окончания работы",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+				WorkExperiences: []dto.WorkExperienceDTO{
+					{
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    startDateStr,
+						EndDate:      "invalid-date",
+						UntilNow:     false,
+					},
+				},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 1).
+					Return(nil)
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("неверный формат даты окончания работы: %w", fmt.Errorf("parsing time \"invalid-date\" as \"2006-01-02\": cannot parse \"invalid-date\" as \"2006\"")),
+			),
+		},
+		{
+			name:        "Ошибка валидации опыта работы",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+				WorkExperiences: []dto.WorkExperienceDTO{
+					{
+						// Missing EmployerName, assuming validation fails
+						Position:  "Разработчик",
+						StartDate: startDateStr,
+						UntilNow:  true,
+					},
+				},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					AddWorkExperience(gomock.Any(), &entity.WorkExperience{
+						ResumeID:  1,
+						Position:  "Разработчик",
+						StartDate: startDate,
+						UntilNow:  true,
+					}).
+					Return(nil, entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("ошибка валидации опыта работы"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("ошибка валидации опыта работы"),
+			),
+		},
+		{
+			name:        "Ошибка добавления опыта работы",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+				WorkExperiences: []dto.WorkExperienceDTO{
+					{
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    startDateStr,
+						UntilNow:     true,
+					},
+				},
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					AddWorkExperience(gomock.Any(), &entity.WorkExperience{
+						ResumeID:     1,
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						StartDate:    startDate,
+						UntilNow:     true,
+					}).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при добавлении опыта работы"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при добавлении опыта работы"),
+			),
+		},
+		{
+			name:        "Ошибка получения специализации для ответа",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Specialization: "Backend разработка",
+				Profession:     "Developer",
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					FindSpecializationIDByName(gomock.Any(), "Backend разработка").
+					Return(1, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:               1,
+						ApplicantID:      1,
+						SpecializationID: 1,
+						Profession:       "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:               1,
+						ApplicantID:      1,
+						SpecializationID: 1,
+						Profession:       "Developer",
+						CreatedAt:        now,
+						UpdatedAt:        now,
 					}, nil)
 
 				rr.EXPECT().
@@ -1128,8 +1952,114 @@ func TestResumeService_Update(t *testing.T) {
 					Return(nil)
 
 				spr.EXPECT().
-					GetByID(gomock.Any(), 2).
-					Return(&entity.Specialization{ID: 2, Name: "Frontend разработка"}, nil)
+					GetByID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении специализации"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при получении специализации"),
+			),
+		},
+		{
+			name:        "Ошибка получения навыков для ответа",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении навыков"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при получении навыков"),
+			),
+		},
+		{
+			name:        "Ошибка получения дополнительных специализаций для ответа",
+			resumeID:    1,
+			applicantID: 1,
+			request: &dto.UpdateResumeRequest{
+				Profession: "Developer",
+			},
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+				rr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Old Profession",
+					}, nil)
+
+				rr.EXPECT().
+					Update(gomock.Any(), &entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+					}).
+					Return(&entity.Resume{
+						ID:          1,
+						ApplicantID: 1,
+						Profession:  "Developer",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}, nil)
+
+				rr.EXPECT().
+					DeleteSkills(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteSpecializations(gomock.Any(), 1).
+					Return(nil)
+
+				rr.EXPECT().
+					DeleteWorkExperiences(gomock.Any(), 1).
+					Return(nil)
 
 				rr.EXPECT().
 					GetSkillsByResumeID(gomock.Any(), 1).
@@ -1137,24 +2067,16 @@ func TestResumeService_Update(t *testing.T) {
 
 				rr.EXPECT().
 					GetSpecializationsByResumeID(gomock.Any(), 1).
-					Return([]entity.Specialization{}, nil)
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении дополнительных специализаций"),
+					))
 			},
-			expectedResult: &dto.ResumeResponse{
-				ID:                        1,
-				ApplicantID:               1,
-				AboutMe:                   "Обновленный текст без опыта",
-				Specialization:            "Frontend разработка",
-				Profession:                "Frontend Developer",
-				Education:                 entity.Higher,
-				EducationalInstitution:    "МГУ",
-				GraduationYear:            gradYearStr,
-				CreatedAt:                 now.Format(time.RFC3339),
-				UpdatedAt:                 now.Format(time.RFC3339),
-				Skills:                    []string{},
-				AdditionalSpecializations: []string{},
-				WorkExperiences:           []dto.WorkExperienceResponse{},
-			},
-			expectedErr: nil,
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при получении дополнительных специализаций"),
+			),
 		},
 	}
 
@@ -1184,6 +2106,7 @@ func TestResumeService_Update(t *testing.T) {
 				var serviceErr entity.Error
 				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
@@ -1198,7 +2121,7 @@ func TestResumeService_Delete(t *testing.T) {
 		name           string
 		resumeID       int
 		applicantID    int
-		mockSetup      func(*mock.MockResumeRepository, *mock.MockApplicantRepository)
+		mockSetup      func(*mock.MockResumeRepository, *mock.MockSkillRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository)
 		expectedResult *dto.DeleteResumeResponse
 		expectedErr    error
 	}{
@@ -1206,7 +2129,7 @@ func TestResumeService_Delete(t *testing.T) {
 			name:        "Успешное удаление резюме",
 			resumeID:    1,
 			applicantID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
@@ -1232,7 +2155,7 @@ func TestResumeService_Delete(t *testing.T) {
 			},
 			expectedResult: &dto.DeleteResumeResponse{
 				Success: true,
-				Message: "Резюме с id=1 успешно удалено",
+				Message: fmt.Sprintf("Резюме с id=%d успешно удалено", 1),
 			},
 			expectedErr: nil,
 		},
@@ -1240,25 +2163,25 @@ func TestResumeService_Delete(t *testing.T) {
 			name:        "Резюме не найдено",
 			resumeID:    999,
 			applicantID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 999).
 					Return(nil, entity.NewError(
 						entity.ErrNotFound,
-						fmt.Errorf("резюме с id=999 не найдено"),
+						fmt.Errorf("резюме с id=%d не найдено", 999),
 					))
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrNotFound,
-				fmt.Errorf("резюме с id=999 не найдено"),
+				fmt.Errorf("резюме с id=%d не найдено", 999),
 			),
 		},
 		{
-			name:        "Резюме не принадлежит соискателю",
+			name:        "Запрещено: резюме не принадлежит соискателю",
 			resumeID:    1,
 			applicantID: 2,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
@@ -1269,14 +2192,14 @@ func TestResumeService_Delete(t *testing.T) {
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrForbidden,
-				fmt.Errorf("резюме с id=1 не принадлежит соискателю с id=2"),
+				fmt.Errorf("резюме с id=%d не принадлежит соискателю с id=%d", 1, 2),
 			),
 		},
 		{
-			name:        "Ошибка при удалении опыта работы",
+			name:        "Ошибка удаления опыта работы",
 			resumeID:    1,
 			applicantID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
@@ -1298,10 +2221,10 @@ func TestResumeService_Delete(t *testing.T) {
 			),
 		},
 		{
-			name:        "Ошибка при удалении навыков",
+			name:        "Ошибка удаления навыков",
 			resumeID:    1,
 			applicantID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
@@ -1327,10 +2250,10 @@ func TestResumeService_Delete(t *testing.T) {
 			),
 		},
 		{
-			name:        "Ошибка при удалении специализаций",
+			name:        "Ошибка удаления специализаций",
 			resumeID:    1,
 			applicantID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
@@ -1360,10 +2283,10 @@ func TestResumeService_Delete(t *testing.T) {
 			),
 		},
 		{
-			name:        "Ошибка при удалении самого резюме",
+			name:        "Ошибка удаления резюме",
 			resumeID:    1,
 			applicantID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
 				rr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Resume{
@@ -1396,40 +2319,6 @@ func TestResumeService_Delete(t *testing.T) {
 				fmt.Errorf("ошибка при удалении резюме"),
 			),
 		},
-		{
-			name:        "Успешное удаление резюме без связанных данных",
-			resumeID:    2,
-			applicantID: 1,
-			mockSetup: func(rr *mock.MockResumeRepository, ar *mock.MockApplicantRepository) {
-				rr.EXPECT().
-					GetByID(gomock.Any(), 2).
-					Return(&entity.Resume{
-						ID:          2,
-						ApplicantID: 1,
-					}, nil)
-
-				rr.EXPECT().
-					DeleteWorkExperiences(gomock.Any(), 2).
-					Return(nil)
-
-				rr.EXPECT().
-					DeleteSkills(gomock.Any(), 2).
-					Return(nil)
-
-				rr.EXPECT().
-					DeleteSpecializations(gomock.Any(), 2).
-					Return(nil)
-
-				rr.EXPECT().
-					Delete(gomock.Any(), 2).
-					Return(nil)
-			},
-			expectedResult: &dto.DeleteResumeResponse{
-				Success: true,
-				Message: "Резюме с id=2 успешно удалено",
-			},
-			expectedErr: nil,
-		},
 	}
 
 	for _, tc := range testCases {
@@ -1446,7 +2335,7 @@ func TestResumeService_Delete(t *testing.T) {
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
 			mockApplicantService := NewApplicantService(mockApplicantRepo, nil, nil)
 
-			tc.mockSetup(mockResumeRepo, mockApplicantRepo)
+			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo)
 
 			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 			ctx := context.Background()
@@ -1458,6 +2347,7 @@ func TestResumeService_Delete(t *testing.T) {
 				var serviceErr entity.Error
 				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
@@ -1469,14 +2359,16 @@ func TestResumeService_GetAll(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	startDate := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2022, time.December, 31, 0, 0, 0, 0, time.UTC)
+	startDate := time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC)
+	startDateStr := startDate.Format("2006-01-02")
+	// endDate := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	// endDateStr := endDate.Format("2006-01-02")
 
 	testCases := []struct {
 		name           string
 		limit          int
 		offset         int
-		mockSetup      func(*mock.MockResumeRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository)
+		mockSetup      func(*mock.MockResumeRepository, *mock.MockSkillRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository, *m.MockApplicant)
 		expectedResult []dto.ResumeShortResponse
 		expectedErr    error
 	}{
@@ -1484,35 +2376,33 @@ func TestResumeService_GetAll(t *testing.T) {
 			name:   "Успешное получение списка резюме",
 			limit:  10,
 			offset: 0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
 				rr.EXPECT().
 					GetAll(gomock.Any(), 10, 0).
 					Return([]entity.Resume{
 						{
 							ID:               1,
-							ApplicantID:      100,
+							ApplicantID:      1,
 							SpecializationID: 1,
 							Profession:       "Backend Developer",
 							CreatedAt:        now,
 							UpdatedAt:        now,
 						},
 						{
-							ID:               2,
-							ApplicantID:      101,
-							SpecializationID: 2,
-							Profession:       "DevOps Engineer",
-							CreatedAt:        now.Add(-24 * time.Hour),
-							UpdatedAt:        now.Add(-24 * time.Hour),
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
 						},
 					}, nil)
 
+				// Resume 1: Specialization
 				spr.EXPECT().
 					GetByID(gomock.Any(), 1).
-					Return(&entity.Specialization{
-						ID:   1,
-						Name: "Backend разработка",
-					}, nil)
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
 
+				// Resume 1: Work Experience
 				rr.EXPECT().
 					GetWorkExperienceByResumeID(gomock.Any(), 1).
 					Return([]entity.WorkExperience{
@@ -1524,55 +2414,32 @@ func TestResumeService_GetAll(t *testing.T) {
 							Duties:       "Разработка сервисов",
 							Achievements: "Оптимизация запросов",
 							StartDate:    startDate,
-							EndDate:      endDate,
-							UntilNow:     false,
+							UntilNow:     true,
+							UpdatedAt:    now,
 						},
 					}, nil)
 
-				ar.EXPECT().
-					GetApplicantByID(gomock.Any(), 100).
-					Return(&entity.Applicant{
-						ID:        100,
-						FirstName: "Иван",
-						LastName:  "Иванов",
-						Email:     "ivan@example.com",
-					}, nil)
+				// Resume 1: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
 
-				spr.EXPECT().
-					GetByID(gomock.Any(), 2).
-					Return(&entity.Specialization{
-						ID:   2,
-						Name: "DevOps",
-					}, nil)
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
 
+				// Resume 2: Work Experience (empty)
 				rr.EXPECT().
 					GetWorkExperienceByResumeID(gomock.Any(), 2).
-					Return([]entity.WorkExperience{
-						{
-							ID:           2,
-							ResumeID:     2,
-							EmployerName: "Google",
-							Position:     "Инженер",
-							Duties:       "Поддержка инфраструктуры",
-							Achievements: "Автоматизация деплоя",
-							StartDate:    startDate,
-							UntilNow:     true,
-						},
-					}, nil)
+					Return([]entity.WorkExperience{}, nil)
 
-				ar.EXPECT().
-					GetApplicantByID(gomock.Any(), 101).
-					Return(&entity.Applicant{
-						ID:        101,
-						FirstName: "Петр",
-						LastName:  "Петров",
-						Email:     "petr@example.com",
-					}, nil)
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
 			},
 			expectedResult: []dto.ResumeShortResponse{
 				{
 					ID:             1,
-					Applicant:      &dto.ApplicantProfileResponse{ID: 100, FirstName: "Иван", LastName: "Иванов", Email: "ivan@example.com"},
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
 					Specialization: "Backend разработка",
 					Profession:     "Backend Developer",
 					CreatedAt:      now.Format(time.RFC3339),
@@ -1583,36 +2450,38 @@ func TestResumeService_GetAll(t *testing.T) {
 						Position:     "Разработчик",
 						Duties:       "Разработка сервисов",
 						Achievements: "Оптимизация запросов",
-						StartDate:    startDate.Format("2006-01-02"),
-						EndDate:      endDate.Format("2006-01-02"),
-						UntilNow:     false,
+						StartDate:    startDateStr,
+						UntilNow:     true,
 					},
 				},
 				{
 					ID:             2,
-					Applicant:      &dto.ApplicantProfileResponse{ID: 101, FirstName: "Петр", LastName: "Петров", Email: "petr@example.com"},
-					Specialization: "DevOps",
-					Profession:     "DevOps Engineer",
-					CreatedAt:      now.Add(-24 * time.Hour).Format(time.RFC3339),
-					UpdatedAt:      now.Add(-24 * time.Hour).Format(time.RFC3339),
-					WorkExperience: dto.WorkExperienceShort{
-						ID:           2,
-						EmployerName: "Google",
-						Position:     "Инженер",
-						Duties:       "Поддержка инфраструктуры",
-						Achievements: "Автоматизация деплоя",
-						StartDate:    startDate.Format("2006-01-02"),
-						UntilNow:     true,
-					},
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
 				},
 			},
 			expectedErr: nil,
 		},
 		{
-			name:   "Ошибка при получении списка резюме",
+			name:   "Пустой список резюме",
 			limit:  10,
 			offset: 0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAll(gomock.Any(), 10, 0).
+					Return([]entity.Resume{}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{},
+			expectedErr:    nil,
+		},
+		{
+			name:   "Ошибка получения списка резюме",
+			limit:  10,
+			offset: 0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
 				rr.EXPECT().
 					GetAll(gomock.Any(), 10, 0).
 					Return(nil, entity.NewError(
@@ -1627,135 +2496,243 @@ func TestResumeService_GetAll(t *testing.T) {
 			),
 		},
 		{
-			name:   "Ошибка при получении специализации (пропускаем резюме)",
+			name:   "Частичная ошибка: ошибка получения специализации",
 			limit:  10,
 			offset: 0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
 				rr.EXPECT().
 					GetAll(gomock.Any(), 10, 0).
 					Return([]entity.Resume{
 						{
 							ID:               1,
-							ApplicantID:      100,
+							ApplicantID:      1,
 							SpecializationID: 1,
 							Profession:       "Backend Developer",
 							CreatedAt:        now,
 							UpdatedAt:        now,
 						},
+						{
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
 					}, nil)
 
+				// Resume 1: Specialization fails
 				spr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении специализации"),
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
 					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
 			},
-			expectedResult: []dto.ResumeShortResponse{},
-			expectedErr:    nil,
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
 		},
 		{
-			name:   "Ошибка при получении опыта работы (пропускаем резюме)",
+			name:   "Частичная ошибка: ошибка получения опыта работы",
 			limit:  10,
 			offset: 0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
 				rr.EXPECT().
 					GetAll(gomock.Any(), 10, 0).
 					Return([]entity.Resume{
 						{
 							ID:               1,
-							ApplicantID:      100,
+							ApplicantID:      1,
 							SpecializationID: 1,
 							Profession:       "Backend Developer",
 							CreatedAt:        now,
 							UpdatedAt:        now,
 						},
+						{
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
 					}, nil)
 
+				// Resume 1: Specialization
 				spr.EXPECT().
 					GetByID(gomock.Any(), 1).
-					Return(&entity.Specialization{
-						ID:   1,
-						Name: "Backend разработка",
-					}, nil)
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
 
+				// Resume 1: Work Experience fails
 				rr.EXPECT().
 					GetWorkExperienceByResumeID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
 						fmt.Errorf("ошибка при получении опыта работы"),
 					))
-			},
-			expectedResult: []dto.ResumeShortResponse{},
-			expectedErr:    nil,
-		},
-		{
-			name:   "Резюме без специализации и опыта работы",
-			limit:  10,
-			offset: 0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
-				rr.EXPECT().
-					GetAll(gomock.Any(), 10, 0).
-					Return([]entity.Resume{
-						{
-							ID:          1,
-							ApplicantID: 100,
-							Profession:  "Developer",
-							CreatedAt:   now,
-							UpdatedAt:   now,
-						},
-					}, nil)
 
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
 				rr.EXPECT().
-					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
 					Return([]entity.WorkExperience{}, nil)
 
-				ar.EXPECT().
-					GetApplicantByID(gomock.Any(), 100).
-					Return(&entity.Applicant{
-						ID:        100,
-						FirstName: "Иван",
-						LastName:  "Иванов",
-						Email:     "ivan@example.com",
-					}, nil)
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
 			},
 			expectedResult: []dto.ResumeShortResponse{
 				{
-					ID:         1,
-					Applicant:  &dto.ApplicantProfileResponse{ID: 100, FirstName: "Иван", LastName: "Иванов", Email: "ivan@example.com"},
-					Profession: "Developer",
-					CreatedAt:  now.Format(time.RFC3339),
-					UpdatedAt:  now.Format(time.RFC3339),
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
 				},
 			},
 			expectedErr: nil,
 		},
 		{
-			name:   "Ошибка при получении информации о соискателе (пропускаем резюме)",
+			name:   "Частичная ошибка: ошибка получения информации о соискателе",
 			limit:  10,
 			offset: 0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
 				rr.EXPECT().
 					GetAll(gomock.Any(), 10, 0).
 					Return([]entity.Resume{
 						{
-							ID:          1,
-							ApplicantID: 100,
-							Profession:  "Developer",
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
 							CreatedAt:   now,
 							UpdatedAt:   now,
 						},
 					}, nil)
 
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience
 				rr.EXPECT().
 					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return([]entity.WorkExperience{
+						{
+							ID:           1,
+							ResumeID:     1,
+							EmployerName: "Яндекс",
+							Position:     "Разработчик",
+							Duties:       "Разработка сервисов",
+							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+					}, nil)
+
+				// Resume 1: Applicant fails
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("соискатель с id=1 не найден"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
 					Return([]entity.WorkExperience{}, nil)
 
-				ar.EXPECT().
-					GetApplicantByID(gomock.Any(), 100).
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:   "Все резюме пропущены из-за ошибок",
+			limit:  10,
+			offset: 0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAll(gomock.Any(), 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:               2,
+							ApplicantID:      2,
+							SpecializationID: 2,
+							Profession:       "Frontend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении информации о соискателе"),
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
+					))
+
+				// Resume 2: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 2).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=2 не найдена"),
 					))
 			},
 			expectedResult: []dto.ResumeShortResponse{},
@@ -1775,9 +2752,9 @@ func TestResumeService_GetAll(t *testing.T) {
 			mockSkillRepo := mock.NewMockSkillRepository(ctrl)
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
-			mockApplicantService := NewApplicantService(mockApplicantRepo, nil, nil)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
-			tc.mockSetup(mockResumeRepo, mockSpecRepo, mockApplicantRepo)
+			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 
 			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 			ctx := context.Background()
@@ -1789,6 +2766,7 @@ func TestResumeService_GetAll(t *testing.T) {
 				var serviceErr entity.Error
 				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
@@ -1800,24 +2778,475 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	startDate := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2022, time.December, 31, 0, 0, 0, 0, time.UTC)
+	startDate := time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC)
+	startDateStr := startDate.Format("2006-01-02")
 
 	testCases := []struct {
 		name           string
 		applicantID    int
 		limit          int
 		offset         int
-		mockSetup      func(*mock.MockResumeRepository, *mock.MockSpecializationRepository, *m.MockApplicant)
-		expectedResult []dto.ResumeShortResponse
+		mockSetup      func(*mock.MockResumeRepository, *mock.MockSkillRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository, *m.MockApplicant)
+		expectedResult []dto.ResumeApplicantShortResponse
 		expectedErr    error
 	}{
 		{
-			name:        "Успешное получение списка резюме с опытом работы",
+			name:        "Успешное получение списка резюме соискателя",
 			applicantID: 1,
 			limit:       10,
 			offset:      0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, am *m.MockApplicant) {
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "DevOps Engineer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return([]entity.WorkExperience{
+						{
+							ID:           1,
+							ResumeID:     1,
+							EmployerName: "Яндекс",
+							Position:     "Разработчик",
+							Duties:       "Разработка сервисов",
+							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+					}, nil)
+
+				// Resume 1: Skills
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 1).
+					Return([]entity.Skill{
+						{Name: "Go"},
+						{Name: "PostgreSQL"},
+					}, nil)
+
+				// Resume 1: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Skills (empty)
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 2).
+					Return([]entity.Skill{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeApplicantShortResponse{
+				{
+					ID:             1,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "Backend разработка",
+					Profession:     "Backend Developer",
+					Skills:         []string{"Go", "PostgreSQL"},
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+					WorkExperience: dto.WorkExperienceShort{
+						ID:           1,
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						Duties:       "Разработка сервисов",
+						Achievements: "Оптимизация запросов",
+						StartDate:    startDateStr,
+						UntilNow:     true,
+					},
+				},
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "DevOps Engineer",
+					Skills:         []string{},
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "Пустой список резюме",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]entity.Resume{}, nil)
+			},
+			expectedResult: []dto.ResumeApplicantShortResponse{},
+			expectedErr:    nil,
+		},
+		{
+			name:        "Ошибка получения списка резюме",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении списка резюме для соискателя"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при получении списка резюме для соискателя"),
+			),
+		},
+		{
+			name:        "Частичная ошибка: ошибка получения специализации",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "DevOps Engineer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Skills (empty)
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 2).
+					Return([]entity.Skill{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeApplicantShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "DevOps Engineer",
+					Skills:         []string{},
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "Частичная ошибка: ошибка получения опыта работы",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "DevOps Engineer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience fails
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении опыта работы"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Skills (empty)
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 2).
+					Return([]entity.Skill{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeApplicantShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "DevOps Engineer",
+					Skills:         []string{},
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "Частичная ошибка: ошибка получения информации о соискателе",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "DevOps Engineer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return([]entity.WorkExperience{
+						{
+							ID:           1,
+							ResumeID:     1,
+							EmployerName: "Яндекс",
+							Position:     "Разработчик",
+							Duties:       "Разработка сервисов",
+							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+					}, nil)
+
+				// Resume 1: Applicant fails
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("соискатель с id=1 не найден"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Skills (empty)
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 2).
+					Return([]entity.Skill{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeApplicantShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "DevOps Engineer",
+					Skills:         []string{},
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "Частичная ошибка: ошибка получения навыков",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "DevOps Engineer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return([]entity.WorkExperience{
+						{
+							ID:           1,
+							ResumeID:     1,
+							EmployerName: "Яндекс",
+							Position:     "Разработчик",
+							Duties:       "Разработка сервисов",
+							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+					}, nil)
+
+				// Resume 1: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+
+				// Resume 1: Skills fails
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении навыков"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Skills (empty)
+				rr.EXPECT().
+					GetSkillsByResumeID(gomock.Any(), 2).
+					Return([]entity.Skill{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeApplicantShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "DevOps Engineer",
+					Skills:         []string{},
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "Все резюме пропущены из-за ошибок",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
 				rr.EXPECT().
 					GetAllResumesByApplicantID(gomock.Any(), 1, 10, 0).
 					Return([]entity.Resume{
@@ -1833,16 +3262,123 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 							ID:               2,
 							ApplicantID:      1,
 							SpecializationID: 2,
-							Profession:       "Frontend Developer",
-							CreatedAt:        now.Add(-time.Hour),
-							UpdatedAt:        now.Add(-time.Hour),
+							Profession:       "DevOps Engineer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
 						},
 					}, nil)
 
+				// Resume 1: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
+					))
+
+				// Resume 2: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 2).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=2 не найдена"),
+					))
+			},
+			expectedResult: []dto.ResumeApplicantShortResponse{},
+			expectedErr:    nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockSkillRepo := mock.NewMockSkillRepository(ctrl)
+			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
+			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
+
+			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			ctx := context.Background()
+
+			result, err := service.GetAllResumesByApplicantID(ctx, tc.applicantID, tc.limit, tc.offset)
+
+			if tc.expectedErr != nil {
+				require.Error(t, err)
+				var serviceErr entity.Error
+				require.ErrorAs(t, err, &serviceErr)
+				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedResult, result)
+			}
+		})
+	}
+}
+func TestResumeService_SearchResumesByProfession(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	startDate := time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC)
+	startDateStr := startDate.Format("2006-01-02")
+
+	type testConfig struct {
+		role string
+	}
+
+	testCases := []struct {
+		name           string
+		config         testConfig
+		userID         int
+		profession     string
+		limit          int
+		offset         int
+		mockSetup      func(*mock.MockResumeRepository, *mock.MockSkillRepository, *mock.MockSpecializationRepository, *mock.MockApplicantRepository, *m.MockApplicant)
+		expectedResult []dto.ResumeShortResponse
+		expectedErr    error
+	}{
+		{
+			name:       "Успешный поиск для соискателя",
+			config:     testConfig{role: "applicant"},
+			userID:     1,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfessionForApplicant(gomock.Any(), 1, "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
 				spr.EXPECT().
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
 
+				// Resume 1: Work Experience
 				rr.EXPECT().
 					GetWorkExperienceByResumeID(gomock.Any(), 1).
 					Return([]entity.WorkExperience{
@@ -1854,44 +3390,32 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 							Duties:       "Разработка сервисов",
 							Achievements: "Оптимизация запросов",
 							StartDate:    startDate,
-							EndDate:      endDate,
-							UntilNow:     false,
+							UntilNow:     true,
+							UpdatedAt:    now,
 						},
 					}, nil)
 
-				spr.EXPECT().
-					GetByID(gomock.Any(), 2).
-					Return(&entity.Specialization{ID: 2, Name: "Frontend разработка"}, nil)
+				// Resume 1: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
 
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
 				rr.EXPECT().
 					GetWorkExperienceByResumeID(gomock.Any(), 2).
-					Return([]entity.WorkExperience{
-						{
-							ID:           2,
-							ResumeID:     2,
-							EmployerName: "Google",
-							Position:     "Инженер",
-							Duties:       "Разработка интерфейсов",
-							Achievements: "Улучшение UX",
-							StartDate:    startDate,
-							UntilNow:     true,
-						},
-					}, nil)
+					Return([]entity.WorkExperience{}, nil)
 
-				am.EXPECT().
+				// Resume 2: Applicant
+				as.EXPECT().
 					GetUser(gomock.Any(), 1).
-					Return(&dto.ApplicantProfileResponse{
-						ID:        1,
-						FirstName: "Иван",
-						LastName:  "Иванов",
-						Email:     "ivan@example.com",
-					}, nil).
-					Times(2)
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
 			},
 			expectedResult: []dto.ResumeShortResponse{
 				{
 					ID:             1,
-					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов", Email: "ivan@example.com"},
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
 					Specialization: "Backend разработка",
 					Profession:     "Backend Developer",
 					CreatedAt:      now.Format(time.RFC3339),
@@ -1902,183 +3426,15 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 						Position:     "Разработчик",
 						Duties:       "Разработка сервисов",
 						Achievements: "Оптимизация запросов",
-						StartDate:    startDate.Format("2006-01-02"),
-						EndDate:      endDate.Format("2006-01-02"),
-						UntilNow:     false,
+						StartDate:    startDateStr,
+						UntilNow:     true,
 					},
 				},
 				{
 					ID:             2,
-					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов", Email: "ivan@example.com"},
-					Specialization: "Frontend разработка",
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
 					Profession:     "Frontend Developer",
-					CreatedAt:      now.Add(-time.Hour).Format(time.RFC3339),
-					UpdatedAt:      now.Add(-time.Hour).Format(time.RFC3339),
-					WorkExperience: dto.WorkExperienceShort{
-						ID:           2,
-						EmployerName: "Google",
-						Position:     "Инженер",
-						Duties:       "Разработка интерфейсов",
-						Achievements: "Улучшение UX",
-						StartDate:    startDate.Format("2006-01-02"),
-						UntilNow:     true,
-					},
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			name:        "Резюме без специализации и опыта работы",
-			applicantID: 2,
-			limit:       10,
-			offset:      0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, am *m.MockApplicant) {
-				rr.EXPECT().
-					GetAllResumesByApplicantID(gomock.Any(), 2, 10, 0).
-					Return([]entity.Resume{
-						{
-							ID:          3,
-							ApplicantID: 2,
-							Profession:  "Fullstack Developer",
-							CreatedAt:   now,
-							UpdatedAt:   now,
-						},
-					}, nil)
-
-				rr.EXPECT().
-					GetWorkExperienceByResumeID(gomock.Any(), 3).
-					Return([]entity.WorkExperience{}, nil)
-
-				am.EXPECT().
-					GetUser(gomock.Any(), 2).
-					Return(&dto.ApplicantProfileResponse{
-						ID:        2,
-						FirstName: "Петр",
-						LastName:  "Петров",
-						Email:     "petr@example.com",
-					}, nil)
-			},
-			expectedResult: []dto.ResumeShortResponse{
-				{
-					ID:         3,
-					Applicant:  &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров", Email: "petr@example.com"},
-					Profession: "Fullstack Developer",
-					CreatedAt:  now.Format(time.RFC3339),
-					UpdatedAt:  now.Format(time.RFC3339),
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			name:        "Ошибка при получении списка резюме",
-			applicantID: 3,
-			limit:       10,
-			offset:      0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, am *m.MockApplicant) {
-				rr.EXPECT().
-					GetAllResumesByApplicantID(gomock.Any(), 3, 10, 0).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении списка резюме"),
-					))
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при получении списка резюме"),
-			),
-		},
-		{
-			name:        "Ошибка при получении специализации (пропускаем резюме)",
-			applicantID: 4,
-			limit:       10,
-			offset:      0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, am *m.MockApplicant) {
-				rr.EXPECT().
-					GetAllResumesByApplicantID(gomock.Any(), 4, 10, 0).
-					Return([]entity.Resume{
-						{
-							ID:               4,
-							ApplicantID:      4,
-							SpecializationID: 1,
-							Profession:       "DevOps Engineer",
-							CreatedAt:        now,
-							UpdatedAt:        now,
-						},
-					}, nil)
-
-				spr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении специализации"),
-					))
-
-				am.EXPECT().
-					GetUser(gomock.Any(), 4).
-					Return(&dto.ApplicantProfileResponse{
-						ID:        4,
-						FirstName: "Сергей",
-						LastName:  "Сергеев",
-						Email:     "sergey@example.com",
-					}, nil)
-			},
-			expectedResult: []dto.ResumeShortResponse{
-				{
-					ID:         4,
-					Applicant:  &dto.ApplicantProfileResponse{ID: 4, FirstName: "Сергей", LastName: "Сергеев", Email: "sergey@example.com"},
-					Profession: "DevOps Engineer",
-					CreatedAt:  now.Format(time.RFC3339),
-					UpdatedAt:  now.Format(time.RFC3339),
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			name:        "Ошибка при получении опыта работы (пропускаем опыт)",
-			applicantID: 5,
-			limit:       10,
-			offset:      0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, am *m.MockApplicant) {
-				rr.EXPECT().
-					GetAllResumesByApplicantID(gomock.Any(), 5, 10, 0).
-					Return([]entity.Resume{
-						{
-							ID:               5,
-							ApplicantID:      5,
-							SpecializationID: 1,
-							Profession:       "Data Scientist",
-							CreatedAt:        now,
-							UpdatedAt:        now,
-						},
-					}, nil)
-
-				spr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Specialization{ID: 1, Name: "Data Science"}, nil)
-
-				rr.EXPECT().
-					GetWorkExperienceByResumeID(gomock.Any(), 5).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении опыта работы"),
-					))
-
-				am.EXPECT().
-					GetUser(gomock.Any(), 5).
-					Return(&dto.ApplicantProfileResponse{
-						ID:        5,
-						FirstName: "Алексей",
-						LastName:  "Алексеев",
-						Email:     "alex@example.com",
-					}, nil)
-			},
-			expectedResult: []dto.ResumeShortResponse{
-				{
-					ID:             5,
-					Applicant:      &dto.ApplicantProfileResponse{ID: 5, FirstName: "Алексей", LastName: "Алексеев", Email: "alex@example.com"},
-					Specialization: "Data Science",
-					Profession:     "Data Scientist",
 					CreatedAt:      now.Format(time.RFC3339),
 					UpdatedAt:      now.Format(time.RFC3339),
 				},
@@ -2086,14 +3442,679 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "Пустой список резюме",
-			applicantID: 6,
-			limit:       10,
-			offset:      0,
-			mockSetup: func(rr *mock.MockResumeRepository, spr *mock.MockSpecializationRepository, am *m.MockApplicant) {
+			name:       "Успешный поиск для работодателя",
+			config:     testConfig{role: "employer"},
+			userID:     0,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
 				rr.EXPECT().
-					GetAllResumesByApplicantID(gomock.Any(), 6, 10, 0).
+					SearchResumesByProfession(gomock.Any(), "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return([]entity.WorkExperience{
+						{
+							ID:           1,
+							ResumeID:     1,
+							EmployerName: "Яндекс",
+							Position:     "Разработчик",
+							Duties:       "Разработка сервисов",
+							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+					}, nil)
+
+				// Resume 1: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             1,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "Backend разработка",
+					Profession:     "Backend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+					WorkExperience: dto.WorkExperienceShort{
+						ID:           1,
+						EmployerName: "Яндекс",
+						Position:     "Разработчик",
+						Duties:       "Разработка сервисов",
+						Achievements: "Оптимизация запросов",
+						StartDate:    startDateStr,
+						UntilNow:     true,
+					},
+				},
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:       "Пустой список резюме для соискателя",
+			config:     testConfig{role: "applicant"},
+			userID:     1,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfessionForApplicant(gomock.Any(), 1, "Developer", 10, 0).
 					Return([]entity.Resume{}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{},
+			expectedErr:    nil,
+		},
+		{
+			name:       "Пустой список резюме для работодателя",
+			config:     testConfig{role: "employer"},
+			userID:     0,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfession(gomock.Any(), "Developer", 10, 0).
+					Return([]entity.Resume{}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{},
+			expectedErr:    nil,
+		},
+		{
+			name:       "Ошибка поиска резюме для соискателя",
+			config:     testConfig{role: "applicant"},
+			userID:     1,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfessionForApplicant(gomock.Any(), 1, "Developer", 10, 0).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при поиске резюме для соискателя"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при поиске резюме для соискателя"),
+			),
+		},
+		{
+			name:       "Ошибка поиска резюме для работодателя",
+			config:     testConfig{role: "employer"},
+			userID:     0,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfession(gomock.Any(), "Developer", 10, 0).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при поиске резюме"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при поиске резюме"),
+			),
+		},
+		{
+			name:       "Частичная ошибка: ошибка получения специализации (соискатель)",
+			config:     testConfig{role: "applicant"},
+			userID:     1,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfessionForApplicant(gomock.Any(), 1, "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:       "Частичная ошибка: ошибка получения специализации (работодатель)",
+			config:     testConfig{role: "employer"},
+			userID:     0,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfession(gomock.Any(), "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:       "Частичная ошибка: ошибка получения опыта работы (соискатель)",
+			config:     testConfig{role: "applicant"},
+			userID:     1,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfessionForApplicant(gomock.Any(), 1, "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience fails
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении опыта работы"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:       "Частичная ошибка: ошибка получения опыта работы (работодатель)",
+			config:     testConfig{role: "employer"},
+			userID:     0,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfession(gomock.Any(), "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience fails
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при получении опыта работы"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:       "Частичная ошибка: ошибка получения информации о соискателе (соискатель)",
+			config:     testConfig{role: "applicant"},
+			userID:     1,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfessionForApplicant(gomock.Any(), 1, "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 1,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return([]entity.WorkExperience{
+						{
+							ID:           1,
+							ResumeID:     1,
+							EmployerName: "Яндекс",
+							Position:     "Разработчик",
+							Duties:       "Разработка сервисов",
+							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+					}, nil)
+
+				// Resume 1: Applicant fails
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("соискатель с id=1 не найден"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 1, FirstName: "Иван", LastName: "Иванов"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:       "Частичная ошибка: ошибка получения информации о соискателе (работодатель)",
+			config:     testConfig{role: "employer"},
+			userID:     0,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfession(gomock.Any(), "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:          2,
+							ApplicantID: 2,
+							Profession:  "Frontend Developer",
+							CreatedAt:   now,
+							UpdatedAt:   now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
+
+				// Resume 1: Work Experience
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 1).
+					Return([]entity.WorkExperience{
+						{
+							ID:           1,
+							ResumeID:     1,
+							EmployerName: "Яндекс",
+							Position:     "Разработчик",
+							Duties:       "Разработка сервисов",
+							Achievements: "Оптимизация запросов",
+							StartDate:    startDate,
+							UntilNow:     true,
+							UpdatedAt:    now,
+						},
+					}, nil)
+
+				// Resume 1: Applicant fails
+				as.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("соискатель с id=1 не найден"),
+					))
+
+				// Resume 2: No specialization (SpecializationID = 0, no call to GetByID)
+
+				// Resume 2: Work Experience (empty)
+				rr.EXPECT().
+					GetWorkExperienceByResumeID(gomock.Any(), 2).
+					Return([]entity.WorkExperience{}, nil)
+
+				// Resume 2: Applicant
+				as.EXPECT().
+					GetUser(gomock.Any(), 2).
+					Return(&dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"}, nil)
+			},
+			expectedResult: []dto.ResumeShortResponse{
+				{
+					ID:             2,
+					Applicant:      &dto.ApplicantProfileResponse{ID: 2, FirstName: "Петр", LastName: "Петров"},
+					Specialization: "",
+					Profession:     "Frontend Developer",
+					CreatedAt:      now.Format(time.RFC3339),
+					UpdatedAt:      now.Format(time.RFC3339),
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name:       "Все резюме пропущены из-за ошибок (соискатель)",
+			config:     testConfig{role: "applicant"},
+			userID:     1,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfessionForApplicant(gomock.Any(), 1, "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:               2,
+							ApplicantID:      1,
+							SpecializationID: 2,
+							Profession:       "Frontend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
+					))
+
+				// Resume 2: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 2).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=2 не найдена"),
+					))
+			},
+			expectedResult: []dto.ResumeShortResponse{},
+			expectedErr:    nil,
+		},
+		{
+			name:       "Все резюме пропущены из-за ошибок (работодатель)",
+			config:     testConfig{role: "employer"},
+			userID:     0,
+			profession: "Developer",
+			limit:      10,
+			offset:     0,
+			mockSetup: func(rr *mock.MockResumeRepository, sr *mock.MockSkillRepository, spr *mock.MockSpecializationRepository, ar *mock.MockApplicantRepository, as *m.MockApplicant) {
+				rr.EXPECT().
+					SearchResumesByProfession(gomock.Any(), "Developer", 10, 0).
+					Return([]entity.Resume{
+						{
+							ID:               1,
+							ApplicantID:      1,
+							SpecializationID: 1,
+							Profession:       "Backend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+						{
+							ID:               2,
+							ApplicantID:      2,
+							SpecializationID: 2,
+							Profession:       "Frontend Developer",
+							CreatedAt:        now,
+							UpdatedAt:        now,
+						},
+					}, nil)
+
+				// Resume 1: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=1 не найдена"),
+					))
+
+				// Resume 2: Specialization fails
+				spr.EXPECT().
+					GetByID(gomock.Any(), 2).
+					Return(nil, entity.NewError(
+						entity.ErrNotFound,
+						fmt.Errorf("специализация с id=2 не найдена"),
+					))
 			},
 			expectedResult: []dto.ResumeShortResponse{},
 			expectedErr:    nil,
@@ -2109,23 +4130,24 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
-			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
-			mockApplicant := m.NewMockApplicant(ctrl)
 			mockSkillRepo := mock.NewMockSkillRepository(ctrl)
+			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
-			tc.mockSetup(mockResumeRepo, mockSpecRepo, mockApplicant)
+			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicant)
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 			ctx := context.Background()
 
-			result, err := service.GetAllResumesByApplicantID(ctx, tc.applicantID, tc.limit, tc.offset)
+			result, err := service.SearchResumesByProfession(ctx, tc.userID, tc.config.role, tc.profession, tc.limit, tc.offset)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
 				var serviceErr entity.Error
 				require.ErrorAs(t, err, &serviceErr)
 				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.Nil(t, result)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)

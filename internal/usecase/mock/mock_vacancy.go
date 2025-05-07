@@ -86,76 +86,150 @@ func (mr *MockVacancyMockRecorder) DeleteVacancy(ctx, id, employerID any) *gomoc
 }
 
 // GetActiveVacanciesByEmployerID mocks base method.
-func (m *MockVacancy) GetActiveVacanciesByEmployerID(ctx context.Context, employerID int) ([]dto.VacancyShortResponse, error) {
+func (m *MockVacancy) GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit, offset int) ([]dto.VacancyShortResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetActiveVacanciesByEmployerID", ctx, employerID)
+	ret := m.ctrl.Call(m, "GetActiveVacanciesByEmployerID", ctx, employerID, userID, userRole, limit, offset)
 	ret0, _ := ret[0].([]dto.VacancyShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetActiveVacanciesByEmployerID indicates an expected call of GetActiveVacanciesByEmployerID.
-func (mr *MockVacancyMockRecorder) GetActiveVacanciesByEmployerID(ctx, employerID any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) GetActiveVacanciesByEmployerID(ctx, employerID, userID, userRole, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveVacanciesByEmployerID", reflect.TypeOf((*MockVacancy)(nil).GetActiveVacanciesByEmployerID), ctx, employerID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveVacanciesByEmployerID", reflect.TypeOf((*MockVacancy)(nil).GetActiveVacanciesByEmployerID), ctx, employerID, userID, userRole, limit, offset)
 }
 
 // GetAll mocks base method.
-func (m *MockVacancy) GetAll(ctx context.Context, currentUserID int) ([]dto.VacancyShortResponse, error) {
+func (m *MockVacancy) GetAll(ctx context.Context, currentUserID int, userRole string, limit, offset int) ([]dto.VacancyShortResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, currentUserID)
+	ret := m.ctrl.Call(m, "GetAll", ctx, currentUserID, userRole, limit, offset)
 	ret0, _ := ret[0].([]dto.VacancyShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAll indicates an expected call of GetAll.
-func (mr *MockVacancyMockRecorder) GetAll(ctx, currentUserID any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) GetAll(ctx, currentUserID, userRole, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockVacancy)(nil).GetAll), ctx, currentUserID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockVacancy)(nil).GetAll), ctx, currentUserID, userRole, limit, offset)
+}
+
+// GetLikedVacancies mocks base method.
+func (m *MockVacancy) GetLikedVacancies(ctx context.Context, applicantID, limit, offset int) ([]dto.VacancyShortResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLikedVacancies", ctx, applicantID, limit, offset)
+	ret0, _ := ret[0].([]dto.VacancyShortResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLikedVacancies indicates an expected call of GetLikedVacancies.
+func (mr *MockVacancyMockRecorder) GetLikedVacancies(ctx, applicantID, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLikedVacancies", reflect.TypeOf((*MockVacancy)(nil).GetLikedVacancies), ctx, applicantID, limit, offset)
 }
 
 // GetVacanciesByApplicantID mocks base method.
-func (m *MockVacancy) GetVacanciesByApplicantID(ctx context.Context, applicantID int) ([]dto.VacancyShortResponse, error) {
+func (m *MockVacancy) GetVacanciesByApplicantID(ctx context.Context, applicantID, limit, offset int) ([]dto.VacancyShortResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetVacanciesByApplicantID", ctx, applicantID)
+	ret := m.ctrl.Call(m, "GetVacanciesByApplicantID", ctx, applicantID, limit, offset)
 	ret0, _ := ret[0].([]dto.VacancyShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVacanciesByApplicantID indicates an expected call of GetVacanciesByApplicantID.
-func (mr *MockVacancyMockRecorder) GetVacanciesByApplicantID(ctx, applicantID any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) GetVacanciesByApplicantID(ctx, applicantID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVacanciesByApplicantID", reflect.TypeOf((*MockVacancy)(nil).GetVacanciesByApplicantID), ctx, applicantID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVacanciesByApplicantID", reflect.TypeOf((*MockVacancy)(nil).GetVacanciesByApplicantID), ctx, applicantID, limit, offset)
 }
 
 // GetVacancy mocks base method.
-func (m *MockVacancy) GetVacancy(ctx context.Context, id, currentUserID int) (*dto.VacancyResponse, error) {
+func (m *MockVacancy) GetVacancy(ctx context.Context, id, currentUserID int, userRole string) (*dto.VacancyResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetVacancy", ctx, id, currentUserID)
+	ret := m.ctrl.Call(m, "GetVacancy", ctx, id, currentUserID, userRole)
 	ret0, _ := ret[0].(*dto.VacancyResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVacancy indicates an expected call of GetVacancy.
-func (mr *MockVacancyMockRecorder) GetVacancy(ctx, id, currentUserID any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) GetVacancy(ctx, id, currentUserID, userRole any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVacancy", reflect.TypeOf((*MockVacancy)(nil).GetVacancy), ctx, id, currentUserID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVacancy", reflect.TypeOf((*MockVacancy)(nil).GetVacancy), ctx, id, currentUserID, userRole)
+}
+
+// LikeVacancy mocks base method.
+func (m *MockVacancy) LikeVacancy(ctx context.Context, vacancyID, applicantID int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LikeVacancy", ctx, vacancyID, applicantID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LikeVacancy indicates an expected call of LikeVacancy.
+func (mr *MockVacancyMockRecorder) LikeVacancy(ctx, vacancyID, applicantID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LikeVacancy", reflect.TypeOf((*MockVacancy)(nil).LikeVacancy), ctx, vacancyID, applicantID)
+}
+
+// SearchVacancies mocks base method.
+func (m *MockVacancy) SearchVacancies(ctx context.Context, userID int, userRole, searchQuery string, limit, offset int) ([]dto.VacancyShortResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchVacancies", ctx, userID, userRole, searchQuery, limit, offset)
+	ret0, _ := ret[0].([]dto.VacancyShortResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchVacancies indicates an expected call of SearchVacancies.
+func (mr *MockVacancyMockRecorder) SearchVacancies(ctx, userID, userRole, searchQuery, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchVacancies", reflect.TypeOf((*MockVacancy)(nil).SearchVacancies), ctx, userID, userRole, searchQuery, limit, offset)
+}
+
+// SearchVacanciesByQueryAndSpecializations mocks base method.
+func (m *MockVacancy) SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole, searchQuery string, specializations []string, limit, offset int) ([]dto.VacancyShortResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchVacanciesByQueryAndSpecializations", ctx, userID, userRole, searchQuery, specializations, limit, offset)
+	ret0, _ := ret[0].([]dto.VacancyShortResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchVacanciesByQueryAndSpecializations indicates an expected call of SearchVacanciesByQueryAndSpecializations.
+func (mr *MockVacancyMockRecorder) SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, specializations, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchVacanciesByQueryAndSpecializations", reflect.TypeOf((*MockVacancy)(nil).SearchVacanciesByQueryAndSpecializations), ctx, userID, userRole, searchQuery, specializations, limit, offset)
+}
+
+// SearchVacanciesBySpecializations mocks base method.
+func (m *MockVacancy) SearchVacanciesBySpecializations(ctx context.Context, userID int, userRole string, specializations []string, limit, offset int) ([]dto.VacancyShortResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchVacanciesBySpecializations", ctx, userID, userRole, specializations, limit, offset)
+	ret0, _ := ret[0].([]dto.VacancyShortResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchVacanciesBySpecializations indicates an expected call of SearchVacanciesBySpecializations.
+func (mr *MockVacancyMockRecorder) SearchVacanciesBySpecializations(ctx, userID, userRole, specializations, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchVacanciesBySpecializations", reflect.TypeOf((*MockVacancy)(nil).SearchVacanciesBySpecializations), ctx, userID, userRole, specializations, limit, offset)
 }
 
 // UpdateVacancy mocks base method.
-func (m *MockVacancy) UpdateVacancy(ctx context.Context, id int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error) {
+func (m *MockVacancy) UpdateVacancy(ctx context.Context, id, employerID int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateVacancy", ctx, id, request)
+	ret := m.ctrl.Call(m, "UpdateVacancy", ctx, id, employerID, request)
 	ret0, _ := ret[0].(*dto.VacancyResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateVacancy indicates an expected call of UpdateVacancy.
-func (mr *MockVacancyMockRecorder) UpdateVacancy(ctx, id, request any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) UpdateVacancy(ctx, id, employerID, request any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVacancy", reflect.TypeOf((*MockVacancy)(nil).UpdateVacancy), ctx, id, request)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVacancy", reflect.TypeOf((*MockVacancy)(nil).UpdateVacancy), ctx, id, employerID, request)
 }

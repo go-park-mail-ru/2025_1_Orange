@@ -952,11 +952,11 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 			"requestID": requestID,
 			"vacancyID": vacancyID,
 			"error":     err,
-		}).Error("ошибка при получении городов резюме")
+		}).Error("ошибка при получении городов вакансии")
 
 		return nil, entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("ошибка при получении городов резюме: %w", err),
+			fmt.Errorf("ошибка при получении городов вакансии: %w", err),
 		)
 	}
 
@@ -979,11 +979,11 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 				"requestID": requestID,
 				"vacancyID": vacancyID,
 				"error":     err,
-			}).Error("ошибка при сканировании навыка")
+			}).Error("ошибка при сканировании города")
 
 			return nil, entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("ошибка при сканировании навыка: %w", err),
+				fmt.Errorf("ошибка при сканировании города: %w", err),
 			)
 		}
 		cities = append(cities, skill)
@@ -995,11 +995,11 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 			"requestID": requestID,
 			"resumeID":  vacancyID,
 			"error":     err,
-		}).Error("ошибка при итерации по навыкам")
+		}).Error("ошибка при итерации по городам")
 
 		return nil, entity.NewError(
 			entity.ErrInternal,
-			fmt.Errorf("ошибка при итерации по навыкам: %w", err),
+			fmt.Errorf("ошибка при итерации по городам: %w", err),
 		)
 	}
 

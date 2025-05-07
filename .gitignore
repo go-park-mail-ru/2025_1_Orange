@@ -3,5 +3,6 @@
 go.sum
 
 cover.out
+coverage.out
 coverage.html
 assets

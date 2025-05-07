@@ -4565,11 +4565,11 @@ func TestVacancyRepository_FindSpecializationIDsByNames(t *testing.T) {
 				rows := sqlmock.NewRows(columns).
 					AddRow(1).
 					AddRow(2)
-				query := regexp.QuoteMeta(fmt.Sprintf(`
+				query := regexp.QuoteMeta(`
 		SELECT id
 		FROM specialization
 		WHERE name IN ($1, $2)
-	`))
+	`)
 				mock.ExpectQuery(query).
 					WithArgs(specializationNames[0], specializationNames[1]).
 					WillReturnRows(rows)

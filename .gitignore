@@ -3,7 +3,11 @@
 go.sum
 
 cover.out
+coverage.out
 coverage.html
 assets
 
 prometheus.yml
+datasource.yaml
+
+grafana/*

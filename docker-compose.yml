@@ -69,6 +69,11 @@ services:
       - "${POSTGRES_HOST_PORT}:${POSTGRES_CONTAINER_PORT}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/build/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./db/build/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./db/build/create_role.sql:/docker-entrypoint-initdb.d/create_role.sql
+      - ./logs:/var/log/postgresql
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -77,6 +82,19 @@ services:
     restart: unless-stopped
     networks:
       - resumatch-network
+
+  pgbadger:
+    image: dalibo/pgbadger
+    container_name: pgbadger
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    volumes:
+    - ./logs:/logs
+    - ./pgbadger-report:/output
+    entrypoint: >
+      sh -c "sleep 5 &&
+      pgbadger -f stderr /logs/postgresql-*.log -o /output/report.html"
 
   redis:
     container_name: redis

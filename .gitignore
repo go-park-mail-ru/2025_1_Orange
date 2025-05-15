@@ -6,3 +6,6 @@ cover.out
 coverage.out
 coverage.html
 assets
+
+pgbadger-report/
+logs/

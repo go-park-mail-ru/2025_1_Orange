@@ -103,7 +103,7 @@ func Init(cfg *config.Config) *server.Server {
 
 	specializationService := service.NewSpecializationService(specializationRepo)
 
-	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService)
+	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService, cfg.Resume)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService)
 
 	// Transport Init

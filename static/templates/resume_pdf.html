@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Нагапетян Валерий Сергеевич - Резюме</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 0;
+            color: #333;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .text-wrap {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            max-width: 100%;
+        }
+
+        .profile__header {
+            display: -webkit-flex;
+            align-items: center;
+            margin-bottom: 40px;
+            gap: 30px;
+            max-width: 100%;
+        }
+
+        .profile__header__photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .profile__header__photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile__header__info {
+            flex-grow: 1;
+            min-width: 0;
+            max-width: calc(100% - 150px);
+        }
+
+        .profile__header__info h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .profile__header__quote {
+            font-size: 14px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            max-width: 100%;
+        }
+
+        .section__title {
+            color: #AEAEAE;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #EFEFEF;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .jobs-list {
+            display: -webkit-flex;
+            flex-direction: column;
+            gap: 30px;
+            max-width: 100%;
+        }
+
+        .job {
+            display: -webkit-flex;
+            flex-direction: row;
+            gap: 50px;
+            max-width: 100%;
+        }
+
+        .job-period {
+            width: 150px;
+            font-size: 14px;
+            flex-shrink: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .job-description {
+            display: -webkit-flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-width: 0;
+            max-width: calc(100% - 200px);
+        }
+
+        .job-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .job-details {
+            margin-bottom: 15px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .company {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .position {
+            font-size: 16px;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .responsibilities {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .responsibilities-title {
+            font-weight: 600;
+            display: inline;
+        }
+
+        .education {
+            display: -webkit-flex;
+            flex-direction: row;
+            gap: 50px;
+            max-width: 100%;
+        }
+
+        .education__year {
+            width: 150px;
+            font-size: 14px;
+            flex-shrink: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .education__description {
+            display: -webkit-flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-width: 0;
+            max-width: calc(100% - 200px);
+        }
+
+        .university {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .degree {
+            font-size: 16px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .skills {
+            display: -webkit-flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            max-width: 100%;
+        }
+
+        .skill {
+            background-color: #f1f4f9;
+            color: #768695;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: center;
+            padding: 7px 10px;
+            border-radius: 10px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .profile__body {
+            display: -webkit-flex;
+            flex-direction: row-reverse;
+            gap: 50px;
+            max-width: 100%;
+        }
+
+        .profile__sections {
+            flex-grow: 1;
+            min-width: 0;
+            /*max-width: calc(100% - 350px);*/
+        }
+
+        .profile__contact-info {
+            max-width: 300px;
+            flex-shrink: 0
+        }
+
+        .contact-item {
+            margin-bottom: 20px;
+            max-width: 100%;
+        }
+
+        .contact-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .contact-value {
+            font-size: 18px;
+            font-weight: 600;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            max-width: 100%;
+        }
+
+        .contact-value.email {
+            font-size: 16px;
+        }
+
+        .social-links {
+            margin-top: 10px;
+            display: -webkit-flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 100%;
+        }
+
+        .profile__soc-icon {
+            display: -webkit-flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 100%;
+        }
+
+        .profile__soc-icon a {
+            color: #0071FE;
+            text-decoration: none;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: calc(100% - 42px);
+        }
+
+        .about-text {
+            line-height: 1.6;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        a {
+            color: #0071FE;
+            text-decoration: none;
+        }
+
+    </style>
+</head>
+<body>
+<div class="profile__header">
+    {{if .AvatarBase64}}
+    <div class="profile__header__photo">
+        <img src="{{ safeURL .AvatarBase64 }}" alt="Фото профиля">
+    </div>
+    {{end}}
+    <div class="profile__header__info">
+        <h1 class="text-wrap">{{.LastName}} {{.FirstName}} {{.MiddleName}}</h1>
+        {{if .Quote}}
+        <p class="profile__header__quote text-wrap">{{.Quote}}</p>
+        {{end}}
+    </div>
+</div>
+<div class="profile__body">
+    <div class="profile__contact-info">
+        {{if .City}}
+        <div class="contact-item">
+            <div class="contact-title">Город проживания</div>
+            <div class="contact-value text-wrap">{{.City}}</div>
+        </div>
+        {{end}}
+        <div class="contact-item">
+            <div class="contact-title">Дата рождения</div>
+            <div class="contact-value text-wrap">{{.BirthDate}}</div>
+        </div>
+        <div class="contact-item">
+            <div class="contact-title">Контакты</div>
+            <div class="contact-value email text-wrap">{{.Email}}</div>
+        </div>
+        {{if or .Vk .Telegram .Facebook}}
+        <div class="contact-item">
+            <div class="contact-title">Социальные сети</div>
+            <div class="social-links">
+                {{if .Vk}}
+                <div class="profile__soc-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="32" height="32"
+                         viewBox="0 0 48 48">
+                        <path fill="#1976d2" d="M24 4A20 20 0 1 0 24 44A20 20 0 1 0 24 4Z"></path>
+                        <path fill="#fff"
+                              d="M35.937,18.041c0.046-0.151,0.068-0.291,0.062-0.416C35.984,17.263,35.735,17,35.149,17h-2.618 c-0.661,0-0.966,0.4-1.144,0.801c0,0-1.632,3.359-3.513,5.574c-0.61,0.641-0.92,0.625-1.25,0.625C26.447,24,26,23.786,26,23.199 v-5.185C26,17.32,25.827,17,25.268,17h-4.649C20.212,17,20,17.32,20,17.641c0,0.667,0.898,0.827,1,2.696v3.623 C21,24.84,20.847,25,20.517,25c-0.89,0-2.642-3-3.815-6.932C16.448,17.294,16.194,17,15.533,17h-2.643 C12.127,17,12,17.374,12,17.774c0,0.721,0.6,4.619,3.875,9.101C18.25,30.125,21.379,32,24.149,32c1.678,0,1.85-0.427,1.85-1.094 v-2.972C26,27.133,26.183,27,26.717,27c0.381,0,1.158,0.25,2.658,2c1.73,2.018,2.044,3,3.036,3h2.618 c0.608,0,0.957-0.255,0.971-0.75c0.003-0.126-0.015-0.267-0.056-0.424c-0.194-0.576-1.084-1.984-2.194-3.326 c-0.615-0.743-1.222-1.479-1.501-1.879C32.062,25.36,31.991,25.176,32,25c0.009-0.185,0.105-0.361,0.249-0.607 C32.223,24.393,35.607,19.642,35.937,18.041z">
+                        </path>
+                    </svg>
+                    <a href="{{.Vk}}" class="text-wrap">ВКонтакте</a>
+                </div>
+                {{end}}
+                {{if .Telegram}}
+                <div class="profile__soc-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="32" height="32"
+                         viewBox="0 0 48 48">
+                        <path fill="#29b6f6" d="M24 4A20 20 0 1 0 24 44A20 20 0 1 0 24 4Z"></path>
+                        <path fill="#fff"
+                              d="M33.95,15l-3.746,19.126c0,0-0.161,0.874-1.245,0.874c-0.576,0-0.873-0.274-0.873-0.274l-8.114-6.733 l-3.97-2.001l-5.095-1.355c0,0-0.907-0.262-0.907-1.012c0-0.625,0.933-0.923,0.933-0.923l21.316-8.468 c-0.001-0.001,0.651-0.235,1.126-0.234C33.667,14,34,14.125,34,14.5C34,14.75,33.95,15,33.95,15z">
+                        </path>
+                        <path fill="#b0bec5"
+                              d="M23,30.505l-3.426,3.374c0,0-0.149,0.115-0.348,0.12c-0.069,0.002-0.143-0.009-0.219-0.043 l0.964-5.965L23,30.505z">
+                        </path>
+                        <path fill="#cfd8dc"
+                              d="M29.897,18.196c-0.169-0.22-0.481-0.26-0.701-0.093L16,26c0,0,2.106,5.892,2.427,6.912 c0.322,1.021,0.58,1.045,0.58,1.045l0.964-5.965l9.832-9.096C30.023,18.729,30.064,18.416,29.897,18.196z">
+                        </path>
+                    </svg>
+                    <a href="{{.Telegram}}" class="text-wrap">Telegram</a>
+                </div>
+                {{end}}
+                {{if .Facebook}}
+                <div class="profile__soc-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="32" height="32"
+                         viewBox="0 0 48 48">
+                        <path fill="#039be5" d="M24 5A19 19 0 1 0 24 43A19 19 0 1 0 24 5Z"></path>
+                        <path fill="#fff"
+                              d="M26.572,29.036h4.917l0.772-4.995h-5.69v-2.73c0-2.075,0.678-3.915,2.619-3.915h3.119v-4.359c-0.548-0.074-1.707-0.236-3.897-0.236c-4.573,0-7.254,2.415-7.254,7.917v3.323h-4.701v4.995h4.701v13.729C22.089,42.905,23.032,43,24,43c0.875,0,1.729-0.08,2.572-0.194V29.036z">
+                        </path>
+                    </svg>
+                    <a href="{{.Facebook}}" class="text-wrap">Facebook</a>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="profile__sections">
+        {{if .Profession}}
+        <div class="section">
+            <h2 class="section__title">Профессия</h2>
+            <div class="job-title text-wrap">{{.Profession}}</div>
+        </div>
+        {{end}}
+        {{if .WorkExperiences}}
+        <div class="section">
+            <h2 class="section__title">Опыт работы</h2>
+            <div class="jobs-list">
+                {{range .WorkExperiences}}
+                <div class="job">
+                    <div class="job-period text-wrap">{{.WorkExperienceDate}}</div>
+                    <div class="job-description">
+                        <div class="company text-wrap">{{.EmployerName}}</div>
+                        <div class="position text-wrap">{{.Position}}</div>
+                        <div class="responsibilities text-wrap">
+                            <span class="responsibilities-title">Обязанности —</span> {{.Duties}}
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+        <div class="section">
+            <h2 class="section__title">Образование</h2>
+            <div class="education">
+                <div class="education__year text-wrap">{{.GraduationYear}}</div>
+                <div class="education__description">
+                    <div class="university text-wrap">{{.EducationalInstitution}}</div>
+                    <div class="degree text-wrap">{{.Education}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section__title">Навыки</h2>
+            <div class="skills">
+                {{range .Skills}}
+                <div class="skill text-wrap">{{.}}</div>
+                {{end}}
+            </div>
+        </div>
+
+        {{if .AboutMe}}
+        <div class="section">
+            <h2 class="section__title">О себе</h2>
+            <p class="about-text text-wrap">
+                {{.AboutMe}}
+            </p>
+        </div>
+        {{end}}
+    </div>
+</div>
+</body>
+</html>

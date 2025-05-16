@@ -1,6 +1,7 @@
 package utils
 
 import (
+	l "ResuMatch/pkg/logger"
 	"bytes"
 	"encoding/base64"
 	"fmt"
@@ -18,7 +19,12 @@ func ConvertImageToBase64(imageUrl string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			l.Log.Errorf("Ошибка при закрытии тела ответа: %v", closeErr)
+		}
+	}()
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(resp.Body)

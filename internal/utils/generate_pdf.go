@@ -2,6 +2,7 @@ package utils
 
 import (
 	"ResuMatch/internal/config"
+	l "ResuMatch/pkg/logger"
 	"bytes"
 	"fmt"
 	"io"
@@ -45,7 +46,12 @@ func GeneratePDF(htmlContent string, cfg config.ResumeConfig) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("не удалось сделать запрос к Gotenberg: %w", err)
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			l.Log.Errorf("Ошибка при закрытии тела ответа: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)

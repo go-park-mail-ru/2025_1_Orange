@@ -10,8 +10,6 @@ import (
 	"net/http"
 )
 
-const GenerateURL = "http://gotenberg:3000/forms/chromium/convert/html"
-
 func GeneratePDF(htmlContent string, cfg config.ResumeConfig) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)

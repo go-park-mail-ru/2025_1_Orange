@@ -110,12 +110,21 @@ func (a *AuthClientConfig) Addr() string {
 	return fmt.Sprintf("%s:%s", a.Host, a.Port)
 }
 
+type ResumeConfig struct {
+	StaticPath  string `yaml:"staticPath"`
+	StaticFile  string `yaml:"staticFile"`
+	PaperWidth  string `yaml:"paperWidth"`
+	PaperHeight string `yaml:"paperHeight"`
+	GenerateURL string `yaml:"generateURL"`
+}
+
 type Config struct {
 	HTTP          HTTPConfig          `yaml:"http"`
 	Session       SessionConfig       `yaml:"session_id"`
 	CSRF          CSRFConfig          `yaml:"csrf"`
 	Postgres      PostgresConfig      `yaml:"postgres"`
 	Microservices MicroservicesConfig `yaml:"microservices"`
+	Resume        ResumeConfig        `yaml:"resume"`
 }
 
 func LoadAppConfig() (*Config, error) {

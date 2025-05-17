@@ -35,6 +35,7 @@ func (h *ResumeHandler) Configure(r *http.ServeMux) {
 	resumeMux.HandleFunc("DELETE /{id}", h.DeleteResume)
 	resumeMux.HandleFunc("GET /all", h.GetAllResumes)
 	resumeMux.HandleFunc("GET /search", h.SearchResumes)
+	resumeMux.HandleFunc("GET /pdf/{id}", h.GetResumePDF)
 
 	r.Handle("/resume/", http.StripPrefix("/resume", resumeMux))
 }
@@ -526,6 +527,36 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resumes); err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "SearchResumes").Inc()
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
+}
+
+func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil || cookie == nil {
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	id := r.PathValue("id")
+	resumeID, err := strconv.Atoi(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	pdfBytes, err := h.resume.GetResumePDF(ctx, resumeID)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "attachment; filename=resume.pdf")
+	if _, err := w.Write(pdfBytes); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

@@ -17,6 +17,7 @@ COPY docs ./docs
 COPY cmd/app/main.go ./cmd/app/main.go
 COPY internal ./internal
 COPY pkg ./pkg
+COPY static/templates ./static/templates
 
 RUN go mod download
 
@@ -34,11 +35,8 @@ COPY --from=builder /app/.bin .
 COPY --from=builder /app/db/migrations ./migrations
 COPY --from=builder /go/bin/migrate .
 COPY --from=builder /app/docs ./docs
+COPY --from=builder /app/static/templates ./static/templates
 
 # Директория для аватарок
 RUN mkdir -p /app/assets
 
-# tzdata - указываем, какой часовой пояс использовать
-# libc6-compat - для migrate
-RUN apk add --no-cache tzdata libc6-compat
-ENV TZ=Europe/Moscow

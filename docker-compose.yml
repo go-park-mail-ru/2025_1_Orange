@@ -14,6 +14,8 @@ services:
         condition: service_started
       static:
         condition: service_started
+      gotenberg:
+        condition: service_started  
     restart: unless-stopped
     command: >
       sh -c "
@@ -116,10 +118,28 @@ services:
     networks:
       - resumatch-network
 
+  gotenberg:
+    container_name: gotenberg
+    image: gotenberg/gotenberg:8
+    ports:
+      - "3000:3000"
+    environment:
+      - DISABLE_GOOGLE_CHROME=false
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - gotenberg-data:/tmp
+    networks:
+      - resumatch-network
+
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  gotenberg-data:
 
 networks:
   resumatch-network:

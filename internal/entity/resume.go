@@ -16,6 +16,15 @@ const (
 	PhD              EducationType = "phd"
 )
 
+var EducationTypeRu = map[EducationType]string{
+	SecondarySchool:  "Среднее",
+	IncompleteHigher: "Неоконченное высшее",
+	Higher:           "Высшее",
+	Bachelor:         "Бакалавр",
+	Master:           "Магистр",
+	PhD:              "Кандидат наук",
+}
+
 type Resume struct {
 	ID                        int              `json:"id"`
 	ApplicantID               int              `json:"applicant_id"`
@@ -72,4 +81,8 @@ func (w *WorkExperience) Validate() error {
 	}
 
 	return nil
+}
+
+func GetEducationTypeRu(educationType EducationType) string {
+	return EducationTypeRu[educationType]
 }

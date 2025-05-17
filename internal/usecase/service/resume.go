@@ -1,18 +1,52 @@
 package service
 
 import (
+	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
+	"bytes"
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/sirupsen/logrus"
+	"html/template"
+	"path/filepath"
+	"time"
 )
+
+type WorkExperience struct {
+	EmployerName       string
+	Position           string
+	Duties             string
+	Achievements       string
+	WorkExperienceDate string
+	UntilNow           bool
+}
+
+type ResumeTemplateData struct {
+	FirstName              string
+	LastName               string
+	MiddleName             string
+	City                   string
+	BirthDate              string
+	AvatarBase64           string
+	Email                  string
+	Quote                  string
+	Vk                     string
+	Telegram               string
+	Facebook               string
+	AboutMe                string
+	Specialization         string
+	Profession             string
+	Education              string
+	EducationalInstitution string
+	GraduationYear         string
+	Skills                 []string
+	WorkExperiences        []WorkExperience
+}
 
 // Add the required dependencies to the ResumeService struct
 type ResumeService struct {
@@ -21,6 +55,7 @@ type ResumeService struct {
 	specializationRepository repository.SpecializationRepository
 	applicantRepository      repository.ApplicantRepository
 	applicantService         usecase.Applicant
+	cfg                      config.ResumeConfig
 }
 
 // Update the constructor to include the new dependencies
@@ -30,6 +65,7 @@ func NewResumeService(
 	specializationRepo repository.SpecializationRepository,
 	applicantRepo repository.ApplicantRepository,
 	applicantService usecase.Applicant,
+	cfg config.ResumeConfig,
 ) usecase.ResumeUsecase {
 	return &ResumeService{
 		resumeRepository:         resumeRepo,
@@ -37,7 +73,63 @@ func NewResumeService(
 		specializationRepository: specializationRepo,
 		applicantRepository:      applicantRepo,
 		applicantService:         applicantService,
+		cfg:                      cfg,
 	}
+}
+
+func (s *ResumeService) prepareResumeTemplateData(applicant *dto.ApplicantProfileResponse, resume *dto.ResumeResponse) (*ResumeTemplateData, error) {
+	templateData := ResumeTemplateData{
+		FirstName:              applicant.FirstName,
+		LastName:               applicant.LastName,
+		MiddleName:             applicant.MiddleName,
+		City:                   applicant.City,
+		Email:                  applicant.Email,
+		Quote:                  applicant.Quote,
+		Vk:                     applicant.Vk,
+		Telegram:               applicant.Telegram,
+		Facebook:               applicant.Facebook,
+		AboutMe:                resume.AboutMe,
+		Specialization:         resume.Specialization,
+		Profession:             resume.Profession,
+		EducationalInstitution: resume.EducationalInstitution,
+		Skills:                 resume.Skills,
+	}
+
+	graduationYear, err := utils.ExtractYearFromDate(resume.GraduationYear)
+	if err != nil {
+		return nil, err
+	}
+	templateData.GraduationYear = graduationYear
+
+	avatarEncoded, err := utils.ConvertImageToBase64(applicant.AvatarPath)
+	if err != nil {
+		return nil, entity.NewError(entity.ErrInternal, err)
+	}
+	templateData.AvatarBase64 = avatarEncoded
+
+	birthDate := utils.FormatDataToString(applicant.BirthDate)
+	templateData.BirthDate = birthDate
+
+	educationType := entity.GetEducationTypeRu(resume.Education)
+	templateData.Education = educationType
+
+	var workExperiences []WorkExperience
+	for _, exp := range resume.WorkExperiences {
+		workExperience := WorkExperience{
+			EmployerName: exp.EmployerName,
+			Position:     exp.Position,
+			Duties:       exp.Duties,
+			Achievements: exp.Achievements,
+		}
+		workDate, err := utils.FormatWorkExperienceDate(exp.StartDate, exp.EndDate, exp.UntilNow)
+		if err != nil {
+			return nil, entity.NewError(entity.ErrBadRequest, err)
+		}
+		workExperience.WorkExperienceDate = workDate
+		workExperiences = append(workExperiences, workExperience)
+	}
+	templateData.WorkExperiences = workExperiences
+	return &templateData, nil
 }
 
 func (s *ResumeService) Create(ctx context.Context, applicantID int, request *dto.CreateResumeRequest) (*dto.ResumeResponse, error) {
@@ -960,4 +1052,54 @@ func (s *ResumeService) SearchResumesByProfession(ctx context.Context, userID in
 	}
 
 	return response, nil
+}
+
+func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID int) ([]byte, error) {
+	resume, err := s.GetByID(ctx, resumeID)
+	if err != nil {
+		return nil, err
+	}
+
+	applicant, err := s.applicantService.GetUser(ctx, resume.ApplicantID)
+	if err != nil {
+		return nil, err
+	}
+
+	templateData, err := s.prepareResumeTemplateData(applicant, resume)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Log.Info(templateData.AvatarBase64)
+	htmlContent, err := s.renderTemplate(templateData)
+	if err != nil {
+		return nil, entity.NewError(entity.ErrInternal, err)
+	}
+
+	pdfBytes, err := utils.GeneratePDF(htmlContent, s.cfg)
+	if err != nil {
+		return nil, entity.NewError(entity.ErrInternal, err)
+	}
+
+	return pdfBytes, nil
+}
+
+func (s *ResumeService) renderTemplate(data *ResumeTemplateData) (string, error) {
+	funcMap := template.FuncMap{
+		"safeURL": func(s string) template.URL {
+			return template.URL(s)
+		},
+	}
+	templatePath := filepath.Join(s.cfg.StaticPath, s.cfg.StaticFile)
+	tmpl, err := template.New(s.cfg.StaticFile).Funcs(funcMap).ParseFiles(templatePath)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }

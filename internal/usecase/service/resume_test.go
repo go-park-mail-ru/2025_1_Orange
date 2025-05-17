@@ -1,6 +1,7 @@
 package service
 
 import (
+	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository/mock"
@@ -535,8 +536,8 @@ func TestResumeService_Create(t *testing.T) {
 			mockApplicantService := NewApplicantService(mockApplicantRepo, nil, nil)
 
 			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo)
-
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			var cfg = config.ResumeConfig{}
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService, cfg)
 			ctx := context.Background()
 
 			result, err := service.Create(ctx, tc.applicantID, tc.request)
@@ -870,7 +871,8 @@ func TestResumeService_GetByID(t *testing.T) {
 
 			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo)
 
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			var cfg = config.ResumeConfig{}
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService, cfg)
 			ctx := context.Background()
 
 			result, err := service.GetByID(ctx, tc.resumeID)
@@ -2096,7 +2098,8 @@ func TestResumeService_Update(t *testing.T) {
 
 			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo)
 
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			var cfg = config.ResumeConfig{}
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService, cfg)
 			ctx := context.Background()
 
 			result, err := service.Update(ctx, tc.resumeID, tc.applicantID, tc.request)
@@ -2337,7 +2340,8 @@ func TestResumeService_Delete(t *testing.T) {
 
 			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo)
 
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			var cfg = config.ResumeConfig{}
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService, cfg)
 			ctx := context.Background()
 
 			result, err := service.Delete(ctx, tc.resumeID, tc.applicantID)
@@ -2756,7 +2760,8 @@ func TestResumeService_GetAll(t *testing.T) {
 
 			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			var cfg = config.ResumeConfig{}
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService, cfg)
 			ctx := context.Background()
 
 			result, err := service.GetAll(ctx, tc.limit, tc.offset)
@@ -3305,7 +3310,8 @@ func TestResumeService_GetAllResumesByApplicantID(t *testing.T) {
 
 			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			var cfg = config.ResumeConfig{}
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService, cfg)
 			ctx := context.Background()
 
 			result, err := service.GetAllResumesByApplicantID(ctx, tc.applicantID, tc.limit, tc.offset)
@@ -4137,7 +4143,8 @@ func TestResumeService_SearchResumesByProfession(t *testing.T) {
 
 			tc.mockSetup(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
 
-			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService)
+			var cfg = config.ResumeConfig{}
+			service := NewResumeService(mockResumeRepo, mockSkillRepo, mockSpecRepo, mockApplicantRepo, mockApplicantService, cfg)
 			ctx := context.Background()
 
 			result, err := service.SearchResumesByProfession(ctx, tc.userID, tc.config.role, tc.profession, tc.limit, tc.offset)

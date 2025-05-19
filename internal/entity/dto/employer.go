@@ -1,6 +1,8 @@
 package dto
 
-import "time"
+import (
+	"time"
+)
 
 type EmployerProfileResponse struct {
 	ID           int       `json:"id"`
@@ -27,4 +29,10 @@ type EmployerProfileUpdate struct {
 	Vk           string `json:"vk" valid:"url,runelength(7|128),optional"`
 	Telegram     string `json:"telegram" valid:"url,runelength(7|128),optional"`
 	Facebook     string `json:"facebook" valid:"url,runelength(7|128),optional"`
+}
+
+type ChatShortResponseEmployer struct {
+	ID          int    `json:"id"`
+	CompanyName string `json:"company_name"`
+	LogoPath    string `json:"logo_path"`
 }

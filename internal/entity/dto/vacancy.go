@@ -111,3 +111,9 @@ type SearchBySpecializationsRequest struct {
 type SearchByQueryAndSpecializationsRequest struct {
 	Specializations []string `json:"specializations"`
 }
+
+type VacancyChatResponse struct {
+	ID         int    `json:"id"`
+	EmployerID int    `json:"employer_id"`
+	Title      string `json:"title"`
+}

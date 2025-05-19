@@ -6,6 +6,7 @@ import (
 )
 
 type ChatRepository interface {
-	Create(ctx context.Context, vacancyID, employerID, applicantID int) (int, error)
-	GetByID(ctx context.Context, chatID int) (*entity.Chat, error)
+	CreateChat(ctx context.Context, vacancyID, resumeID, employerID, applicantID int) (*entity.Chat, error)
+	GetChatByID(ctx context.Context, chatID int) (*entity.Chat, error)
+	GetForUser(ctx context.Context, userID int, isApplicant bool) ([]*entity.Chat, error)
 }

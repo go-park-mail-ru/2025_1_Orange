@@ -146,3 +146,9 @@ type WorkExperienceShort struct {
 	EndDate      string `json:"end_date,omitempty"`
 	UntilNow     bool   `json:"until_now"`
 }
+
+type ResumeChatResponse struct {
+	ID          int    `json:"id"`
+	ApplicantID int    `json:"applicant_id"`
+	Profession  string `json:"profession"`
+}

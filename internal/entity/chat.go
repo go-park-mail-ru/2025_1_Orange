@@ -7,6 +7,7 @@ import (
 type Chat struct {
 	ID          int       `json:"id"`
 	VacancyID   int       `json:"vacancy_id"`
+	ResumeID    int       `json:"resume_id"`
 	ApplicantID int       `json:"applicant_id"`
 	EmployerID  int       `json:"employer_id"`
 	CreatedAt   time.Time `json:"created_at"`

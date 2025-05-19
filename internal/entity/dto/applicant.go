@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// easyjson:json
 type ApplicantProfileResponse struct {
 	ID         int       `json:"id"`
 	FirstName  string    `json:"first_name"`
@@ -23,6 +24,7 @@ type ApplicantProfileResponse struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
+// easyjson:json
 type ApplicantProfileUpdate struct {
 	FirstName  string    `json:"first_name" valid:"runelength(2|30),optional"`
 	LastName   string    `json:"last_name" valid:"runelength(2|30),optional"`

@@ -8,7 +8,6 @@ import (
 	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -55,9 +54,8 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var registerDTO dto.EmployerRegister
-	if err := json.NewDecoder(r.Body).Decode(&registerDTO); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Register").Inc()
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &registerDTO); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -74,10 +72,9 @@ func (h *EmployerHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	middleware.SetCSRFToken(w, r, h.cfg)
 
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: employerID, Role: "employer"}); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Register").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	authResp := dto.AuthResponse{UserID: employerID, Role: "employer"}
+	if err := utils.WriteJSON(w, authResp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -104,9 +101,8 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var loginDTO dto.Login
-	if err := json.NewDecoder(r.Body).Decode(&loginDTO); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Login").Inc()
-		utils.WriteError(w, http.StatusUnauthorized, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &loginDTO); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -123,10 +119,9 @@ func (h *EmployerHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	middleware.SetCSRFToken(w, r, h.cfg)
 
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: employerID, Role: "employer"}); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "Login").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	authResp := dto.AuthResponse{UserID: employerID, Role: "employer"}
+	if err := utils.WriteJSON(w, authResp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -160,13 +155,10 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(employer); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "GetProfile").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, employer); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 // UpdateProfile godoc
@@ -206,9 +198,8 @@ func (h *EmployerHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var employerDTO dto.EmployerProfileUpdate
-	if err := json.NewDecoder(r.Body).Decode(&employerDTO); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UpdateProfile").Inc()
-		utils.WriteError(w, http.StatusBadRequest, err)
+	if err := utils.ReadJSON(r, &employerDTO); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -282,9 +273,8 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = json.NewEncoder(w).Encode(logo); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, logo); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -307,10 +297,8 @@ func (h *EmployerHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var emailDTO dto.EmailExistsRequest
-	err := json.NewDecoder(r.Body).Decode(&emailDTO)
-	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "EmailExists").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &emailDTO); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -320,10 +308,8 @@ func (h *EmployerHandler) EmailExists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "EmailExists").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, response); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }

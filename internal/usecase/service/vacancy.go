@@ -935,7 +935,7 @@ func (vs *VacanciesService) LikeVacancy(ctx context.Context, vacancyID, applican
 		return fmt.Errorf("vacancy not found: %w", err)
 	}
 
-	hasLiked, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
+	hasLiked, err := vs.vacanciesRepository.LikeExists(ctx, vacancyID, applicantID)
 	if err != nil {
 		return fmt.Errorf("failed to check existing like: %w", err)
 	}

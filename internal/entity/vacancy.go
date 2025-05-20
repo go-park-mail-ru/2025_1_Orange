@@ -8,7 +8,7 @@ import (
 
 type Vacancy struct {
 	ID                      int                       `json:"id"`
-	Title                   string                    `json:"title" valid:"required,length(3|50),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
+	Title                   string                    `json:"title" valid:"required,length(3|50)"`
 	IsActive                bool                      `json:"is_active"`
 	EmployerID              int                       `json:"employer_id" valid:"required"`
 	SpecializationID        int                       `json:"specialization_id" valid:"required"`
@@ -20,14 +20,14 @@ type Vacancy struct {
 	SalaryTo                int                       `json:"salary_to" valid:"required,range(0|1000000)"`
 	TaxesIncluded           bool                      `json:"taxes_included"`
 	Experience              string                    `json:"experience" valid:"required,in(no_experience|1_3_years|3_6_years|6_plus_years)"`
-	Description             string                    `json:"description" valid:"required,length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
-	Tasks                   string                    `json:"tasks" valid:"length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
-	Requirements            string                    `json:"requirements" valid:"length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,]+$)"`
-	OptionalRequirements    string                    `json:"optional_requirements" valid:"length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
+	Description             string                    `json:"description" valid:"required,length(10|500)"`
+	Tasks                   string                    `json:"tasks" valid:"length(10|500)"`
+	Requirements            string                    `json:"requirements" valid:"length(10|500)"`
+	OptionalRequirements    string                    `json:"optional_requirements" valid:"length(10|500)"`
 	CreatedAt               time.Time                 `json:"created_at"`
 	UpdatedAt               time.Time                 `json:"updated_at"`
 	Skills                  []Skill                   `json:"-" valid:"dive"`
-	City                    string                    `json:"city" valid:"required,length(3|50),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,]+$)"`
+	City                    string                    `json:"city" valid:"required,length(3|50)"`
 	SupplementaryConditions []SupplementaryConditions `json:"-"`
 	Responded               bool                      `json:"responded"`
 }

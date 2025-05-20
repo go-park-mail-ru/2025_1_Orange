@@ -14,16 +14,8 @@
 					"request": {
 						"method": "GET",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Cookie",
-								"value": "session_id={{session_id}}",
-								"type": "text"
-							}
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"}
 						],
 						"url": {
 							"raw": "{{base_url}}/vacancies",
@@ -39,30 +31,14 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Cookie",
-								"value": "session_id={{session_id}}",
-								"type": "text"
-							},
-							{
-								"key": "X-CSRF-Token",
-								"value": "{{csrf_token}}",
-								"type": "text"
-							}
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"},
+							{"key": "X-CSRF-Token", "value": "{{csrf_token}}", "type": "text"}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"Backend Developer\",\n    \"specialization\": \"IT\",\n    \"work_format\": \"remote\",\n    \"employment\": \"full\",\n    \"schedule\": \"flexible\",\n    \"working_hours\": 40,\n    \"salary_from\": 100000,\n    \"salary_to\": 150000,\n    \"taxes_included\": \"net\",\n    \"experience\": 3,\n    \"city\": [\"Москва\", \"Санкт-Петербург\"],\n    \"skills\": [\"Go\", \"PostgreSQL\", \"Docker\"],\n    \"description\": \"Ищем опытного разработчика...\",\n    \"tasks\": \"Разработка API...\",\n    \"requirements\": \"Опыт от 3 лет...\",\n    \"optional_requirements\": \"Знание Kubernetes...\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"title\": \"Backend Developer\",\n    \"specializations\": [\"IT\"],\n    \"work_format\": \"remote\",\n    \"employment\": \"full\",\n    \"schedule\": \"flexible\",\n    \"working_hours\": 40,\n    \"salary_from\": 100000,\n    \"salary_to\": 150000,\n    \"taxes_included\": \"net\",\n    \"experience\": 3,\n    \"city\": [\"Москва\", \"Санкт-Петербург\"],\n    \"skills\": [\"Go\", \"PostgreSQL\", \"Docker\"],\n    \"description\": \"Ищем опытного разработчика...\",\n    \"tasks\": \"Разработка API...\",\n    \"requirements\": \"Опыт от 3 лет...\",\n    \"optional_requirements\": \"Знание Kubernetes...\"\n}",
+							"options": {"raw": {"language": "json"}}
 						},
 						"url": {
 							"raw": "{{base_url}}/vacancies",
@@ -78,16 +54,8 @@
 					"request": {
 						"method": "GET",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Cookie",
-								"value": "session_id={{session_id}}",
-								"type": "text"
-							}
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"}
 						],
 						"url": {
 							"raw": "{{base_url}}/vacancy/1",
@@ -103,30 +71,14 @@
 					"request": {
 						"method": "PUT",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Cookie",
-								"value": "session_id={{session_id}}",
-								"type": "text"
-							},
-							{
-								"key": "X-CSRF-Token",
-								"value": "{{csrf_token}}",
-								"type": "text"
-							}
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"},
+							{"key": "X-CSRF-Token", "value": "{{csrf_token}}", "type": "text"}
 						],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"title\": \"Updated Backend Position\",\n    \"salary_to\": 160000,\n    \"description\": \"Обновленное описание\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"options": {"raw": {"language": "json"}}
 						},
 						"url": {
 							"raw": "{{base_url}}/vacancy/1",
@@ -142,21 +94,9 @@
 					"request": {
 						"method": "DELETE",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Cookie",
-								"value": "session_id={{session_id}}",
-								"type": "text"
-							},
-							{
-								"key": "X-CSRF-Token",
-								"value": "{{csrf_token}}",
-								"type": "text"
-							}
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"},
+							{"key": "X-CSRF-Token", "value": "{{csrf_token}}", "type": "text"}
 						],
 						"url": {
 							"raw": "{{base_url}}/vacancy/1",
@@ -172,21 +112,9 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Cookie",
-								"value": "session_id={{session_id}}",
-								"type": "text"
-							},
-							{
-								"key": "X-CSRF-Token",
-								"value": "{{csrf_token}}",
-								"type": "text"
-							}
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"},
+							{"key": "X-CSRF-Token", "value": "{{csrf_token}}", "type": "text"}
 						],
 						"url": {
 							"raw": "{{base_url}}/vacancy/1/response",
@@ -198,20 +126,138 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Search",
+			"item": [
+				{
+					"name": "Search Vacancies by Query",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/search?query=Java&limit=10&offset=0",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["search"],
+							"query": [
+								{"key": "query", "value": "Java"},
+								{"key": "limit", "value": "10"},
+								{"key": "offset", "value": "0"}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Vacancies by Specializations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"specializations\": [\"Backend\", \"Java\"]\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {
+							"raw": "{{base_url}}/search/specializations?limit=10&offset=0",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["search", "specializations"],
+							"query": [
+								{"key": "limit", "value": "10"},
+								{"key": "offset", "value": "0"}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Combined Search (Query + Specializations)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"searchQuery\": \"Java Developer\",\n  \"specializations\": [\"Backend\"]\n}",
+							"options": {"raw": {"language": "json"}}
+						},
+						"url": {
+							"raw": "{{base_url}}/search/query-specializations?limit=10&offset=0",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["search", "query-specializations"],
+							"query": [
+								{"key": "limit", "value": "10"},
+								{"key": "offset", "value": "0"}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Liked Vacancies",
+			"item": [
+				{
+					"name": "Get Liked Vacancies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/applicant/123/liked?limit=10&offset=0",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["applicant", "123", "liked"],
+							"query": [
+								{"key": "limit", "value": "10"},
+								{"key": "offset", "value": "0"}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Like Vacancy",
+			"item": [
+				{
+					"name": "Like a Vacancy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json", "type": "text"},
+							{"key": "Cookie", "value": "session_id={{session_id}}", "type": "text"}
+						],
+						"url": {
+							"raw": "{{base_url}}/vacancy/456/like",
+							"protocol": "http",
+							"host": ["{{base_url}}"],
+							"path": ["vacancy", "456", "like"]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:8080"
-		},
-		{
-			"key": "session_id",
-			"value": ""
-		},
-		{
-			"key": "csrf_token",
-			"value": ""
-		}
+		{"key": "base_url", "value": "http://localhost:8080"},
+		{"key": "session_id", "value": ""},
+		{"key": "csrf_token", "value": ""}
 	]
 }

@@ -73,9 +73,8 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var vacancyCreate dto.VacancyCreate
-	if err := json.NewDecoder(r.Body).Decode(&vacancyCreate); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "CreateVacancy").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &vacancyCreate); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -102,11 +101,8 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(vacancy); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "CreateVacancy").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, vacancy); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -140,11 +136,8 @@ func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancy); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacancy").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, vacancy); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -185,9 +178,8 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var vacancyUpdate dto.VacancyUpdate
-	if err := json.NewDecoder(r.Body).Decode(&vacancyUpdate); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "UpdateVacancy").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &vacancyUpdate); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -216,11 +208,8 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancy); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "UpdateVacancy").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, vacancy); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -266,11 +255,8 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "DeleteVacancy").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, response); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -319,12 +305,9 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetAllVacancies").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.VacancyShortResponseList(vacancies)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -427,11 +410,9 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.VacancyShortResponseList(vacancies)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -503,11 +484,9 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.VacancyShortResponseList(vacancies)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -579,11 +558,9 @@ func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacancies").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.VacancyShortResponseList(vacancies)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -631,9 +608,8 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 
 	// Декодируем тело запроса
 	var searchRequest dto.SearchBySpecializationsRequest
-	if err := json.NewDecoder(r.Body).Decode(&searchRequest); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacanciesBySpecializations").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &searchRequest); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -656,11 +632,9 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacanciesBySpecializations").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.VacancyShortResponseList(vacancies)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -716,9 +690,8 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 
 	// Декодируем тело запроса для получения списка специализаций
 	var searchRequest dto.SearchByQueryAndSpecializationsRequest
-	if err := json.NewDecoder(r.Body).Decode(&searchRequest); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacanciesByQueryAndSpecializations").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &searchRequest); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -741,11 +714,9 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacanciesByQueryAndSpecializations").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.VacancyShortResponseList(vacancies)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -813,11 +784,9 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetLikedVacancies").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.VacancyShortResponseList(vacancies)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }

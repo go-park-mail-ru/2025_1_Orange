@@ -30,8 +30,8 @@ func ReadJSON(r *http.Request, v easyjson.Unmarshaler) error {
 	err := easyjson.UnmarshalFromReader(r.Body, v)
 	if err != nil {
 		return entity.NewError(
-			entity.ErrInternal,
-			fmt.Errorf("ошибка чтения тела запроса: %w", err),
+			entity.ErrBadRequest,
+			fmt.Errorf("невалидный json: %w", err),
 		)
 	}
 	return nil

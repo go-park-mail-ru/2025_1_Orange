@@ -8,7 +8,6 @@ import (
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
 	"ResuMatch/pkg/sanitizer"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -85,9 +84,8 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 
 	// Декодируем запрос
 	var createResumeRequest dto.CreateResumeRequest
-	if err := json.NewDecoder(r.Body).Decode(&createResumeRequest); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "CreateResume").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &createResumeRequest); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -127,11 +125,9 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(resume); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "CreateResume").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, resume); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -169,11 +165,8 @@ func (h *ResumeHandler) GetResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resume); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetResume").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, resume); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -234,9 +227,8 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 
 	// Декодируем запрос
 	var updateResumeRequest dto.UpdateResumeRequest
-	if err := json.NewDecoder(r.Body).Decode(&updateResumeRequest); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "UpdateResume").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+	if err := utils.ReadJSON(r, &updateResumeRequest); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 
@@ -275,11 +267,8 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resume); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "UpdateResume").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, resume); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -344,11 +333,8 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "DeleteResume").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	if err := utils.WriteJSON(w, response); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }
@@ -422,11 +408,9 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Отправляем ответ
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(resumesWithSkills); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetAllResumes").Inc()
-			utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		resp := dto.ResumeApplicantShortResponseList(resumesWithSkills)
+		if err := utils.WriteJSON(w, resp); err != nil {
+			utils.WriteAPIError(w, utils.ToAPIError(err))
 			return
 		}
 	} else {
@@ -437,11 +421,9 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Отправляем ответ
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(resumes); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetAllResumes").Inc()
-			utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		resp := dto.ResumeShortResponseList(resumes)
+		if err := utils.WriteJSON(w, resp); err != nil {
+			utils.WriteAPIError(w, utils.ToAPIError(err))
 			return
 		}
 	}
@@ -523,11 +505,9 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resumes); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "SearchResumes").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	resp := dto.ResumeShortResponseList(resumes)
+	if err := utils.WriteJSON(w, resp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }

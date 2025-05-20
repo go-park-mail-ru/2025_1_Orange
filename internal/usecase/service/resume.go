@@ -1070,7 +1070,6 @@ func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID int) ([]byte,
 		return nil, err
 	}
 
-	l.Log.Info(templateData.AvatarBase64)
 	htmlContent, err := s.renderTemplate(templateData)
 	if err != nil {
 		return nil, entity.NewError(entity.ErrInternal, err)

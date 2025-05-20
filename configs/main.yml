@@ -35,3 +35,11 @@ postgres:
   user: "postgres"
   dbname: "mydb"
   sslmode: "disable"
+
+resume:
+  staticPath: "static/templates"
+  staticFile: "resume_pdf.html"
+  paperWidth:  "12"
+  paperHeight: "18"
+  generateURL: "http://gotenberg:3000/forms/chromium/convert/html"
+

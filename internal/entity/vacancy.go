@@ -100,6 +100,7 @@ type VacancyResponses struct {
 	ID          int       `json:"id"`
 	VacancyID   int       `json:"vacancy_id"`
 	ApplicantID int       `json:"applicant_id"`
+	ResumeID    int       `json:"resume_id"`
 	AppliedAt   time.Time `json:"applied_at"`
 }
 

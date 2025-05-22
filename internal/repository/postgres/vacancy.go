@@ -1190,6 +1190,8 @@ func (r *VacancyRepository) VacancyBelongsToEmployer(ctx context.Context, vacanc
 }
 
 func (r *VacancyRepository) GetVacancyResponses(ctx context.Context, vacancyID int, limit, offset int) ([]*entity.VacancyResponses, error) {
+	requestID := utils.GetRequestID(ctx)
+
 	query := `
         SELECT 
             id, 
@@ -1206,7 +1208,15 @@ func (r *VacancyRepository) GetVacancyResponses(ctx context.Context, vacancyID i
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetVacancyResponses").Inc()
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var responses []*entity.VacancyResponses
 	for rows.Next() {

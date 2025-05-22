@@ -77,7 +77,7 @@ func (vs *VacanciesService) CreateVacancy(ctx context.Context, employerID int, r
 		City:                 request.City,
 	}
 
-	if _, err := vacancy.Validate(); err != nil {
+	if err := vacancy.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -270,7 +270,7 @@ func (vs *VacanciesService) UpdateVacancy(ctx context.Context, id int, employerI
 		City:                 request.City,
 	}
 
-	if _, err := vacancy.Validate(); err != nil {
+	if err := vacancy.Validate(); err != nil {
 		return nil, err
 	}
 

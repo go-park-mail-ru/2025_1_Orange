@@ -184,6 +184,20 @@ func (mr *MockVacancyRepositoryMockRecorder) DeleteLike(ctx, vacancyID, applican
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLike", reflect.TypeOf((*MockVacancyRepository)(nil).DeleteLike), ctx, vacancyID, applicantID)
 }
 
+// DeleteResponse mocks base method.
+func (m *MockVacancyRepository) DeleteResponse(ctx context.Context, vacancyID, applicantID int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteResponse", ctx, vacancyID, applicantID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteResponse indicates an expected call of DeleteResponse.
+func (mr *MockVacancyRepositoryMockRecorder) DeleteResponse(ctx, vacancyID, applicantID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResponse", reflect.TypeOf((*MockVacancyRepository)(nil).DeleteResponse), ctx, vacancyID, applicantID)
+}
+
 // DeleteSkills mocks base method.
 func (m *MockVacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) error {
 	m.ctrl.T.Helper()
@@ -346,6 +360,21 @@ func (m *MockVacancyRepository) GetVacanciesByApplicantID(ctx context.Context, a
 func (mr *MockVacancyRepositoryMockRecorder) GetVacanciesByApplicantID(ctx, applicantID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVacanciesByApplicantID", reflect.TypeOf((*MockVacancyRepository)(nil).GetVacanciesByApplicantID), ctx, applicantID, limit, offset)
+}
+
+// GetVacancyResponses mocks base method.
+func (m *MockVacancyRepository) GetVacancyResponses(ctx context.Context, vacancyID, limit, offset int) ([]*entity.VacancyResponses, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVacancyResponses", ctx, vacancyID, limit, offset)
+	ret0, _ := ret[0].([]*entity.VacancyResponses)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVacancyResponses indicates an expected call of GetVacancyResponses.
+func (mr *MockVacancyRepositoryMockRecorder) GetVacancyResponses(ctx, vacancyID, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVacancyResponses", reflect.TypeOf((*MockVacancyRepository)(nil).GetVacancyResponses), ctx, vacancyID, limit, offset)
 }
 
 // GetlikedVacancies mocks base method.

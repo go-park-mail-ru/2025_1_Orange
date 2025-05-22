@@ -395,6 +395,8 @@ func TestVacanciesService_GetVacancy(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo, mockSpecRepo, mockEmployerService)
 
@@ -403,6 +405,8 @@ func TestVacanciesService_GetVacancy(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -607,6 +611,8 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo, mockSpecRepo, mockEmployerService)
 
@@ -615,6 +621,8 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -950,6 +958,8 @@ func TestVacanciesService_SearchVacanciesByQueryAndSpecializations(t *testing.T)
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo, mockSpecRepo, mockEmployerService)
 
@@ -958,6 +968,8 @@ func TestVacanciesService_SearchVacanciesByQueryAndSpecializations(t *testing.T)
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -1057,6 +1069,8 @@ func TestVacanciesService_DeleteVacancy(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo)
 
@@ -1065,6 +1079,8 @@ func TestVacanciesService_DeleteVacancy(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -1156,6 +1172,8 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo)
 
@@ -1164,6 +1182,8 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -1247,6 +1267,8 @@ func TestVacanciesService_LikeVacancy(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo)
 
@@ -1255,6 +1277,8 @@ func TestVacanciesService_LikeVacancy(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -1474,6 +1498,8 @@ func TestVacanciesService_GetLikedVacancies(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo, mockSpecRepo, mockEmployerService)
 
@@ -1482,6 +1508,8 @@ func TestVacanciesService_GetLikedVacancies(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -1875,6 +1903,8 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo, mockSpecRepo, mockEmployerService)
 
@@ -1883,6 +1913,8 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 
@@ -2221,6 +2253,8 @@ func TestVacanciesService_GetAll(t *testing.T) {
 			mockSpecRepo := mock.NewMockSpecializationRepository(ctrl)
 			mockEmployerService := m.NewMockEmployer(ctrl)
 			mockApplicantRepo := mock.NewMockApplicantRepository(ctrl)
+			mockResumeRepo := mock.NewMockResumeRepository(ctrl)
+			mockApplicantService := m.NewMockApplicant(ctrl)
 
 			tc.mockSetup(mockVacancyRepo, mockSpecRepo, mockEmployerService)
 
@@ -2229,6 +2263,8 @@ func TestVacanciesService_GetAll(t *testing.T) {
 				mockApplicantRepo,
 				mockSpecRepo,
 				mockEmployerService,
+				mockResumeRepo,
+				mockApplicantService,
 			)
 			ctx := context.Background()
 

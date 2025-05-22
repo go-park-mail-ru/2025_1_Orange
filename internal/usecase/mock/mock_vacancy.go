@@ -130,6 +130,21 @@ func (mr *MockVacancyMockRecorder) GetLikedVacancies(ctx, applicantID, limit, of
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLikedVacancies", reflect.TypeOf((*MockVacancy)(nil).GetLikedVacancies), ctx, applicantID, limit, offset)
 }
 
+// GetRespondedResumeOnVacancy mocks base method.
+func (m *MockVacancy) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID, limit, offset int) ([]dto.ResumeShortResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRespondedResumeOnVacancy", ctx, vacancyID, limit, offset)
+	ret0, _ := ret[0].([]dto.ResumeShortResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRespondedResumeOnVacancy indicates an expected call of GetRespondedResumeOnVacancy.
+func (mr *MockVacancyMockRecorder) GetRespondedResumeOnVacancy(ctx, vacancyID, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRespondedResumeOnVacancy", reflect.TypeOf((*MockVacancy)(nil).GetRespondedResumeOnVacancy), ctx, vacancyID, limit, offset)
+}
+
 // GetVacanciesByApplicantID mocks base method.
 func (m *MockVacancy) GetVacanciesByApplicantID(ctx context.Context, applicantID, limit, offset int) ([]dto.VacancyShortResponse, error) {
 	m.ctrl.T.Helper()

@@ -36,4 +36,5 @@ type VacancyRepository interface {
 	GetlikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]*entity.Vacancy, error)
 	LikeExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
 	DeleteResponse(ctx context.Context, vacancyID, applicantID int) error
+	GetVacancyResponses(ctx context.Context, vacancyID int, limit, offset int) ([]*entity.VacancyResponses, error)
 }

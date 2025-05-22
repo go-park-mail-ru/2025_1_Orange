@@ -19,21 +19,24 @@ type VacanciesService struct {
 	applicantRepository      repository.ApplicantRepository
 	specializationRepository repository.SpecializationRepository
 	employerService          usecase.Employer
-	resumeService usecase.ResumeUsecase
+	resumeRepository         repository.ResumeRepository
+	applicantService         usecase.Applicant
 }
 
 func NewVacanciesService(vacancyRepo repository.VacancyRepository,
 	applicantRepo repository.ApplicantRepository,
 	specializationRepo repository.SpecializationRepository,
 	employerService usecase.Employer,
-	resumeService usecase.ResumeUsecase,
+	resumeRepository repository.ResumeRepository,
+	applicantService usecase.Applicant,
 ) usecase.Vacancy {
 	return &VacanciesService{
 		vacanciesRepository:      vacancyRepo,
 		applicantRepository:      applicantRepo,
 		specializationRepository: specializationRepo,
 		employerService:          employerService,
-		resumeService:			resumeService,
+		resumeRepository:         resumeRepository,
+		applicantService:         applicantService,
 	}
 }
 
@@ -471,7 +474,7 @@ func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, appli
 	return vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
 }
 
-func (vs *VacanciesService) GetRepondedResumeOnVacancy(ctx context.Context, vacancyID int) ([]*dto.ResumeShortResponse, error) {
+func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID int, limit, offset int) ([]dto.ResumeShortResponse, error) {
 
 	requestID := utils.GetRequestID(ctx)
 
@@ -480,20 +483,85 @@ func (vs *VacanciesService) GetRepondedResumeOnVacancy(ctx context.Context, vaca
 		"vacancyID": vacancyID,
 	}).Info("Получение списка резюме откликнувшихся на вакансию")
 
-	responses, err := vs.vacanciesRepository.GetVacancyResponses(ctx, vacancyID)
+	responses, err := vs.vacanciesRepository.GetVacancyResponses(ctx, vacancyID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get vacancy responses: %w", err)
 	}
 
 	response := make([]dto.ResumeShortResponse, 0, len(responses))
-	var resume dto.ResumeShortResponse
-	for _, r := range responses {
-		resume = r
-		response = append(response, r.ResumeID)
-	}
 
-	for 
-	return result, nil
+	for _, r := range responses {
+		resume, err := vs.resumeRepository.GetByID(ctx, r.ResumeID)
+		if err != nil {
+			return nil, err
+		}
+		var specializationName string
+		if resume.SpecializationID != 0 {
+			specialization, err := vs.specializationRepository.GetByID(ctx, resume.SpecializationID)
+			if err != nil {
+				l.Log.WithFields(logrus.Fields{
+					"requestID":        requestID,
+					"resumeID":         resume.ID,
+					"specializationID": resume.SpecializationID,
+					"error":            err,
+				}).Error("ошибка при получении специализации")
+				continue
+			}
+			specializationName = specialization.Name
+		}
+
+		workExperiences, err := vs.resumeRepository.GetWorkExperienceByResumeID(ctx, resume.ID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"resumeID":  resume.ID,
+				"error":     err,
+			}).Error("ошибка при получении опыта работы")
+			continue
+		}
+
+		applicantDTO, err := vs.applicantService.GetUser(ctx, resume.ApplicantID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID":   requestID,
+				"resumeID":    resume.ID,
+				"applicantID": resume.ApplicantID,
+				"error":       err,
+			}).Error("ошибка при конвертации соискателя в DTO")
+			continue
+		}
+
+		shortResume := dto.ResumeShortResponse{
+			ID:             resume.ID,
+			Applicant:      applicantDTO,
+			Specialization: specializationName,
+			Profession:     resume.Profession,
+			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:      resume.UpdatedAt.Format(time.RFC3339),
+		}
+
+		if len(workExperiences) > 0 {
+			we := workExperiences[0]
+			workExp := dto.WorkExperienceShort{
+				ID:           we.ID,
+				EmployerName: we.EmployerName,
+				Position:     we.Position,
+				Duties:       we.Duties,
+				Achievements: we.Achievements,
+				StartDate:    we.StartDate.Format("2006-01-02"),
+				UntilNow:     we.UntilNow,
+			}
+
+			if !we.UntilNow && !we.EndDate.IsZero() {
+				workExp.EndDate = we.EndDate.Format("2006-01-02")
+			}
+
+			shortResume.WorkExperience = workExp
+		}
+
+		response = append(response, shortResume)
+	}
+	return response, nil
 }
 
 func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error) {

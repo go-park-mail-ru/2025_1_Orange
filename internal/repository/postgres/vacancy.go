@@ -1043,7 +1043,6 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 		DELETE FROM vacancy_city
 		WHERE vacancy_id = $1
 	`
-
 	_, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteCity").Inc()
@@ -1190,39 +1189,43 @@ func (r *VacancyRepository) VacancyBelongsToEmployer(ctx context.Context, vacanc
 	return exists, nil
 }
 
-func (r *VacancyRepository) GetResponsesOnVacancy(ctx context.Context, vacancyID int) ([]*entity.VacancyResponse, error) {
+func (r *VacancyRepository) GetVacancyResponses(ctx context.Context, vacancyID int, limit, offset int) ([]*entity.VacancyResponses, error) {
 	query := `
         SELECT 
+            id, 
             vacancy_id, 
             applicant_id,
             resume_id, 
             applied_at
         FROM vacancy_response
         WHERE vacancy_id = $1
-        ORDER BY created_at DESC
+        ORDER BY applied_at DESC
+        LIMIT $2 OFFSET $3  
     `
-
-	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
+	rows, err := r.DB.QueryContext(ctx, query, vacancyID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query error: %w", err)
 	}
 	defer rows.Close()
 
-	var responses []*entity.VacancyResponse
+	var responses []*entity.VacancyResponses
 	for rows.Next() {
-		var resp entity.VacancyResponse
+		var resp entity.VacancyResponses
 		err := rows.Scan(
-			&resp.ID, &resp.VacancyID, &resp.ResumeID, &resp.ApplicantID,
-			&resp.Status, &resp.CreatedAt, &resp.UpdatedAt, &resp.CoverLetter,
+			&resp.ID,
+			&resp.VacancyID,
+			&resp.ApplicantID,
+			&resp.ResumeID,
+			&resp.AppliedAt,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("scan error: %w", err)
 		}
 		responses = append(responses, &resp)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	return responses, nil

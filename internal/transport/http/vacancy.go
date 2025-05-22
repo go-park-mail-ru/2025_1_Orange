@@ -43,7 +43,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("POST /search/combined", h.SearchVacanciesByQueryAndSpecializations)
 	vacancyMux.HandleFunc("GET /applicant/{id}/liked", h.GetLikedVacancies)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/like", h.LikeVacancy)
-	vacancyMux.HandleFunc("GET /vacancy{id}/response/list", h.GetResponsesOnVacancy)
+	vacancyMux.HandleFunc("GET /vacancy/{id}/response/list", h.GetResponsesOnVacancy)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -366,24 +366,30 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID = 0
-	var userRole string
-
 	idStr := r.PathValue("id")
-	employerID, err := strconv.Atoi(idStr)
+	vacancyID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	cookie, err := r.Cookie("session_id")
-	if err == nil && cookie != nil {
-		currentUserID, currenyUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-		if err == nil {
-			userID = currentUserID
-			userRole = currenyUserRole
-		}
+	if err != nil || cookie == nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
+	}
+
+	_, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if userType != "employer" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
 	}
 
 	limitStr := r.URL.Query().Get("limit")
@@ -409,7 +415,7 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	vacancies, err := h.vacancy.GetActiveVacanciesByEmployerID(ctx, employerID, userID, userRole, limit, offset)
+	resumes, err := h.vacancy.GetRespondedResumeOnVacancy(ctx, vacancyID, limit, offset)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -417,8 +423,8 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
+	if err := json.NewEncoder(w).Encode(resumes); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetAllResumes").Inc()
 		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
 		return
 	}

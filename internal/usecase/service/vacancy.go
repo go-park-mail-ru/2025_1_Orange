@@ -19,18 +19,21 @@ type VacanciesService struct {
 	applicantRepository      repository.ApplicantRepository
 	specializationRepository repository.SpecializationRepository
 	employerService          usecase.Employer
+	resumeService usecase.ResumeUsecase
 }
 
 func NewVacanciesService(vacancyRepo repository.VacancyRepository,
 	applicantRepo repository.ApplicantRepository,
 	specializationRepo repository.SpecializationRepository,
 	employerService usecase.Employer,
+	resumeService usecase.ResumeUsecase,
 ) usecase.Vacancy {
 	return &VacanciesService{
 		vacanciesRepository:      vacancyRepo,
 		applicantRepository:      applicantRepo,
 		specializationRepository: specializationRepo,
 		employerService:          employerService,
+		resumeService:			resumeService,
 	}
 }
 
@@ -411,7 +414,7 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 
 		liked := false
 		if userRole == "applicant" && currentUserID != 0 {
-			liked, err = s.vacanciesRepository.ResponseExists(ctx, vacancy.ID, currentUserID)
+			liked, err = s.vacanciesRepository.LikeExists(ctx, vacancy.ID, currentUserID)
 			if err != nil {
 				return nil, err
 			}
@@ -456,17 +459,41 @@ func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, appli
 	if _, err := vs.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
 		return fmt.Errorf("vacancy not found: %w", err)
 	}
-	// Проверяем, не откликался ли уже
+
 	hasResponded, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
 	if err != nil {
 		return fmt.Errorf("failed to check existing responses: %w", err)
 	}
 	if hasResponded {
-		return entity.NewError(entity.ErrAlreadyExists,
-			fmt.Errorf("you have already applied to this vacancy"))
+		return vs.vacanciesRepository.DeleteResponse(ctx, vacancyID, applicantID)
 	}
 
 	return vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
+}
+
+func (vs *VacanciesService) GetRepondedResumeOnVacancy(ctx context.Context, vacancyID int) ([]*dto.ResumeShortResponse, error) {
+
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID": requestID,
+		"vacancyID": vacancyID,
+	}).Info("Получение списка резюме откликнувшихся на вакансию")
+
+	responses, err := vs.vacanciesRepository.GetVacancyResponses(ctx, vacancyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vacancy responses: %w", err)
+	}
+
+	response := make([]dto.ResumeShortResponse, 0, len(responses))
+	var resume dto.ResumeShortResponse
+	for _, r := range responses {
+		resume = r
+		response = append(response, r.ResumeID)
+	}
+
+	for 
+	return result, nil
 }
 
 func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error) {

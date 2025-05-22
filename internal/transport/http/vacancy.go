@@ -43,6 +43,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("POST /search/combined", h.SearchVacanciesByQueryAndSpecializations)
 	vacancyMux.HandleFunc("GET /applicant/{id}/liked", h.GetLikedVacancies)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/like", h.LikeVacancy)
+	vacancyMux.HandleFunc("GET /vacancy{id}/response/list", h.GetResponsesOnVacancy)
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
@@ -79,7 +80,6 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Санитизация всех строковых полей
 	vacancyCreate.Title = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Title)
 	vacancyCreate.Specialization = sanitizer.StrictPolicy.Sanitize(vacancyCreate.Specialization)
 	vacancyCreate.WorkFormat = sanitizer.StrictPolicy.Sanitize(vacancyCreate.WorkFormat)
@@ -354,17 +354,6 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Санитизация данных отклика, если они есть в теле запроса
-	if r.ContentLength > 0 {
-		var application struct {
-			Message string `json:"message"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&application); err == nil {
-			application.Message = sanitizer.StrictPolicy.Sanitize(application.Message)
-			// Здесь можно передать санитизированное сообщение в usecase, если нужно
-		}
-	}
-
 	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
@@ -372,6 +361,67 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var userID = 0
+	var userRole string
+
+	idStr := r.PathValue("id")
+	employerID, err := strconv.Atoi(idStr)
+	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
+	cookie, err := r.Cookie("session_id")
+	if err == nil && cookie != nil {
+		currentUserID, currenyUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+		if err == nil {
+			userID = currentUserID
+			userRole = currenyUserRole
+		}
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	vacancies, err := h.vacancy.GetActiveVacanciesByEmployerID(ctx, employerID, userID, userRole, limit, offset)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(vacancies); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
+		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+		return
+	}
 }
 
 func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *http.Request) {
@@ -457,7 +507,6 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Получаем `applicantID` из URL
 	idStr := r.PathValue("id")
 	applicantID, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -466,7 +515,6 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Проверяем, что соискатель получает **свои** отклики
 	if applicantID != currentUserID {
 		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
@@ -753,43 +801,20 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID = 0
-	var userRole string
-
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-		if err == nil {
-			userID = currentUserID
-			userRole = currentUserRole
-		}
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
+		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
+		return
 	}
 
-	// Получаем параметры пагинации из URL
-	limitStr := r.URL.Query().Get("limit")
-	offsetStr := r.URL.Query().Get("offset")
-
-	limit := 10 // Значение по умолчанию
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetLikedVacancies").Inc()
-			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
-			return
-		}
+	currentUserID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
 	}
 
-	offset := 0 // Значение по умолчанию
-	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetLikedVacancies").Inc()
-			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
-			return
-		}
-	}
-
-	if userRole != "applicant" {
+	if userType != "applicant" {
 		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
@@ -797,12 +822,40 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 	idStr := r.PathValue("id")
 	applicantID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetLikedVacancies").Inc()
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
-	if applicantID != userID {
+	if applicantID != currentUserID {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 10
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	offset := 0
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
+			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+			return
+		}
+	}
+
+	if applicantID != currentUserID {
 		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
 		return
 	}
@@ -825,19 +878,19 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var userID = 0
-	var userRole string
-
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
-		if err == nil {
-			userID = currentUserID
-			userRole = currentUserRole
-		}
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "LikeVacancy").Inc()
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
 	}
 
-	// Получаем ID вакансии из URL
+	currentUserID, currentUserRole, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil || currentUserRole != "applicant" {
+		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
+		return
+	}
+
 	vacancyID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "LikeVacancy").Inc()
@@ -845,21 +898,7 @@ func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if userRole != "applicant" {
-		utils.WriteError(w, http.StatusForbidden, entity.ErrForbidden)
-		return
-	}
-
-	if r.ContentLength > 0 {
-		var application struct {
-			Message string `json:"message"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&application); err == nil {
-			application.Message = sanitizer.StrictPolicy.Sanitize(application.Message)
-		}
-	}
-
-	err = h.vacancy.LikeVacancy(ctx, vacancyID, userID)
+	err = h.vacancy.LikeVacancy(ctx, vacancyID, currentUserID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

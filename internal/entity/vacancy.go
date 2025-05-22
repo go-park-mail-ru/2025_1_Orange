@@ -1,14 +1,13 @@
 package entity
 
 import (
+	"fmt"
 	"time"
-
-	"github.com/asaskevich/govalidator"
 )
 
 type Vacancy struct {
 	ID                      int                       `json:"id"`
-	Title                   string                    `json:"title" valid:"required,length(3|50)"`
+	Title                   string                    `json:"title" valid:"required,runelength(3|50)"`
 	IsActive                bool                      `json:"is_active"`
 	EmployerID              int                       `json:"employer_id" valid:"required"`
 	SpecializationID        int                       `json:"specialization_id" valid:"required"`
@@ -20,20 +19,25 @@ type Vacancy struct {
 	SalaryTo                int                       `json:"salary_to" valid:"required,range(0|1000000)"`
 	TaxesIncluded           bool                      `json:"taxes_included"`
 	Experience              string                    `json:"experience" valid:"required,in(no_experience|1_3_years|3_6_years|6_plus_years)"`
-	Description             string                    `json:"description" valid:"required,length(10|500)"`
-	Tasks                   string                    `json:"tasks" valid:"length(10|500)"`
-	Requirements            string                    `json:"requirements" valid:"length(10|500)"`
-	OptionalRequirements    string                    `json:"optional_requirements" valid:"length(10|500)"`
+	Description             string                    `json:"description" valid:"required,runelength(10|500)"`
+	Tasks                   string                    `json:"tasks" valid:"runelength(10|500)"`
+	Requirements            string                    `json:"requirements" valid:"runelength(10|500)"`
+	OptionalRequirements    string                    `json:"optional_requirements" valid:"runelength(10|500)"`
 	CreatedAt               time.Time                 `json:"created_at"`
 	UpdatedAt               time.Time                 `json:"updated_at"`
 	Skills                  []Skill                   `json:"-" valid:"dive"`
-	City                    string                    `json:"city" valid:"required,length(3|50)"`
+	City                    string                    `json:"city" valid:"required,runelength(3|50)"`
 	SupplementaryConditions []SupplementaryConditions `json:"-"`
-	Responded               bool                      `json:"responded"`
 }
 
 func (v *Vacancy) Validate() (bool, error) {
-	return govalidator.ValidateStruct(v)
+	if v.ID < 0 {
+		return false, NewError(
+			ErrBadRequest,
+			fmt.Errorf("Vacancy id cant be equal 0"),
+		)
+	}
+	return true, nil
 }
 
 type VacancyShort struct {
@@ -55,9 +59,9 @@ type VacancyShort struct {
 }
 
 type VacancyCreate struct {
-	Title                string   `form:"title" validate:"required,min=3,max=50,validTitle"`
-	Specialization       string   `form:"specialization" validate:"required,min=3,max=50,validText"`
-	City                 string   `form:"city" validate:"required,min=3,max=50,validCity"`
+	Title                string   `form:"title" validate:"required,runelength(3|50),validTitle"`
+	Specialization       string   `form:"specialization" validate:"required,runelength(3|50),validText"`
+	City                 string   `form:"city" validate:"required,runelength(3|50),validCity"`
 	Employment           string   `form:"employment" validate:"required,oneof=full_time part_time contract internship freelance watch"`
 	Schedule             string   `form:"schedule" validate:"required,oneof=5/2 2/2 6/1 3/3 on_weekend by_agreement"`
 	WorkingHours         int      `form:"working_hours" validate:"required,min=1,max=96"`
@@ -66,18 +70,18 @@ type VacancyCreate struct {
 	SalaryTo             int      `form:"salary_to" validate:"required,min=0,max=1000000,gtefield=SalaryFrom"`
 	TaxesIncluded        string   `form:"taxes_included" validate:"required,oneof=true false"`
 	Experience           string   `form:"experience" validate:"required,oneof=no_experience 1_3_years 3_6_years 6_plus_years"`
-	Description          string   `form:"description" validate:"required,min=10,max=500,validText"`
-	Tasks                string   `form:"tasks" validate:"min=10,max=500,validText"`
-	Requirements         string   `form:"requirements" validate:"min=10,max=500,validText"`
-	OptionalRequirements string   `form:"optional_requirements" validate:"min=10,max=500,validText"`
+	Description          string   `form:"description" validate:"required,runelength(10|500),validText"`
+	Tasks                string   `form:"tasks" validate:"runelength(10|500),validText"`
+	Requirements         string   `form:"requirements" validate:"runelength(10|500),validText"`
+	OptionalRequirements string   `form:"optional_requirements" validate:"runelength(10|500),validText"`
 	Skills               []string `validate:"dive,min=2,max=30,validText"`
 }
 
 type VacancyResponse struct {
 	ID                   int       `json:"id" validate:"required,min=1"`
 	EmployerID           int       `json:"employer_id" validate:"required,min=1"`
-	Title                string    `json:"title" validate:"required,min=10,max=100"`
-	Specialization       string    `json:"specialization" validate:"required,min=3,max=50"`
+	Title                string    `json:"title" validate:"required,runelength(10|100)"`
+	Specialization       string    `json:"specialization" validate:"required,runelength(3|50)"`
 	WorkFormat           string    `json:"work_format" validate:"required,oneof=remote office hybrid traveling"`
 	Employment           string    `json:"employment" validate:"required,oneof=full_time part_time contract freelance internship watch"`
 	Schedule             string    `json:"schedule"`
@@ -86,12 +90,12 @@ type VacancyResponse struct {
 	SalaryTo             int       `json:"salary_to" validate:"required,min=0,gtfield=SalaryFrom"`
 	TaxesIncluded        bool      `json:"taxes_included"`
 	Experience           string    `json:"experience"`
-	City                 string    `json:"city" validate:"required,min=2,max=50"`
+	City                 string    `json:"city" validate:"required,runelength(2|50)"`
 	Skills               []string  `json:"skills" validate:"required,min=1,max=10,dive,min=2,max=30"`
-	Description          string    `json:"description" validate:"required,min=10,max=5000"`
-	Tasks                string    `json:"tasks" validate:"required,min=20,max=2000"`
-	Requirements         string    `json:"requirements" validate:"required,min=10,max=2000"`
-	OptionalRequirements string    `json:"optional_requirements" validate:"max=2000"`
+	Description          string    `json:"description" validate:"required,runelength(10|5000)"`
+	Tasks                string    `json:"tasks" validate:"required,runelength(20|2000)"`
+	Requirements         string    `json:"requirements" validate:"required,runelength(10|2000)"`
+	OptionalRequirements string    `json:"optional_requirements" validate:"runelength(0|2000)"`
 	CreatedAt            time.Time `json:"created_at" validate:"required"`
 	UpdatedAt            time.Time `json:"updated_at" validate:"required"`
 }

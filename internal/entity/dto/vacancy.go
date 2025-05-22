@@ -5,6 +5,7 @@ import (
 )
 
 // VacancyShort представляет сокращенную информацию о вакансии
+// easyjson:json
 type VacancyShortResponse struct {
 	ID             int                      `json:"id"`
 	Title          string                   `json:"title"`
@@ -23,6 +24,7 @@ type VacancyShortResponse struct {
 	Liked          bool                     `json:"liked"`
 }
 
+// easyjson:json
 type VacancyCreate struct {
 	Title                string   `json:"title"`
 	Specialization       string   `json:"specialization"`
@@ -42,6 +44,7 @@ type VacancyCreate struct {
 	OptionalRequirements string   `json:"optional_requirements"`
 }
 
+// easyjson:json
 type VacancyUpdate struct {
 	Title                string   `json:"title"`
 	Specialization       string   `json:"specialization"`
@@ -61,6 +64,7 @@ type VacancyUpdate struct {
 	OptionalRequirements string   `json:"optional_requirements"`
 }
 
+// easyjson:json
 type VacancyResponse struct {
 	ID                   int      `json:"id"`
 	EmployerID           int      `json:"employer_id"`
@@ -86,6 +90,7 @@ type VacancyResponse struct {
 	Liked                bool     `json:"liked"`
 }
 
+// easyjson:json
 type VacancyResponsed struct {
 	ID          int       `json:"id"`
 	VacancyID   int       `json:"vacancy_id"`
@@ -94,20 +99,27 @@ type VacancyResponsed struct {
 	AppliedAt   time.Time `json:"applied_at"`
 }
 
+// easyjson:json
 type DeleteVacancy struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
+// easyjson:json
 type ApplyToVacancyRequest struct {
 	ResumeID int `json:"resume_id,omitempty"`
 }
 
 // SearchBySpecializationsRequest для поиска вакансий по специализациям
+// easyjson:json
 type SearchBySpecializationsRequest struct {
 	Specializations []string `json:"specializations"`
 }
 
+// easyjson:json
 type SearchByQueryAndSpecializationsRequest struct {
 	Specializations []string `json:"specializations"`
 }
+
+// easyjson:json
+type VacancyShortResponseList []VacancyShortResponse

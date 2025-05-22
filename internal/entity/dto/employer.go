@@ -2,6 +2,7 @@ package dto
 
 import "time"
 
+// easyjson:json
 type EmployerProfileResponse struct {
 	ID           int       `json:"id"`
 	CompanyName  string    `json:"company_name"`
@@ -18,6 +19,7 @@ type EmployerProfileResponse struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+// easyjson:json
 type EmployerProfileUpdate struct {
 	CompanyName  string `json:"company_name" valid:"runelength(2|30),optional"`
 	LegalAddress string `json:"legal_address" valid:"runelength(5|100),optional"`

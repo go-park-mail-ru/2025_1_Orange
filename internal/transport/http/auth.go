@@ -8,7 +8,6 @@ import (
 	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
-	"encoding/json"
 	"net/http"
 )
 
@@ -56,11 +55,9 @@ func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err = json.NewEncoder(w).Encode(dto.AuthResponse{UserID: userID, Role: role}); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Auth Handler", "IsAuth").Inc()
-		utils.WriteError(w, http.StatusInternalServerError, entity.ErrInternal)
+	authResp := dto.AuthResponse{UserID: userID, Role: role}
+	if err := utils.WriteJSON(w, authResp); err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
 	}
 }

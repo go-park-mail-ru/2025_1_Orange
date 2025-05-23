@@ -1537,16 +1537,20 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
-        SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
-               v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
-               v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
-               v.optional_requirements, v.city, v.created_at, v.updated_at
-        FROM vacancy v
-        JOIN vacancy_response vr ON v.id = vr.vacancy_id
-        WHERE vr.applicant_id = $1
-        ORDER BY vr.applied_at DESC
+		SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
+			v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
+			v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
+			v.optional_requirements, v.city, v.created_at, v.updated_at
+		FROM vacancy v
+		JOIN (
+			SELECT vacancy_id, MAX(applied_at) as last_applied_at
+			FROM vacancy_response
+			WHERE applicant_id = $1
+			GROUP BY vacancy_id
+		) vr ON v.id = vr.vacancy_id
+		ORDER BY vr.last_applied_at DESC
 		LIMIT $2 OFFSET $3
-    `
+	`
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetVacanciesByApplicantID").Inc()

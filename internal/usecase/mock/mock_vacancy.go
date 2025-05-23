@@ -10,6 +10,7 @@
 package mock
 
 import (
+	entity "ResuMatch/internal/entity"
 	dto "ResuMatch/internal/entity/dto"
 	context "context"
 	reflect "reflect"
@@ -42,11 +43,12 @@ func (m *MockVacancy) EXPECT() *MockVacancyMockRecorder {
 }
 
 // ApplyToVacancy mocks base method.
-func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error {
+func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) (*entity.Notification, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ApplyToVacancy", ctx, vacancyID, applicantID)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*entity.Notification)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ApplyToVacancy indicates an expected call of ApplyToVacancy.

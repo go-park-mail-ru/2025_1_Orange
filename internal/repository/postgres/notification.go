@@ -426,7 +426,15 @@ func (r *NotificationRepository) GetApplyNotificationsForUser(ctx context.Contex
 			fmt.Errorf("ошибка при выполнении запроса GetApplyNotificationsForUser: %v", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var notifications []*entity.NotificationPreview
 
@@ -510,7 +518,15 @@ func (r *NotificationRepository) GetDownloadResumeNotificationsForUser(ctx conte
 			fmt.Errorf("ошибка при выполнении запроса GetDownloadResumeNotificationsForUser: %v", err),
 		)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
 
 	var notifications []*entity.NotificationPreview
 

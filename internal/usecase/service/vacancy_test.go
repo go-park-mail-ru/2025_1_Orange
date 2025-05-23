@@ -1167,7 +1167,7 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 			)
 			ctx := context.Background()
 
-			err := service.ApplyToVacancy(ctx, tc.vacancyID, tc.applicantID)
+			_, err := service.ApplyToVacancy(ctx, tc.vacancyID, tc.applicantID)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)

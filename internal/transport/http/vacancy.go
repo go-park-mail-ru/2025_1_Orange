@@ -6,7 +6,9 @@ import (
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/transport/http/utils"
+	"ResuMatch/internal/transport/ws"
 	"ResuMatch/internal/usecase"
+	l "ResuMatch/pkg/logger"
 	"ResuMatch/pkg/sanitizer"
 	"encoding/json"
 	"fmt"
@@ -15,16 +17,26 @@ import (
 )
 
 type VacancyHandler struct {
-	auth    usecase.Auth
-	vacancy usecase.Vacancy
-	cfg     config.CSRFConfig
+	auth         usecase.Auth
+	vacancy      usecase.Vacancy
+	cfg          config.CSRFConfig
+	wsPool       *ws.WebsocketPool
+	notification usecase.Notification
 }
 
-func NewVacancyHandler(auth usecase.Auth, vac usecase.Vacancy, cfg config.CSRFConfig) VacancyHandler {
+func NewVacancyHandler(
+	auth usecase.Auth,
+	vac usecase.Vacancy,
+	cfg config.CSRFConfig,
+	wsPool *ws.WebsocketPool,
+	notification usecase.Notification,
+) VacancyHandler {
 	return VacancyHandler{
-		auth:    auth,
-		vacancy: vac,
-		cfg:     cfg,
+		auth:         auth,
+		vacancy:      vac,
+		cfg:          cfg,
+		wsPool:       wsPool,
+		notification: notification,
 	}
 }
 
@@ -348,10 +360,21 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID)
+	notification, err := h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
+	}
+
+	notificationPreview, err := h.notification.CreateNotification(ctx, notification)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	err = h.wsPool.SendNotification(notificationPreview)
+	if err != nil {
+		l.Log.Errorf("Не удалось отправить уведомление: %v", err)
 	}
 
 	w.WriteHeader(http.StatusCreated)

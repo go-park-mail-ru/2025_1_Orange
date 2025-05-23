@@ -457,21 +457,22 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 
 	return response, nil
 }
-func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error {
+
+func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	// Проверяем существование вакансии
 	if _, err := vs.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
 		return fmt.Errorf("vacancy not found: %w", err)
 	}
 
-	hasResponded, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
+	hasResponded, err := vs.vacanciesRepository.ResponseExistsForApplicant(ctx, vacancyID, applicantID, resumeID)
 	if err != nil {
 		return fmt.Errorf("failed to check existing responses: %w", err)
 	}
 	if hasResponded {
-		return vs.vacanciesRepository.DeleteResponse(ctx, vacancyID, applicantID)
+		return vs.vacanciesRepository.DeleteResponse(ctx, vacancyID, applicantID, resumeID)
 	}
 
-	return vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
+	return vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)
 }
 
 func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID int, limit, offset int) ([]dto.ResumeShortResponse, error) {

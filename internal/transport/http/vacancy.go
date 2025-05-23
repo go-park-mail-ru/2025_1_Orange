@@ -35,7 +35,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("GET /vacancy/{id}", h.GetVacancy)
 	vacancyMux.HandleFunc("PUT /vacancy/{id}", h.UpdateVacancy)
 	vacancyMux.HandleFunc("DELETE /vacancy/{id}", h.DeleteVacancy)
-	vacancyMux.HandleFunc("POST /vacancy/{id}/response", h.ApplyToVacancy)
+	vacancyMux.HandleFunc("POST /vacancy/{id}/response/{resume_id}", h.ApplyToVacancy)
 	vacancyMux.HandleFunc("GET /employer/{id}/vacancies", h.GetActiveVacanciesByEmployer)
 	vacancyMux.HandleFunc("GET /applicant/{id}/vacancies", h.GetVacanciesByApplicant)
 	vacancyMux.HandleFunc("GET /search", h.SearchVacancies)
@@ -347,6 +347,12 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	resumeID, err := strconv.Atoi(r.PathValue("resume_id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
+		return
+	}
+
 	// Получаем ID текущего пользователя
 	applicantID, userType, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil || userType != "applicant" {
@@ -354,7 +360,7 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID)
+	err = h.vacancy.ApplyToVacancy(ctx, vacancyID, applicantID, resumeID)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

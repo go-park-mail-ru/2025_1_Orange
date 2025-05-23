@@ -99,17 +99,17 @@ func (mr *MockVacancyRepositoryMockRecorder) CreateLike(ctx, vacancyID, applican
 }
 
 // CreateResponse mocks base method.
-func (m *MockVacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID int) error {
+func (m *MockVacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateResponse", ctx, vacancyID, applicantID)
+	ret := m.ctrl.Call(m, "CreateResponse", ctx, vacancyID, applicantID, resumeID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateResponse indicates an expected call of CreateResponse.
-func (mr *MockVacancyRepositoryMockRecorder) CreateResponse(ctx, vacancyID, applicantID any) *gomock.Call {
+func (mr *MockVacancyRepositoryMockRecorder) CreateResponse(ctx, vacancyID, applicantID, resumeID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResponse", reflect.TypeOf((*MockVacancyRepository)(nil).CreateResponse), ctx, vacancyID, applicantID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResponse", reflect.TypeOf((*MockVacancyRepository)(nil).CreateResponse), ctx, vacancyID, applicantID, resumeID)
 }
 
 // CreateSkillIfNotExists mocks base method.
@@ -185,17 +185,17 @@ func (mr *MockVacancyRepositoryMockRecorder) DeleteLike(ctx, vacancyID, applican
 }
 
 // DeleteResponse mocks base method.
-func (m *MockVacancyRepository) DeleteResponse(ctx context.Context, vacancyID, applicantID int) error {
+func (m *MockVacancyRepository) DeleteResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteResponse", ctx, vacancyID, applicantID)
+	ret := m.ctrl.Call(m, "DeleteResponse", ctx, vacancyID, applicantID, resumeID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteResponse indicates an expected call of DeleteResponse.
-func (mr *MockVacancyRepositoryMockRecorder) DeleteResponse(ctx, vacancyID, applicantID any) *gomock.Call {
+func (mr *MockVacancyRepositoryMockRecorder) DeleteResponse(ctx, vacancyID, applicantID, resumeID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResponse", reflect.TypeOf((*MockVacancyRepository)(nil).DeleteResponse), ctx, vacancyID, applicantID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResponse", reflect.TypeOf((*MockVacancyRepository)(nil).DeleteResponse), ctx, vacancyID, applicantID, resumeID)
 }
 
 // DeleteSkills mocks base method.
@@ -420,6 +420,21 @@ func (m *MockVacancyRepository) ResponseExists(ctx context.Context, vacancyID, a
 func (mr *MockVacancyRepositoryMockRecorder) ResponseExists(ctx, vacancyID, applicantID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResponseExists", reflect.TypeOf((*MockVacancyRepository)(nil).ResponseExists), ctx, vacancyID, applicantID)
+}
+
+// ResponseExistsForApplicant mocks base method.
+func (m *MockVacancyRepository) ResponseExistsForApplicant(ctx context.Context, vacancyID, applicantID, resumeID int) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResponseExistsForApplicant", ctx, vacancyID, applicantID, resumeID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResponseExistsForApplicant indicates an expected call of ResponseExistsForApplicant.
+func (mr *MockVacancyRepositoryMockRecorder) ResponseExistsForApplicant(ctx, vacancyID, applicantID, resumeID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResponseExistsForApplicant", reflect.TypeOf((*MockVacancyRepository)(nil).ResponseExistsForApplicant), ctx, vacancyID, applicantID, resumeID)
 }
 
 // SearchVacancies mocks base method.

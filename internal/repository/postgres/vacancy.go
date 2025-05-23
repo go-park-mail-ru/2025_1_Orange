@@ -1248,30 +1248,38 @@ func (r *VacancyRepository) ResponseExists(ctx context.Context, vacancyID, appli
 	return exists, err
 }
 
-func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID int) error {
+func (r *VacancyRepository) ResponseExistsForApplicant(ctx context.Context, vacancyID, applicantID, resumeID int) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM vacancy_response WHERE vacancy_id = $1 AND applicant_id = $2 AND resume_id = $3)`
+	var exists bool
+	err := r.DB.QueryRowContext(ctx, query, vacancyID, applicantID, resumeID).Scan(&exists)
+	return exists, err
+}
+
+func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
 		"vacancyID":   vacancyID,
 		"applicantID": applicantID,
+		"resumeID":    resumeID,
 	}).Info("Creating vacancy response")
 
 	// Получаем последнее резюме соискателя
-	var resumeID sql.NullInt32
-	err := r.DB.QueryRowContext(ctx,
-		`SELECT id FROM resume WHERE applicant_id = $1 ORDER BY created_at DESC LIMIT 1`,
-		applicantID,
-	).Scan(&resumeID)
+	//var resumeID sql.NullInt32
+	//err := r.DB.QueryRowContext(ctx,
+	//	`SELECT id FROM resume WHERE applicant_id = $1 ORDER BY created_at DESC LIMIT 1`,
+	//	applicantID,
+	//).Scan(&resumeID)
 
-	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
-		if errors.Is(err, sql.ErrNoRows) {
-			return entity.NewError(entity.ErrForbidden,
-				fmt.Errorf("no active resumes found for applicant"))
-		}
-		return fmt.Errorf("failed to get applicant resume: %w", err)
-	}
+	//if err != nil {
+	//	metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
+	//	if errors.Is(err, sql.ErrNoRows) {
+	//		return entity.NewError(entity.ErrForbidden,
+	//			fmt.Errorf("no active resumes found for applicant"))
+	//	}
+	//	return fmt.Errorf("failed to get applicant resume: %w", err)
+	//}
 
 	query := `
         INSERT INTO vacancy_response (
@@ -1282,7 +1290,7 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
         ) VALUES ($1, $2, $3, NOW())
     `
 
-	_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
+	_, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
 		var pqErr *pq.Error
@@ -1302,20 +1310,21 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
 	return nil
 }
 
-func (r *VacancyRepository) DeleteResponse(ctx context.Context, vacancyID, applicantID int) error {
+func (r *VacancyRepository) DeleteResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
 		"vacancyID":   vacancyID,
 		"applicantID": applicantID,
+		"resumeID":    resumeID,
 	}).Info("Deleting vacancy response")
 
 	query := `
         DELETE FROM vacancy_response 
-        WHERE vacancy_id = $1 AND applicant_id = $2
+        WHERE vacancy_id = $1 AND applicant_id = $2 AND resume_id = $3
     `
-	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
+	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteResponse").Inc()
 		l.Log.WithFields(logrus.Fields{
@@ -1337,7 +1346,7 @@ func (r *VacancyRepository) DeleteResponse(ctx context.Context, vacancyID, appli
 
 	if rowsAffected == 0 {
 		return entity.NewError(entity.ErrNotFound,
-			fmt.Errorf("response not found for vacancy %d and applicant %d", vacancyID, applicantID))
+			fmt.Errorf("response not found for vacancy %d and applicant %d with resume %d", vacancyID, applicantID, resumeID))
 	}
 
 	return nil

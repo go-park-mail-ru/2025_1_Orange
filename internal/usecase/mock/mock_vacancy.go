@@ -42,17 +42,17 @@ func (m *MockVacancy) EXPECT() *MockVacancyMockRecorder {
 }
 
 // ApplyToVacancy mocks base method.
-func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error {
+func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyToVacancy", ctx, vacancyID, applicantID)
+	ret := m.ctrl.Call(m, "ApplyToVacancy", ctx, vacancyID, applicantID, resumeID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ApplyToVacancy indicates an expected call of ApplyToVacancy.
-func (mr *MockVacancyMockRecorder) ApplyToVacancy(ctx, vacancyID, applicantID any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) ApplyToVacancy(ctx, vacancyID, applicantID, resumeID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyToVacancy", reflect.TypeOf((*MockVacancy)(nil).ApplyToVacancy), ctx, vacancyID, applicantID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyToVacancy", reflect.TypeOf((*MockVacancy)(nil).ApplyToVacancy), ctx, vacancyID, applicantID, resumeID)
 }
 
 // CreateVacancy mocks base method.

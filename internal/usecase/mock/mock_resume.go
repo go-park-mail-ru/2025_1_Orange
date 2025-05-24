@@ -118,11 +118,11 @@ func (mr *MockResumeUsecaseMockRecorder) GetByID(ctx, id any) *gomock.Call {
 }
 
 // GetResumePDF mocks base method.
-func (m *MockResumeUsecase) GetResumePDF(ctx context.Context, resumeID, userID int, role string) ([]byte, *entity.Notification, error) {
+func (m *MockResumeUsecase) GetResumePDF(ctx context.Context, resumeID, userID int, role string) ([]byte, entity.Notification, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetResumePDF", ctx, resumeID, userID, role)
 	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(*entity.Notification)
+	ret1, _ := ret[1].(entity.Notification)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

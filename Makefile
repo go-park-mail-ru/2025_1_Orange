@@ -10,7 +10,6 @@ lint:
 .PHONY: easyjson
 easyjson:
 	@echo "Генерация easyjson..."
-	@echo "Обработка internal/entity/dto..."
 	@for file in $$(find ./internal/entity/dto -name '*.go' | grep -v "_easyjson.go"); do \
 		easyjson -all $$file; \
 	done

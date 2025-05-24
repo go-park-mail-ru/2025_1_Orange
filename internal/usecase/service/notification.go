@@ -19,6 +19,10 @@ func NewNotificationService(notificationRepo repository.NotificationRepository) 
 }
 
 func (s NotificationService) CreateNotification(ctx context.Context, notification *entity.Notification) (*entity.NotificationPreview, error) {
+	if notification == nil || notification.SenderID == 0 {
+		return nil, nil
+	}
+
 	if _, ok := entity.AllowedNotificationTypes[string(notification.Type)]; !ok {
 		return nil, entity.NewError(
 			entity.ErrBadRequest,

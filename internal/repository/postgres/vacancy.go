@@ -1322,9 +1322,9 @@ func (r *VacancyRepository) DeleteResponse(ctx context.Context, vacancyID, appli
 
 	query := `
         DELETE FROM vacancy_response 
-        WHERE vacancy_id = $1 AND applicant_id = $2 AND resume_id = $3
+        WHERE vacancy_id = $1 AND applicant_id = $2
     `
-	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
+	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteResponse").Inc()
 		l.Log.WithFields(logrus.Fields{

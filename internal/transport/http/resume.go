@@ -556,11 +556,7 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if notification == nil {
-		return
-	}
-
-	notificationPreview, err := h.notification.CreateNotification(ctx, notification)
+	notificationPreview, err := h.notification.CreateNotification(ctx, &notification)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -568,7 +564,7 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 
 	err = h.wsPool.SendNotification(notificationPreview)
 	if err != nil {
-		l.Log.Errorf("Не удалось отправить уведомление: %v", err)
+		l.Log.Warnf("Не удалось отправить уведомление: %v", err)
 	}
 
 	w.Header().Set("Content-Type", "application/pdf")

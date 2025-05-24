@@ -43,10 +43,10 @@ func (m *MockVacancy) EXPECT() *MockVacancyMockRecorder {
 }
 
 // ApplyToVacancy mocks base method.
-func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (*entity.Notification, error) {
+func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (entity.Notification, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ApplyToVacancy", ctx, vacancyID, applicantID, resumeID)
-	ret0, _ := ret[0].(*entity.Notification)
+	ret0, _ := ret[0].(entity.Notification)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

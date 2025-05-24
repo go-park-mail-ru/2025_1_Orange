@@ -12,7 +12,7 @@ type Vacancy interface {
 	UpdateVacancy(ctx context.Context, id int, employerID int, request *dto.VacancyUpdate) (*dto.VacancyResponse, error)
 	DeleteVacancy(ctx context.Context, id int, employerID int) (*dto.DeleteVacancy, error)
 	GetAll(ctx context.Context, currentUserID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error)
-	ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (*entity.Notification, error)
+	ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (entity.Notification, error)
 	GetVacanciesByApplicantID(ctx context.Context, applicantID int, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error)
 	SearchVacancies(ctx context.Context, userID int, userRole string, searchQuery string, limit int, offset int) ([]dto.VacancyShortResponse, error)

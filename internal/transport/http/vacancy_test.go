@@ -477,7 +477,7 @@ func TestVacancyHandler_ApplyToVacancy(t *testing.T) {
 					Return(1, "applicant", nil)
 
 				vac.EXPECT().
-					ApplyToVacancy(gomock.Any(), 1, 1).
+					ApplyToVacancy(gomock.Any(), 1, 1, 1).
 					Return(nil)
 			},
 			expectedStatus: http.StatusCreated,

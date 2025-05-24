@@ -126,3 +126,89 @@ func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Special
 
 	return specializations, nil
 }
+
+func (r *SpecializationRepository) GetSpecializationSalaries(ctx context.Context) ([]entity.SpecializationSalaryRange, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	query := `
+		SELECT 
+			s.id, s.name,
+			MIN(v.salary_from) AS min_salary,
+			MAX(v.salary_to) AS max_salary,
+			ROUND(AVG((v.salary_from + v.salary_to) / 2)) AS avg_salary
+		FROM 
+			specialization s
+		JOIN 
+			vacancy v ON s.id = v.specialization_id 
+					AND v.is_active = TRUE 
+					AND v.salary_from IS NOT NULL 
+					AND v.salary_to IS NOT NULL
+		GROUP BY 
+			s.id, s.name
+		ORDER BY 
+			s.name;
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query)
+	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при получении списка вилок специализаций")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении списка вилок специализаций: %w", err),
+		)
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
+
+	var specializations []entity.SpecializationSalaryRange
+	for rows.Next() {
+		var specialization entity.SpecializationSalaryRange
+		if err := rows.Scan(
+			&specialization.ID,
+			&specialization.Name,
+			&specialization.MinSalary,
+			&specialization.MaxSalary,
+			&specialization.AvgSalary,
+		); err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"error":     err,
+			}).Error("ошибка при сканировании специализации")
+
+			return nil, entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при сканировании специализации: %w", err),
+			)
+		}
+		specializations = append(specializations, specialization)
+	}
+
+	if err := rows.Err(); err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("ошибка при итерации по специализациям")
+
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при итерации по специализациям: %w", err),
+		)
+	}
+
+	return specializations, nil
+}

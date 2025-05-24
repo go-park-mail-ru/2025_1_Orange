@@ -17,7 +17,199 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson4bc062f7DecodeResuMatchInternalEntityDto(in *jlexer.Lexer, out *SpecializationNamesResponse) {
+func easyjson4bc062f7DecodeResuMatchInternalEntityDto(in *jlexer.Lexer, out *SpecializationSalaryRangesResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "specializations":
+			if in.IsNull() {
+				in.Skip()
+				out.Specializations = nil
+			} else {
+				in.Delim('[')
+				if out.Specializations == nil {
+					if !in.IsDelim(']') {
+						out.Specializations = make([]SpecializationSalaryRange, 0, 1)
+					} else {
+						out.Specializations = []SpecializationSalaryRange{}
+					}
+				} else {
+					out.Specializations = (out.Specializations)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v1 SpecializationSalaryRange
+					(v1).UnmarshalEasyJSON(in)
+					out.Specializations = append(out.Specializations, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson4bc062f7EncodeResuMatchInternalEntityDto(out *jwriter.Writer, in SpecializationSalaryRangesResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"specializations\":"
+		out.RawString(prefix[1:])
+		if in.Specializations == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v2, v3 := range in.Specializations {
+				if v2 > 0 {
+					out.RawByte(',')
+				}
+				(v3).MarshalEasyJSON(out)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v SpecializationSalaryRangesResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson4bc062f7EncodeResuMatchInternalEntityDto(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v SpecializationSalaryRangesResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson4bc062f7EncodeResuMatchInternalEntityDto(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *SpecializationSalaryRangesResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson4bc062f7DecodeResuMatchInternalEntityDto(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *SpecializationSalaryRangesResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson4bc062f7DecodeResuMatchInternalEntityDto(l, v)
+}
+func easyjson4bc062f7DecodeResuMatchInternalEntityDto1(in *jlexer.Lexer, out *SpecializationSalaryRange) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "id":
+			out.ID = int(in.Int())
+		case "name":
+			out.Name = string(in.String())
+		case "minSalary":
+			out.MinSalary = int(in.Int())
+		case "maxSalary":
+			out.MaxSalary = int(in.Int())
+		case "avgSalary":
+			out.AvgSalary = int(in.Int())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson4bc062f7EncodeResuMatchInternalEntityDto1(out *jwriter.Writer, in SpecializationSalaryRange) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.Int(int(in.ID))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"minSalary\":"
+		out.RawString(prefix)
+		out.Int(int(in.MinSalary))
+	}
+	{
+		const prefix string = ",\"maxSalary\":"
+		out.RawString(prefix)
+		out.Int(int(in.MaxSalary))
+	}
+	{
+		const prefix string = ",\"avgSalary\":"
+		out.RawString(prefix)
+		out.Int(int(in.AvgSalary))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v SpecializationSalaryRange) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson4bc062f7EncodeResuMatchInternalEntityDto1(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v SpecializationSalaryRange) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson4bc062f7EncodeResuMatchInternalEntityDto1(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *SpecializationSalaryRange) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson4bc062f7DecodeResuMatchInternalEntityDto1(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *SpecializationSalaryRange) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson4bc062f7DecodeResuMatchInternalEntityDto1(l, v)
+}
+func easyjson4bc062f7DecodeResuMatchInternalEntityDto2(in *jlexer.Lexer, out *SpecializationNamesResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -52,9 +244,9 @@ func easyjson4bc062f7DecodeResuMatchInternalEntityDto(in *jlexer.Lexer, out *Spe
 					out.Names = (out.Names)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v1 string
-					v1 = string(in.String())
-					out.Names = append(out.Names, v1)
+					var v4 string
+					v4 = string(in.String())
+					out.Names = append(out.Names, v4)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -69,7 +261,7 @@ func easyjson4bc062f7DecodeResuMatchInternalEntityDto(in *jlexer.Lexer, out *Spe
 		in.Consumed()
 	}
 }
-func easyjson4bc062f7EncodeResuMatchInternalEntityDto(out *jwriter.Writer, in SpecializationNamesResponse) {
+func easyjson4bc062f7EncodeResuMatchInternalEntityDto2(out *jwriter.Writer, in SpecializationNamesResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -80,11 +272,11 @@ func easyjson4bc062f7EncodeResuMatchInternalEntityDto(out *jwriter.Writer, in Sp
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v2, v3 := range in.Names {
-				if v2 > 0 {
+			for v5, v6 := range in.Names {
+				if v5 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v3))
+				out.String(string(v6))
 			}
 			out.RawByte(']')
 		}
@@ -95,23 +287,23 @@ func easyjson4bc062f7EncodeResuMatchInternalEntityDto(out *jwriter.Writer, in Sp
 // MarshalJSON supports json.Marshaler interface
 func (v SpecializationNamesResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson4bc062f7EncodeResuMatchInternalEntityDto(&w, v)
+	easyjson4bc062f7EncodeResuMatchInternalEntityDto2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v SpecializationNamesResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson4bc062f7EncodeResuMatchInternalEntityDto(w, v)
+	easyjson4bc062f7EncodeResuMatchInternalEntityDto2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SpecializationNamesResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson4bc062f7DecodeResuMatchInternalEntityDto(&r, v)
+	easyjson4bc062f7DecodeResuMatchInternalEntityDto2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *SpecializationNamesResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson4bc062f7DecodeResuMatchInternalEntityDto(l, v)
+	easyjson4bc062f7DecodeResuMatchInternalEntityDto2(l, v)
 }

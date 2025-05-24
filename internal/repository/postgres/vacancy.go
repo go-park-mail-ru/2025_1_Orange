@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -572,32 +573,29 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
         UPDATE vacancy
         SET 
             title = $1,
-            is_active = $2,
-            specialization_id = $3,
-            work_format = $4,
-            employment = $5,
-            schedule = $6,
-            working_hours = $7,
-            salary_from = $8,
-            salary_to = $9,
-            taxes_included = $10,
-            experience = $11,
-            description = $12,
-            tasks = $13,
-            requirements = $14,
-            optional_requirements = $15,
-			city = $16,
-			created_at = NOW(),
+            specialization_id = $2,
+            work_format = $3,
+            employment = $4,
+            schedule = $5,
+            working_hours = $6,
+            salary_from = $7,
+            salary_to = $8,
+            taxes_included = $9,
+            experience = $10,
+            description = $11,
+            tasks = $12,
+            requirements = $13,
+            optional_requirements = $14,
+			city = $15,
             updated_at = NOW()
-        WHERE id = $17 AND employer_id = $18
-		RETURNING id, employer_id, title, is_active, specialization_id, work_format,
+        WHERE id = $16 AND employer_id = $17
+		RETURNING id, employer_id, title, specialization_id, work_format,
 		 employment, schedule, working_hours, salary_from, salary_to, taxes_included,
 		 experience, description, tasks, requirements, optional_requirements, city, created_at, updated_at
     `
 	var updatedVacancy entity.Vacancy
 	err := r.DB.QueryRowContext(ctx, query,
 		vacancy.Title,
-		vacancy.IsActive,
 		vacancy.SpecializationID,
 		vacancy.WorkFormat,
 		vacancy.Employment,
@@ -618,7 +616,6 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 		&updatedVacancy.ID,
 		&updatedVacancy.EmployerID,
 		&updatedVacancy.Title,
-		&updatedVacancy.IsActive,
 		&updatedVacancy.SpecializationID,
 		&updatedVacancy.WorkFormat,
 		&updatedVacancy.Employment,
@@ -681,7 +678,6 @@ func (r *VacancyRepository) Update(ctx context.Context, vacancy *entity.Vacancy)
 			fmt.Errorf("не удалось обновить вакансию с id=%d", vacancy.ID),
 		)
 	}
-	fmt.Println(updatedVacancy.SpecializationID)
 	return &updatedVacancy, nil
 }
 
@@ -1047,7 +1043,6 @@ func (r *VacancyRepository) DeleteCity(ctx context.Context, vacancyID int) error
 		DELETE FROM vacancy_city
 		WHERE vacancy_id = $1
 	`
-
 	_, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteCity").Inc()
@@ -1173,6 +1168,79 @@ func (r *VacancyRepository) FindCityIDsByNames(ctx context.Context, cityNames []
 	return cityIDs, nil
 }
 
+func (r *VacancyRepository) VacancyBelongsToEmployer(ctx context.Context, vacancyID, employerID int) (bool, error) {
+	query := `
+    SELECT EXISTS(
+        SELECT 1 FROM vacancy 
+        WHERE id = $1 AND employer_id = $2
+    )`
+
+	var exists bool
+	err := r.DB.QueryRowContext(ctx, query, vacancyID, employerID).Scan(&exists)
+	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "VacancyBelongsToEmployer").Inc()
+		l.Log.WithFields(logrus.Fields{
+			"vacancyID":  vacancyID,
+			"employerID": employerID,
+			"error":      err,
+		}).Error("Ошибка при проверке владельца вакансии")
+		return false, err
+	}
+	return exists, nil
+}
+
+func (r *VacancyRepository) GetVacancyResponses(ctx context.Context, vacancyID int, limit, offset int) ([]*entity.VacancyResponses, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	query := `
+        SELECT 
+            id, 
+            vacancy_id, 
+            applicant_id,
+            resume_id, 
+            applied_at
+        FROM vacancy_response
+        WHERE vacancy_id = $1
+        ORDER BY applied_at DESC
+        LIMIT $2 OFFSET $3  
+    `
+	rows, err := r.DB.QueryContext(ctx, query, vacancyID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("query error: %w", err)
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetVacancyResponses").Inc()
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+			}).Errorf("не удалось закрыть rows: %v", err)
+		}
+	}(rows)
+
+	var responses []*entity.VacancyResponses
+	for rows.Next() {
+		var resp entity.VacancyResponses
+		err := rows.Scan(
+			&resp.ID,
+			&resp.VacancyID,
+			&resp.ApplicantID,
+			&resp.ResumeID,
+			&resp.AppliedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan error: %w", err)
+		}
+		responses = append(responses, &resp)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return responses, nil
+}
+
 func (r *VacancyRepository) ResponseExists(ctx context.Context, vacancyID, applicantID int) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM vacancy_response WHERE vacancy_id = $1 AND applicant_id = $2)`
 	var exists bool
@@ -1180,30 +1248,38 @@ func (r *VacancyRepository) ResponseExists(ctx context.Context, vacancyID, appli
 	return exists, err
 }
 
-func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID int) error {
+func (r *VacancyRepository) ResponseExistsForApplicant(ctx context.Context, vacancyID, applicantID, resumeID int) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM vacancy_response WHERE vacancy_id = $1 AND applicant_id = $2 AND resume_id = $3)`
+	var exists bool
+	err := r.DB.QueryRowContext(ctx, query, vacancyID, applicantID, resumeID).Scan(&exists)
+	return exists, err
+}
+
+func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":   requestID,
 		"vacancyID":   vacancyID,
 		"applicantID": applicantID,
+		"resumeID":    resumeID,
 	}).Info("Creating vacancy response")
 
 	// Получаем последнее резюме соискателя
-	var resumeID sql.NullInt32
-	err := r.DB.QueryRowContext(ctx,
-		`SELECT id FROM resume WHERE applicant_id = $1 ORDER BY created_at DESC LIMIT 1`,
-		applicantID,
-	).Scan(&resumeID)
+	//var resumeID sql.NullInt32
+	//err := r.DB.QueryRowContext(ctx,
+	//	`SELECT id FROM resume WHERE applicant_id = $1 ORDER BY created_at DESC LIMIT 1`,
+	//	applicantID,
+	//).Scan(&resumeID)
 
-	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
-		if errors.Is(err, sql.ErrNoRows) {
-			return entity.NewError(entity.ErrNotFound,
-				fmt.Errorf("no active resumes found for applicant"))
-		}
-		return fmt.Errorf("failed to get applicant resume: %w", err)
-	}
+	//if err != nil {
+	//	metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
+	//	if errors.Is(err, sql.ErrNoRows) {
+	//		return entity.NewError(entity.ErrForbidden,
+	//			fmt.Errorf("no active resumes found for applicant"))
+	//	}
+	//	return fmt.Errorf("failed to get applicant resume: %w", err)
+	//}
 
 	query := `
         INSERT INTO vacancy_response (
@@ -1214,7 +1290,7 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
         ) VALUES ($1, $2, $3, NOW())
     `
 
-	_, err = r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
+	_, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "CreateResponse").Inc()
 		var pqErr *pq.Error
@@ -1229,6 +1305,48 @@ func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, appli
 			}
 		}
 		return fmt.Errorf("failed to create vacancy response: %w", err)
+	}
+
+	return nil
+}
+
+func (r *VacancyRepository) DeleteResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":   requestID,
+		"vacancyID":   vacancyID,
+		"applicantID": applicantID,
+		"resumeID":    resumeID,
+	}).Info("Deleting vacancy response")
+
+	query := `
+        DELETE FROM vacancy_response 
+        WHERE vacancy_id = $1 AND applicant_id = $2 AND resume_id = $3
+    `
+	result, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID, resumeID)
+	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteResponse").Inc()
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("Failed to delete vacancy response")
+		return fmt.Errorf("failed to delete vacancy response: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "DeleteResponse").Inc()
+		l.Log.WithFields(logrus.Fields{
+			"requestID": requestID,
+			"error":     err,
+		}).Error("Failed to get rows affected")
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return entity.NewError(entity.ErrNotFound,
+			fmt.Errorf("response not found for vacancy %d and applicant %d with resume %d", vacancyID, applicantID, resumeID))
 	}
 
 	return nil
@@ -1419,16 +1537,20 @@ func (r *VacancyRepository) GetVacanciesByApplicantID(ctx context.Context, appli
 	requestID := utils.GetRequestID(ctx)
 
 	query := `
-        SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
-               v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
-               v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
-               v.optional_requirements, v.city, v.created_at, v.updated_at
-        FROM vacancy v
-        JOIN vacancy_response vr ON v.id = vr.vacancy_id
-        WHERE vr.applicant_id = $1
-        ORDER BY vr.applied_at DESC
+		SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format, 
+			v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to, 
+			v.taxes_included, v.experience, v.description, v.tasks, v.requirements, 
+			v.optional_requirements, v.city, v.created_at, v.updated_at
+		FROM vacancy v
+		JOIN (
+			SELECT vacancy_id, MAX(applied_at) as last_applied_at
+			FROM vacancy_response
+			WHERE applicant_id = $1
+			GROUP BY vacancy_id
+		) vr ON v.id = vr.vacancy_id
+		ORDER BY vr.last_applied_at DESC
 		LIMIT $2 OFFSET $3
-    `
+	`
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetVacanciesByApplicantID").Inc()
@@ -2029,7 +2151,7 @@ func (r *VacancyRepository) CreateLike(ctx context.Context, vacancyID, applicant
         INSERT INTO vacancy_like (
             vacancy_id, 
             applicant_id,
-            applied_at
+            liked_at
         ) VALUES ($1, $2, NOW())
     `
 	_, err := r.DB.ExecContext(ctx, query, vacancyID, applicantID)
@@ -2120,7 +2242,7 @@ func (r *VacancyRepository) GetlikedVacancies(ctx context.Context, applicantID i
     v.city,
     v.created_at,
     v.updated_at,
-    vl.liked_at,
+    vl.liked_at
 FROM 
     vacancy_like vl
 JOIN 
@@ -2157,12 +2279,13 @@ ORDER BY
 	var vacancies []*entity.Vacancy
 	for rows.Next() {
 		var vacancy entity.Vacancy
+		var likedAt time.Time
 		err := rows.Scan(
 			&vacancy.ID, &vacancy.Title, &vacancy.EmployerID, &vacancy.SpecializationID,
 			&vacancy.WorkFormat, &vacancy.Employment, &vacancy.Schedule, &vacancy.WorkingHours,
 			&vacancy.SalaryFrom, &vacancy.SalaryTo, &vacancy.TaxesIncluded, &vacancy.Experience,
 			&vacancy.Description, &vacancy.Tasks, &vacancy.Requirements, &vacancy.OptionalRequirements,
-			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt,
+			&vacancy.City, &vacancy.CreatedAt, &vacancy.UpdatedAt, &likedAt,
 		)
 		if err != nil {
 			metrics.LayerErrorCounter.WithLabelValues("Vacancy Repository", "GetlikedVacancies").Inc()

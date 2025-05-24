@@ -14,13 +14,6 @@ var AllowedNotificationTypes = map[string]NotificationType{
 	"download_resume": DownloadResumeType,
 }
 
-//type UserRole string
-//
-//const (
-//	ApplicantRole UserRole = "applicant"
-//	EmployerRole  UserRole = "employer"
-//)
-
 // easyjson:json
 type Notification struct {
 	ID         int              `json:"id"`

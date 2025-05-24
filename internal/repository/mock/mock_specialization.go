@@ -70,3 +70,18 @@ func (mr *MockSpecializationRepositoryMockRecorder) GetByID(ctx, id any) *gomock
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockSpecializationRepository)(nil).GetByID), ctx, id)
 }
+
+// GetSpecializationSalaries mocks base method.
+func (m *MockSpecializationRepository) GetSpecializationSalaries(ctx context.Context) ([]entity.SpecializationSalaryRange, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSpecializationSalaries", ctx)
+	ret0, _ := ret[0].([]entity.SpecializationSalaryRange)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSpecializationSalaries indicates an expected call of GetSpecializationSalaries.
+func (mr *MockSpecializationRepositoryMockRecorder) GetSpecializationSalaries(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSpecializationSalaries", reflect.TypeOf((*MockSpecializationRepository)(nil).GetSpecializationSalaries), ctx)
+}

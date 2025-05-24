@@ -124,6 +124,8 @@ func easyjson9806e1DecodeResuMatchInternalEntity1(in *jlexer.Lexer, out *Notific
 			out.ReceiverID = int(in.Int())
 		case "object_id":
 			out.ObjectID = int(in.Int())
+		case "resume_id":
+			out.ResumeID = int(in.Int())
 		case "applicant_name":
 			out.ApplicantName = string(in.String())
 		case "employer_name":
@@ -174,6 +176,11 @@ func easyjson9806e1EncodeResuMatchInternalEntity1(out *jwriter.Writer, in Notifi
 		const prefix string = ",\"object_id\":"
 		out.RawString(prefix)
 		out.Int(int(in.ObjectID))
+	}
+	{
+		const prefix string = ",\"resume_id\":"
+		out.RawString(prefix)
+		out.Int(int(in.ResumeID))
 	}
 	{
 		const prefix string = ",\"applicant_name\":"
@@ -255,6 +262,8 @@ func easyjson9806e1DecodeResuMatchInternalEntity2(in *jlexer.Lexer, out *Notific
 			out.ReceiverID = int(in.Int())
 		case "object_id":
 			out.ObjectID = int(in.Int())
+		case "resume_id":
+			out.ResumeID = int(in.Int())
 		case "is_viewed":
 			out.IsViewed = bool(in.Bool())
 		case "created_at":
@@ -299,6 +308,11 @@ func easyjson9806e1EncodeResuMatchInternalEntity2(out *jwriter.Writer, in Notifi
 		const prefix string = ",\"object_id\":"
 		out.RawString(prefix)
 		out.Int(int(in.ObjectID))
+	}
+	{
+		const prefix string = ",\"resume_id\":"
+		out.RawString(prefix)
+		out.Int(int(in.ResumeID))
 	}
 	{
 		const prefix string = ",\"is_viewed\":"

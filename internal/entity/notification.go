@@ -21,6 +21,7 @@ type Notification struct {
 	SenderID   int              `json:"sender_id"`
 	ReceiverID int              `json:"receiver_id"`
 	ObjectID   int              `json:"object_id"`
+	ResumeID   int              `json:"resume_id"`
 	IsViewed   bool             `json:"is_viewed"`
 	CreatedAt  time.Time        `json:"created_at"`
 }
@@ -32,6 +33,7 @@ type NotificationPreview struct {
 	SenderID      int              `json:"sender_id"`
 	ReceiverID    int              `json:"receiver_id"`
 	ObjectID      int              `json:"object_id"`
+	ResumeID      int              `json:"resume_id"`
 	ApplicantName string           `json:"applicant_name"`
 	EmployerName  string           `json:"employer_name"`
 	Title         string           `json:"title"`

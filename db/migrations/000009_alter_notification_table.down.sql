@@ -1,0 +1,1 @@
+ALTER TABLE notification DROP COLUMN resume_id;

@@ -14,9 +14,16 @@ import (
 	"time"
 )
 
+type UserRole string
+
+const (
+	Applicant UserRole = "applicant"
+	Employer  UserRole = "employer"
+)
+
 type NotificationKey struct {
 	UserID int
-	Type   entity.NotificationType
+	Type   UserRole
 }
 
 type WebsocketPool struct {
@@ -62,18 +69,18 @@ func (wsp *WebsocketPool) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var notificationType entity.NotificationType
+	var userRole UserRole
 	switch role {
 	case "employer":
-		notificationType = entity.DownloadResumeType
+		userRole = Employer
 	case "applicant":
-		notificationType = entity.ApplyNotificationType
+		userRole = Applicant
 	default:
 		http.Error(w, "invalid user role", http.StatusForbidden)
 		return
 	}
 
-	userKey := NotificationKey{UserID: userID, Type: notificationType}
+	userKey := NotificationKey{UserID: userID, Type: userRole}
 	defer wsp.cleanupConnection(userKey, conn)
 
 	wsp.AddConn(userKey, conn)
@@ -135,6 +142,7 @@ func (wsp *WebsocketPool) AddConn(key NotificationKey, conn *websocket.Conn) {
 	wsp.mu.Lock()
 	defer wsp.mu.Unlock()
 	wsp.connections[key] = append(wsp.connections[key], conn)
+	l.Log.Infof("websocket connection added for notification key: %v", key)
 }
 
 func (wsp *WebsocketPool) RemoveConn(key NotificationKey, conn *websocket.Conn) error {
@@ -143,6 +151,7 @@ func (wsp *WebsocketPool) RemoveConn(key NotificationKey, conn *websocket.Conn) 
 
 	conns, ok := wsp.connections[key]
 	if !ok {
+		l.Log.Warnf("websocket connection not found for notification key: %s %d %v", key.Type, key.UserID, key)
 		return errors.New("connection not found")
 	}
 
@@ -166,6 +175,7 @@ func (wsp *WebsocketPool) send(key NotificationKey, data []byte) error {
 
 	conns, ok := wsp.connections[key]
 	if !ok {
+		l.Log.Warnf("websocket connection not found for notification key: %v", key)
 		return errors.New("connection not found")
 	}
 
@@ -188,9 +198,17 @@ func (wsp *WebsocketPool) SendNotification(notification *entity.NotificationPrev
 		return fmt.Errorf("marshal error: %w", err)
 	}
 
+	var receiverRole UserRole
+	switch notification.Type {
+	case entity.DownloadResumeType:
+		receiverRole = Applicant
+	case entity.ApplyNotificationType:
+		receiverRole = Employer
+	}
+
 	receiver := NotificationKey{
 		UserID: notification.ReceiverID,
-		Type:   notification.Type,
+		Type:   receiverRole,
 	}
 
 	return wsp.send(receiver, data)

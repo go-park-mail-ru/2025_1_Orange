@@ -34,6 +34,7 @@ func (r *NotificationRepository) GetApplyNotificationPreview(ctx context.Context
 			n.sender_id,
 			n.receiver_id,
 			n.object_id,
+			n.resume_id,
 			n.is_viewed,
 			n.created_at,
 			a.first_name AS applicant_name,
@@ -54,6 +55,7 @@ func (r *NotificationRepository) GetApplyNotificationPreview(ctx context.Context
 		&preview.SenderID,
 		&preview.ReceiverID,
 		&preview.ObjectID,
+		&preview.ResumeID,
 		&preview.IsViewed,
 		&preview.CreatedAt,
 		&preview.ApplicantName,
@@ -91,6 +93,7 @@ func (r *NotificationRepository) GetDownloadResumeNotificationPreview(ctx contex
 			n.sender_id,
 			n.receiver_id,
 			n.object_id,
+			n.resume_id,
 			n.is_viewed,
 			n.created_at,
 			a.first_name AS applicant_name,
@@ -110,6 +113,7 @@ func (r *NotificationRepository) GetDownloadResumeNotificationPreview(ctx contex
 		&preview.SenderID,
 		&preview.ReceiverID,
 		&preview.ObjectID,
+		&preview.ResumeID,
 		&preview.IsViewed,
 		&preview.CreatedAt,
 		&preview.ApplicantName,
@@ -144,8 +148,11 @@ func (r *NotificationRepository) GetNotificationByID(ctx context.Context, notifi
 			id,
 			type,
 			sender_id,
+			sender_role,
 			receiver_id,
+			receiver_role,
 			object_id,
+			resume_id,
 			is_viewed,
 			created_at
 		FROM notification
@@ -159,8 +166,11 @@ func (r *NotificationRepository) GetNotificationByID(ctx context.Context, notifi
 		&n.ID,
 		&n.Type,
 		&n.SenderID,
+		&n.SenderRole,
 		&n.ReceiverID,
+		&n.ReceiverRole,
 		&n.ObjectID,
+		&n.ResumeID,
 		&n.IsViewed,
 		&n.CreatedAt,
 	)
@@ -199,11 +209,14 @@ func (r *NotificationRepository) CreateNotification(ctx context.Context, notific
 		INSERT INTO notification (
 			type,
 			sender_id,
+		    sender_role,
 			receiver_id,
+		    receiver_role,
 			object_id,
+		    resume_id,
 			is_viewed
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 	`
 
@@ -211,8 +224,11 @@ func (r *NotificationRepository) CreateNotification(ctx context.Context, notific
 		query,
 		notification.Type,
 		notification.SenderID,
+		notification.SenderRole,
 		notification.ReceiverID,
+		notification.ReceiverRole,
 		notification.ObjectID,
+		notification.ResumeID,
 		notification.IsViewed,
 	).Scan(&notification.ID)
 
@@ -401,6 +417,7 @@ func (r *NotificationRepository) GetApplyNotificationsForUser(ctx context.Contex
 			n.sender_id,
 			n.receiver_id,
 			n.object_id,
+			n.resume_id,
 			n.is_viewed,
 			n.created_at,
 			a.first_name AS applicant_name,
@@ -446,6 +463,7 @@ func (r *NotificationRepository) GetApplyNotificationsForUser(ctx context.Contex
 			&preview.SenderID,
 			&preview.ReceiverID,
 			&preview.ObjectID,
+			&preview.ResumeID,
 			&preview.IsViewed,
 			&preview.CreatedAt,
 			&preview.ApplicantName,
@@ -494,6 +512,7 @@ func (r *NotificationRepository) GetDownloadResumeNotificationsForUser(ctx conte
 			n.sender_id,
 			n.receiver_id,
 			n.object_id,
+			n.resume_id,
 			n.is_viewed,
 			n.created_at,
 			a.first_name AS applicant_name,
@@ -538,6 +557,7 @@ func (r *NotificationRepository) GetDownloadResumeNotificationsForUser(ctx conte
 			&preview.SenderID,
 			&preview.ReceiverID,
 			&preview.ObjectID,
+			&preview.ResumeID,
 			&preview.IsViewed,
 			&preview.CreatedAt,
 			&preview.ApplicantName,

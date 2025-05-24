@@ -118,9 +118,9 @@ func (mr *MockResumeUsecaseMockRecorder) GetByID(ctx, id any) *gomock.Call {
 }
 
 // GetResumePDF mocks base method.
-func (m *MockResumeUsecase) GetResumePDF(ctx context.Context, resumeID, userID int) ([]byte, *entity.Notification, error) {
+func (m *MockResumeUsecase) GetResumePDF(ctx context.Context, resumeID, userID int, role string) ([]byte, *entity.Notification, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResumePDF", ctx, resumeID, userID)
+	ret := m.ctrl.Call(m, "GetResumePDF", ctx, resumeID, userID, role)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(*entity.Notification)
 	ret2, _ := ret[2].(error)
@@ -128,9 +128,9 @@ func (m *MockResumeUsecase) GetResumePDF(ctx context.Context, resumeID, userID i
 }
 
 // GetResumePDF indicates an expected call of GetResumePDF.
-func (mr *MockResumeUsecaseMockRecorder) GetResumePDF(ctx, resumeID, userID any) *gomock.Call {
+func (mr *MockResumeUsecaseMockRecorder) GetResumePDF(ctx, resumeID, userID, role any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResumePDF", reflect.TypeOf((*MockResumeUsecase)(nil).GetResumePDF), ctx, resumeID, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResumePDF", reflect.TypeOf((*MockResumeUsecase)(nil).GetResumePDF), ctx, resumeID, userID, role)
 }
 
 // SearchResumesByProfession mocks base method.

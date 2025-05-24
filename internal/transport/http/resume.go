@@ -537,7 +537,7 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, _, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
@@ -550,9 +550,13 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pdfBytes, notification, err := h.resume.GetResumePDF(ctx, resumeID, userID)
+	pdfBytes, notification, err := h.resume.GetResumePDF(ctx, resumeID, userID, role)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	if notification == nil {
 		return
 	}
 

@@ -1054,7 +1054,7 @@ func (s *ResumeService) SearchResumesByProfession(ctx context.Context, userID in
 	return response, nil
 }
 
-func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID, userID int) ([]byte, *entity.Notification, error) {
+func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID, userID int, role string) ([]byte, *entity.Notification, error) {
 	resume, err := s.GetByID(ctx, resumeID)
 	if err != nil {
 		return nil, nil, err
@@ -1080,11 +1080,16 @@ func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID, userID int) 
 		return nil, nil, entity.NewError(entity.ErrInternal, err)
 	}
 
+	senderType := entity.AllowedUserRoles[role]
+
 	notification := &entity.Notification{
-		Type:       entity.DownloadResumeType,
-		SenderID:   userID,
-		ReceiverID: resume.ApplicantID,
-		ObjectID:   resume.ID,
+		Type:         entity.DownloadResumeType,
+		SenderID:     userID,
+		SenderRole:   senderType,
+		ReceiverID:   resume.ApplicantID,
+		ReceiverRole: entity.ApplicantRole,
+		ObjectID:     resume.ID,
+		ResumeID:     resume.ID,
 	}
 	return pdfBytes, notification, nil
 }

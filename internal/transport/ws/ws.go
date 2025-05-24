@@ -14,16 +14,9 @@ import (
 	"time"
 )
 
-type UserRole string
-
-const (
-	Applicant UserRole = "applicant"
-	Employer  UserRole = "employer"
-)
-
 type NotificationKey struct {
 	UserID int
-	Type   UserRole
+	Type   entity.UserRole
 }
 
 type WebsocketPool struct {
@@ -69,12 +62,12 @@ func (wsp *WebsocketPool) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var userRole UserRole
+	var userRole entity.UserRole
 	switch role {
 	case "employer":
-		userRole = Employer
+		userRole = entity.EmployerRole
 	case "applicant":
-		userRole = Applicant
+		userRole = entity.ApplicantRole
 	default:
 		http.Error(w, "invalid user role", http.StatusForbidden)
 		return
@@ -198,12 +191,12 @@ func (wsp *WebsocketPool) SendNotification(notification *entity.NotificationPrev
 		return fmt.Errorf("marshal error: %w", err)
 	}
 
-	var receiverRole UserRole
+	var receiverRole entity.UserRole
 	switch notification.Type {
 	case entity.DownloadResumeType:
-		receiverRole = Applicant
+		receiverRole = entity.ApplicantRole
 	case entity.ApplyNotificationType:
-		receiverRole = Employer
+		receiverRole = entity.EmployerRole
 	}
 
 	receiver := NotificationKey{

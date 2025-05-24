@@ -258,8 +258,12 @@ func easyjson9806e1DecodeResuMatchInternalEntity2(in *jlexer.Lexer, out *Notific
 			out.Type = NotificationType(in.String())
 		case "sender_id":
 			out.SenderID = int(in.Int())
+		case "sender_role":
+			out.SenderRole = UserRole(in.String())
 		case "receiver_id":
 			out.ReceiverID = int(in.Int())
+		case "receiver_role":
+			out.ReceiverRole = UserRole(in.String())
 		case "object_id":
 			out.ObjectID = int(in.Int())
 		case "resume_id":
@@ -300,9 +304,19 @@ func easyjson9806e1EncodeResuMatchInternalEntity2(out *jwriter.Writer, in Notifi
 		out.Int(int(in.SenderID))
 	}
 	{
+		const prefix string = ",\"sender_role\":"
+		out.RawString(prefix)
+		out.String(string(in.SenderRole))
+	}
+	{
 		const prefix string = ",\"receiver_id\":"
 		out.RawString(prefix)
 		out.Int(int(in.ReceiverID))
+	}
+	{
+		const prefix string = ",\"receiver_role\":"
+		out.RawString(prefix)
+		out.String(string(in.ReceiverRole))
 	}
 	{
 		const prefix string = ",\"object_id\":"

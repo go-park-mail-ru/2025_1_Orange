@@ -474,10 +474,13 @@ func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, appli
 	}
 
 	notification := &entity.Notification{
-		Type:       entity.ApplyNotificationType,
-		SenderID:   applicantID,
-		ReceiverID: vacancy.EmployerID,
-		ObjectID:   vacancy.ID,
+		Type:         entity.ApplyNotificationType,
+		SenderID:     applicantID,
+		SenderRole:   entity.ApplicantRole,
+		ReceiverID:   vacancy.EmployerID,
+		ReceiverRole: entity.EmployerRole,
+		ObjectID:     vacancy.ID,
+		ResumeID:     resumeID,
 	}
 
 	return notification, vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)

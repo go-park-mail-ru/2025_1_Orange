@@ -32,13 +32,9 @@ func NewServer(cfg *config.Config, wsPool *ws.WebsocketPool) *Server {
 }
 
 func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
-	//wsRouter := http.NewServeMux()
-	//wsRouter.HandleFunc("/api/v1/notification/ws", s.wsPool.Connect)
-
 	subrouter := http.NewServeMux()
 
 	mainRouter := http.NewServeMux()
-	//mainRouter.Handle("/api/v1/notification/ws", wsRouter)
 	mainRouter.Handle("/metrics", middleware.PrometheusHandler())
 	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", subrouter))
 

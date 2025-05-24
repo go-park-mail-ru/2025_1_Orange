@@ -1,0 +1,3 @@
+ALTER TABLE vacancy_response DROP CONSTRAINT vacancy_response_vacancy_id_applicant_id_key;
+
+ALTER TABLE vacancy_response ADD CONSTRAINT vacancy_response_vacancy_id_applicant_id_resume_id_key UNIQUE (vacancy_id, applicant_id, resume_id);

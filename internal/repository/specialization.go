@@ -8,4 +8,5 @@ import (
 type SpecializationRepository interface {
 	GetByID(ctx context.Context, id int) (*entity.Specialization, error)
 	GetAll(ctx context.Context) ([]entity.Specialization, error)
+	GetSpecializationSalaries(ctx context.Context) ([]entity.SpecializationSalaryRange, error)
 }

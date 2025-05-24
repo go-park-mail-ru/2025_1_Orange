@@ -55,3 +55,18 @@ func (mr *MockSpecializationUsecaseMockRecorder) GetAllSpecializationNames(ctx a
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSpecializationNames", reflect.TypeOf((*MockSpecializationUsecase)(nil).GetAllSpecializationNames), ctx)
 }
+
+// GetSpecializationSalaries mocks base method.
+func (m *MockSpecializationUsecase) GetSpecializationSalaries(ctx context.Context) (*dto.SpecializationSalaryRangesResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSpecializationSalaries", ctx)
+	ret0, _ := ret[0].(*dto.SpecializationSalaryRangesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSpecializationSalaries indicates an expected call of GetSpecializationSalaries.
+func (mr *MockSpecializationUsecaseMockRecorder) GetSpecializationSalaries(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSpecializationSalaries", reflect.TypeOf((*MockSpecializationUsecase)(nil).GetSpecializationSalaries), ctx)
+}

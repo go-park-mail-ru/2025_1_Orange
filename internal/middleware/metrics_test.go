@@ -70,7 +70,7 @@ func TestResponseRecorder(t *testing.T) {
 	t.Run("WriteHeader sets status code", func(t *testing.T) {
 		t.Parallel()
 		rec := httptest.NewRecorder()
-		writer := &responseRecorder{ResponseWriter: rec}
+		writer := &hijackableResponseWriter{ResponseWriter: rec}
 
 		writer.WriteHeader(http.StatusForbidden)
 		require.Equal(t, http.StatusForbidden, writer.statusCode)
@@ -79,7 +79,7 @@ func TestResponseRecorder(t *testing.T) {
 	t.Run("Write updates size", func(t *testing.T) {
 		t.Parallel()
 		rec := httptest.NewRecorder()
-		writer := &responseRecorder{ResponseWriter: rec}
+		writer := &hijackableResponseWriter{ResponseWriter: rec}
 
 		data := []byte("Test response")
 		size, err := writer.Write(data)

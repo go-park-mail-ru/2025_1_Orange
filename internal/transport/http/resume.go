@@ -6,7 +6,9 @@ import (
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/transport/http/utils"
+	"ResuMatch/internal/transport/ws"
 	"ResuMatch/internal/usecase"
+	l "ResuMatch/pkg/logger"
 	"ResuMatch/pkg/sanitizer"
 	"fmt"
 	"net/http"
@@ -16,13 +18,27 @@ import (
 )
 
 type ResumeHandler struct {
-	auth   usecase.Auth
-	resume usecase.ResumeUsecase
-	cfg    config.CSRFConfig
+	auth         usecase.Auth
+	resume       usecase.ResumeUsecase
+	cfg          config.CSRFConfig
+	wsPool       *ws.WebsocketPool
+	notification usecase.Notification
 }
 
-func NewResumeHandler(auth usecase.Auth, resume usecase.ResumeUsecase, cfg config.CSRFConfig) ResumeHandler {
-	return ResumeHandler{auth: auth, resume: resume, cfg: cfg}
+func NewResumeHandler(
+	auth usecase.Auth,
+	resume usecase.ResumeUsecase,
+	cfg config.CSRFConfig,
+	wsPool *ws.WebsocketPool,
+	notification usecase.Notification,
+) ResumeHandler {
+	return ResumeHandler{
+		auth:         auth,
+		resume:       resume,
+		cfg:          cfg,
+		wsPool:       wsPool,
+		notification: notification,
+	}
 }
 
 func (h *ResumeHandler) Configure(r *http.ServeMux) {
@@ -521,6 +537,12 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, role, err := h.auth.GetUserIDBySession(ctx, cookie.Value)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
 	id := r.PathValue("id")
 	resumeID, err := strconv.Atoi(id)
 	if err != nil {
@@ -528,10 +550,21 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pdfBytes, err := h.resume.GetResumePDF(ctx, resumeID)
+	pdfBytes, notification, err := h.resume.GetResumePDF(ctx, resumeID, userID, role)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return
+	}
+
+	notificationPreview, err := h.notification.CreateNotification(ctx, &notification)
+	if err != nil {
+		utils.WriteAPIError(w, utils.ToAPIError(err))
+		return
+	}
+
+	err = h.wsPool.SendNotification(notificationPreview)
+	if err != nil {
+		l.Log.Warnf("Не удалось отправить уведомление: %v", err)
 	}
 
 	w.Header().Set("Content-Type", "application/pdf")

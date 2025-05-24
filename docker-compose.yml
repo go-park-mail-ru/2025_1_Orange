@@ -125,6 +125,7 @@ services:
       - "3000:3000"
     environment:
       - DISABLE_GOOGLE_CHROME=false
+      - LOG_LEVEL=warn
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
       interval: 5s

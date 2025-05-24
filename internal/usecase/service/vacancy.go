@@ -451,22 +451,31 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 
 	return response, nil
 }
-func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) error {
+
+func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) (*entity.Notification, error) {
 	// Проверяем существование вакансии
-	if _, err := vs.vacanciesRepository.GetByID(ctx, vacancyID); err != nil {
-		return fmt.Errorf("vacancy not found: %w", err)
+	vacancy, err := vs.vacanciesRepository.GetByID(ctx, vacancyID)
+	if err != nil {
+		return nil, fmt.Errorf("vacancy not found: %w", err)
 	}
 	// Проверяем, не откликался ли уже
 	hasResponded, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
 	if err != nil {
-		return fmt.Errorf("failed to check existing responses: %w", err)
+		return nil, fmt.Errorf("failed to check existing responses: %w", err)
 	}
 	if hasResponded {
-		return entity.NewError(entity.ErrAlreadyExists,
+		return nil, entity.NewError(entity.ErrAlreadyExists,
 			fmt.Errorf("you have already applied to this vacancy"))
 	}
 
-	return vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
+	notification := &entity.Notification{
+		Type:       entity.ApplyNotificationType,
+		SenderID:   applicantID,
+		ReceiverID: vacancy.EmployerID,
+		ObjectID:   vacancy.ID,
+	}
+
+	return notification, vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID)
 }
 
 func (vs *VacanciesService) GetActiveVacanciesByEmployerID(ctx context.Context, employerID, userID int, userRole string, limit int, offset int) ([]dto.VacancyShortResponse, error) {

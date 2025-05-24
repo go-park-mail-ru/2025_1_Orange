@@ -5,6 +5,7 @@ import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/transport/http/utils"
+	"ResuMatch/internal/transport/ws"
 	"ResuMatch/internal/usecase/mock"
 	"bytes"
 	"encoding/json"
@@ -711,10 +712,12 @@ func TestVacancyHandler_SearchVacanciesBySpecializations(t *testing.T) {
 
 			authMock := mock.NewMockAuth(ctrl)
 			vacancyMock := mock.NewMockVacancy(ctrl)
+			wsPool := ws.NewWebsocketPool(authMock)
+			notificationMock := mock.NewMockNotification(ctrl)
 
 			tc.setupMocks(authMock, vacancyMock)
 
-			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{})
+			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{}, wsPool, notificationMock)
 
 			var reqBody []byte
 			switch body := tc.requestBody.(type) {
@@ -836,10 +839,11 @@ func TestVacancyHandler_SearchVacanciesByQueryAndSpecializations(t *testing.T) {
 
 			authMock := mock.NewMockAuth(ctrl)
 			vacancyMock := mock.NewMockVacancy(ctrl)
-
+			wsPool := ws.NewWebsocketPool(authMock)
+			notificationMock := mock.NewMockNotification(ctrl)
 			tc.setupMocks(authMock, vacancyMock)
 
-			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{})
+			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{}, wsPool, notificationMock)
 
 			var reqBody []byte
 			switch body := tc.requestBody.(type) {
@@ -964,10 +968,11 @@ func TestVacancyHandler_GetActiveVacanciesByEmployer(t *testing.T) {
 
 			authMock := mock.NewMockAuth(ctrl)
 			vacancyMock := mock.NewMockVacancy(ctrl)
-
+			wsPool := ws.NewWebsocketPool(authMock)
+			notificationMock := mock.NewMockNotification(ctrl)
 			tc.setupMocks(authMock, vacancyMock)
 
-			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{})
+			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{}, wsPool, notificationMock)
 
 			req := httptest.NewRequest(http.MethodGet, tc.url, nil)
 			if tc.cookie != nil {
@@ -1093,10 +1098,12 @@ func TestVacancyHandler_GetLikedVacancies(t *testing.T) {
 
 			authMock := mock.NewMockAuth(ctrl)
 			vacancyMock := mock.NewMockVacancy(ctrl)
+			wsPool := ws.NewWebsocketPool(authMock)
+			notificationMock := mock.NewMockNotification(ctrl)
 
 			tc.setupMocks(authMock, vacancyMock)
 
-			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{})
+			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{}, wsPool, notificationMock)
 
 			req := httptest.NewRequest(http.MethodGet, tc.url+tc.queryParams, nil)
 			if tc.cookie != nil {
@@ -1204,10 +1211,11 @@ func TestVacancyHandler_LikeVacancy(t *testing.T) {
 
 			authMock := mock.NewMockAuth(ctrl)
 			vacancyMock := mock.NewMockVacancy(ctrl)
-
+			wsPool := ws.NewWebsocketPool(authMock)
+			notificationMock := mock.NewMockNotification(ctrl)
 			tc.setupMocks(authMock, vacancyMock)
 
-			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{})
+			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{}, wsPool, notificationMock)
 
 			req := httptest.NewRequest(http.MethodPost, tc.url, nil)
 			if tc.cookie != nil {

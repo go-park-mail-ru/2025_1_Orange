@@ -1,105 +1,239 @@
 package entity
 
 import (
+	"fmt"
 	"time"
-
-	"github.com/asaskevich/govalidator"
 )
 
 type Vacancy struct {
 	ID                      int                       `json:"id"`
-	Title                   string                    `json:"title" valid:"required,length(3|50),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
+	Title                   string                    `json:"title"`
 	IsActive                bool                      `json:"is_active"`
-	EmployerID              int                       `json:"employer_id" valid:"required"`
-	SpecializationID        int                       `json:"specialization_id" valid:"required"`
-	WorkFormat              string                    `json:"work_format" valid:"required,in(office|hybrid|remote|traveling)"`
-	Employment              string                    `json:"employment" valid:"required,in(full_time|part_time|contract|internship|freelance|watch)"`
-	Schedule                string                    `json:"schedule" valid:"required,in(5/2|2/2|6/1|3/3|on_weekend|by_agreement)"`
-	WorkingHours            int                       `json:"working_hours" valid:"required,range(1|96)"`
-	SalaryFrom              int                       `json:"salary_from" valid:"required,range(15000|1000000)"`
-	SalaryTo                int                       `json:"salary_to" valid:"required,range(0|1000000)"`
+	EmployerID              int                       `json:"employer_id"`
+	SpecializationID        int                       `json:"specialization_id"`
+	WorkFormat              string                    `json:"work_format"`
+	Employment              string                    `json:"employment"`
+	Schedule                string                    `json:"schedule"`
+	WorkingHours            int                       `json:"working_hours"`
+	SalaryFrom              int                       `json:"salary_from"`
+	SalaryTo                int                       `json:"salary_to"`
 	TaxesIncluded           bool                      `json:"taxes_included"`
-	Experience              string                    `json:"experience" valid:"required,in(no_experience|1_3_years|3_6_years|6_plus_years)"`
-	Description             string                    `json:"description" valid:"required,length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
-	Tasks                   string                    `json:"tasks" valid:"length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
-	Requirements            string                    `json:"requirements" valid:"length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,]+$)"`
-	OptionalRequirements    string                    `json:"optional_requirements" valid:"length(10|500),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,#+\\-]+$)"`
+	Experience              string                    `json:"experience"`
+	Description             string                    `json:"description"`
+	Tasks                   string                    `json:"tasks"`
+	Requirements            string                    `json:"requirements"`
+	OptionalRequirements    string                    `json:"optional_requirements"`
 	CreatedAt               time.Time                 `json:"created_at"`
 	UpdatedAt               time.Time                 `json:"updated_at"`
-	Skills                  []Skill                   `json:"-" valid:"dive"`
-	City                    string                    `json:"city" valid:"required,length(3|50),matches(^[а-яА-Яa-zA-Z0-9\\s\\.,]+$)"`
+	Skills                  []Skill                   `json:"-"`
+	City                    string                    `json:"city"`
 	SupplementaryConditions []SupplementaryConditions `json:"-"`
 	Responded               bool                      `json:"responded"`
 }
 
-func (v *Vacancy) Validate() (bool, error) {
-	return govalidator.ValidateStruct(v)
+func (v *Vacancy) Validate() error {
+	if v.Title == "" || len([]rune(v.Title)) < 3 || len([]rune(v.Title)) > 50 {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("название вакансии должно быть от 3 до 50 символов"),
+		)
+	}
+
+	if v.EmployerID <= 0 {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректный ID работодателя"),
+		)
+	}
+
+	if v.SpecializationID <= 0 {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректный ID специализации"),
+		)
+	}
+
+	validWorkFormats := map[string]bool{
+		"office":    true,
+		"hybrid":    true,
+		"remote":    true,
+		"traveling": true,
+	}
+	if !validWorkFormats[v.WorkFormat] {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректный формат работы"),
+		)
+	}
+
+	validEmployment := map[string]bool{
+		"full_time":  true,
+		"part_time":  true,
+		"contract":   true,
+		"internship": true,
+		"freelance":  true,
+		"watch":      true,
+	}
+	if !validEmployment[v.Employment] {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректный тип занятости"),
+		)
+	}
+
+	validSchedules := map[string]bool{
+		"5/2":          true,
+		"2/2":          true,
+		"6/1":          true,
+		"3/3":          true,
+		"on_weekend":   true,
+		"by_agreement": true,
+	}
+	if !validSchedules[v.Schedule] {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректный график работы"),
+		)
+	}
+
+	if v.WorkingHours < 1 || v.WorkingHours > 96 {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректное количество рабочих часов"),
+		)
+	}
+
+	if v.SalaryFrom < 15000 || v.SalaryFrom > 1000000 {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректная минимальная зарплата"),
+		)
+	}
+
+	if v.SalaryTo < 0 || v.SalaryTo > 1000000 || v.SalaryTo < v.SalaryFrom {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректная максимальная зарплата"),
+		)
+	}
+
+	validExperience := map[string]bool{
+		"no_experience": true,
+		"1_3_years":     true,
+		"3_6_years":     true,
+		"6_plus_years":  true,
+	}
+	if !validExperience[v.Experience] {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("некорректный требуемый опыт"),
+		)
+	}
+
+	if v.Description == "" || len([]rune(v.Description)) < 10 || len([]rune(v.Description)) > 500 {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("описание вакансии должно быть от 10 до 500 символов"),
+		)
+	}
+
+	if v.Tasks != "" && (len([]rune(v.Tasks)) < 10 || len([]rune(v.Tasks)) > 500) {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("описание задач должно быть от 10 до 500 символов %d", len([]rune(v.Tasks))),
+		)
+	}
+
+	if v.Requirements != "" && (len([]rune(v.Requirements)) < 10 || len([]rune(v.Requirements)) > 500) {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("описание требований должно быть от 10 до 500 символов"),
+		)
+	}
+
+	if v.OptionalRequirements != "" && (len([]rune(v.OptionalRequirements)) < 10 || len([]rune(v.OptionalRequirements)) > 500) {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("описание дополнительных требований должно быть от 10 до 500 символов"),
+		)
+	}
+
+	if v.City == "" || len([]rune(v.City)) < 3 || len([]rune(v.City)) > 50 {
+		return NewError(
+			ErrBadRequest,
+			fmt.Errorf("город должен быть от 3 до 50 символов"),
+		)
+	}
+
+	return nil
 }
 
+// Остальные структуры остаются без изменений
 type VacancyShort struct {
-	ID             int32     `json:"id" validate:"required,min=1"`
-	Title          string    `json:"title" validate:"required,min=10,max=100"`
-	Employer       Employer  `json:"employer" validate:"required"`
-	Specialization string    `json:"specialization" validate:"required,min=3,max=50"`
-	City           string    `json:"city" validate:"required,min=2,max=50"`
-	WorkFormat     string    `json:"work_format" validate:"required,oneof=remote office hybrid traveling"`
-	Employment     string    `json:"employment" validate:"required,oneof=full_time part_time contract freelance internship watch"`
-	WorkingHours   int32     `json:"working_hours" validate:"required,min=1,max=168"`
-	SalaryFrom     int32     `json:"salary_from" validate:"required,min=0"`
-	SalaryTo       int32     `json:"salary_to" validate:"required,min=0,gtfield=SalaryFrom"`
+	ID             int32     `json:"id"`
+	Title          string    `json:"title"`
+	Employer       Employer  `json:"employer"`
+	Specialization string    `json:"specialization"`
+	City           string    `json:"city"`
+	WorkFormat     string    `json:"work_format"`
+	Employment     string    `json:"employment"`
+	WorkingHours   int32     `json:"working_hours"`
+	SalaryFrom     int32     `json:"salary_from"`
+	SalaryTo       int32     `json:"salary_to"`
 	TaxesIncluded  bool      `json:"taxes_included"`
-	CreatedAt      time.Time `json:"created_at" validate:"required"`
-	UpdatedAt      time.Time `json:"updated_at" validate:"required"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 	Responded      bool      `json:"responded"`
 	Liked          bool      `json:"liked"`
 }
 
 type VacancyCreate struct {
-	Title                string   `form:"title" validate:"required,min=3,max=50,validTitle"`
-	Specialization       string   `form:"specialization" validate:"required,min=3,max=50,validText"`
-	City                 string   `form:"city" validate:"required,min=3,max=50,validCity"`
-	Employment           string   `form:"employment" validate:"required,oneof=full_time part_time contract internship freelance watch"`
-	Schedule             string   `form:"schedule" validate:"required,oneof=5/2 2/2 6/1 3/3 on_weekend by_agreement"`
-	WorkingHours         int      `form:"working_hours" validate:"required,min=1,max=96"`
-	WorkFormat           string   `form:"work_format" validate:"required,oneof=office hybrid remote traveling"`
-	SalaryFrom           int      `form:"salary_from" validate:"required,min=15000,max=1000000"`
-	SalaryTo             int      `form:"salary_to" validate:"required,min=0,max=1000000,gtefield=SalaryFrom"`
-	TaxesIncluded        string   `form:"taxes_included" validate:"required,oneof=true false"`
-	Experience           string   `form:"experience" validate:"required,oneof=no_experience 1_3_years 3_6_years 6_plus_years"`
-	Description          string   `form:"description" validate:"required,min=10,max=500,validText"`
-	Tasks                string   `form:"tasks" validate:"min=10,max=500,validText"`
-	Requirements         string   `form:"requirements" validate:"min=10,max=500,validText"`
-	OptionalRequirements string   `form:"optional_requirements" validate:"min=10,max=500,validText"`
-	Skills               []string `validate:"dive,min=2,max=30,validText"`
+	Title                string   `form:"title"`
+	Specialization       string   `form:"specialization"`
+	City                 string   `form:"city"`
+	Employment           string   `form:"employment"`
+	Schedule             string   `form:"schedule"`
+	WorkingHours         int      `form:"working_hours"`
+	WorkFormat           string   `form:"work_format"`
+	SalaryFrom           int      `form:"salary_from"`
+	SalaryTo             int      `form:"salary_to"`
+	TaxesIncluded        string   `form:"taxes_included"`
+	Experience           string   `form:"experience"`
+	Description          string   `form:"description"`
+	Tasks                string   `form:"tasks"`
+	Requirements         string   `form:"requirements"`
+	OptionalRequirements string   `form:"optional_requirements"`
+	Skills               []string `form:"skills"`
 }
 
 type VacancyResponse struct {
-	ID                   int       `json:"id" validate:"required,min=1"`
-	EmployerID           int       `json:"employer_id" validate:"required,min=1"`
-	Title                string    `json:"title" validate:"required,min=10,max=100"`
-	Specialization       string    `json:"specialization" validate:"required,min=3,max=50"`
-	WorkFormat           string    `json:"work_format" validate:"required,oneof=remote office hybrid traveling"`
-	Employment           string    `json:"employment" validate:"required,oneof=full_time part_time contract freelance internship watch"`
+	ID                   int       `json:"id"`
+	EmployerID           int       `json:"employer_id"`
+	Title                string    `json:"title"`
+	Specialization       string    `json:"specialization"`
+	WorkFormat           string    `json:"work_format"`
+	Employment           string    `json:"employment"`
 	Schedule             string    `json:"schedule"`
-	WorkingHours         int       `json:"working_hours" validate:"required,min=1,max=168"`
-	SalaryFrom           int       `json:"salary_from" validate:"required,min=0"`
-	SalaryTo             int       `json:"salary_to" validate:"required,min=0,gtfield=SalaryFrom"`
+	WorkingHours         int       `json:"working_hours"`
+	SalaryFrom           int       `json:"salary_from"`
+	SalaryTo             int       `json:"salary_to"`
 	TaxesIncluded        bool      `json:"taxes_included"`
 	Experience           string    `json:"experience"`
-	City                 string    `json:"city" validate:"required,min=2,max=50"`
-	Skills               []string  `json:"skills" validate:"required,min=1,max=10,dive,min=2,max=30"`
-	Description          string    `json:"description" validate:"required,min=10,max=5000"`
-	Tasks                string    `json:"tasks" validate:"required,min=20,max=2000"`
-	Requirements         string    `json:"requirements" validate:"required,min=10,max=2000"`
-	OptionalRequirements string    `json:"optional_requirements" validate:"max=2000"`
-	CreatedAt            time.Time `json:"created_at" validate:"required"`
-	UpdatedAt            time.Time `json:"updated_at" validate:"required"`
+	City                 string    `json:"city"`
+	Skills               []string  `json:"skills"`
+	Description          string    `json:"description"`
+	Tasks                string    `json:"tasks"`
+	Requirements         string    `json:"requirements"`
+	OptionalRequirements string    `json:"optional_requirements"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
 }
 
 type VacancyResponses struct {
 	ID          int       `json:"id"`
 	VacancyID   int       `json:"vacancy_id"`
 	ApplicantID int       `json:"applicant_id"`
+	ResumeID    int       `json:"resume_id"`
 	AppliedAt   time.Time `json:"applied_at"`
 }
 

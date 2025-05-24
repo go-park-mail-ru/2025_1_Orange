@@ -43,18 +43,18 @@ func (m *MockVacancy) EXPECT() *MockVacancyMockRecorder {
 }
 
 // ApplyToVacancy mocks base method.
-func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID int) (*entity.Notification, error) {
+func (m *MockVacancy) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (*entity.Notification, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyToVacancy", ctx, vacancyID, applicantID)
+	ret := m.ctrl.Call(m, "ApplyToVacancy", ctx, vacancyID, applicantID, resumeID)
 	ret0, _ := ret[0].(*entity.Notification)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ApplyToVacancy indicates an expected call of ApplyToVacancy.
-func (mr *MockVacancyMockRecorder) ApplyToVacancy(ctx, vacancyID, applicantID any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) ApplyToVacancy(ctx, vacancyID, applicantID, resumeID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyToVacancy", reflect.TypeOf((*MockVacancy)(nil).ApplyToVacancy), ctx, vacancyID, applicantID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyToVacancy", reflect.TypeOf((*MockVacancy)(nil).ApplyToVacancy), ctx, vacancyID, applicantID, resumeID)
 }
 
 // CreateVacancy mocks base method.
@@ -130,6 +130,21 @@ func (m *MockVacancy) GetLikedVacancies(ctx context.Context, applicantID, limit,
 func (mr *MockVacancyMockRecorder) GetLikedVacancies(ctx, applicantID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLikedVacancies", reflect.TypeOf((*MockVacancy)(nil).GetLikedVacancies), ctx, applicantID, limit, offset)
+}
+
+// GetRespondedResumeOnVacancy mocks base method.
+func (m *MockVacancy) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID, limit, offset int) ([]dto.ResumeShortResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRespondedResumeOnVacancy", ctx, vacancyID, limit, offset)
+	ret0, _ := ret[0].([]dto.ResumeShortResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRespondedResumeOnVacancy indicates an expected call of GetRespondedResumeOnVacancy.
+func (mr *MockVacancyMockRecorder) GetRespondedResumeOnVacancy(ctx, vacancyID, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRespondedResumeOnVacancy", reflect.TypeOf((*MockVacancy)(nil).GetRespondedResumeOnVacancy), ctx, vacancyID, limit, offset)
 }
 
 // GetVacanciesByApplicantID mocks base method.

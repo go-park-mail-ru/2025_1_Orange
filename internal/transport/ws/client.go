@@ -59,7 +59,9 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID int, role 
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
-		c.conn.Close()
+		if err := c.conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения: %v", err)
+		}
 	}()
 
 	for {
@@ -92,7 +94,9 @@ func (c *Client) readPump() {
 
 func (c *Client) writePump() {
 	defer func() {
-		c.conn.Close()
+		if err := c.conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения: %v", err)
+		}
 	}()
 
 	for msg := range c.send {

@@ -7,6 +7,7 @@ import (
 	"ResuMatch/internal/usecase"
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -185,7 +186,8 @@ func (s *ChatService) GetUserChats(ctx context.Context, userID int, role string)
 		}
 
 		var otherUser dto.ChatUserPreview
-		if role == "applicant" {
+		switch role {
+		case "applicant":
 			employer, err := s.EmployerUC.GetUser(ctx, chat.EmployerID)
 			if err != nil {
 				return nil, err
@@ -195,7 +197,7 @@ func (s *ChatService) GetUserChats(ctx context.Context, userID int, role string)
 				Name:       employer.CompanyName,
 				AvatarPath: employer.LogoPath,
 			}
-		} else if role == "employer" {
+		case "employer":
 			applicant, err := s.ApplicantUC.GetUser(ctx, chat.ApplicantID)
 			if err != nil {
 				return nil, err
@@ -206,6 +208,8 @@ func (s *ChatService) GetUserChats(ctx context.Context, userID int, role string)
 				Name:       fullName,
 				AvatarPath: applicant.AvatarPath,
 			}
+		default:
+			return nil, entity.NewError(entity.ErrBadRequest, fmt.Errorf("неизвестная роль пользователя: %s", role))
 		}
 
 		chats = append(chats, &dto.ChatShortResponse{

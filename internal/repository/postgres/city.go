@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/metrics"
+	// "ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +34,7 @@ func (r *CityRepository) GetCityByID(ctx context.Context, id int) (*entity.City,
 	var city entity.City
 	err := r.DB.QueryRowContext(ctx, query, id).Scan(&city.ID, &city.Name)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("City Repository", "GetCityByID").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("City Repository", "GetCityByID").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
 				entity.ErrNotFound,
@@ -107,7 +108,7 @@ func (r *CityRepository) GetCityByName(ctx context.Context, name string) (*entit
 	var city entity.City
 	err := r.DB.QueryRowContext(ctx, query, name).Scan(&city.ID, &city.Name)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("City Repository", "GetCityByName").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("City Repository", "GetCityByName").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
 				entity.ErrNotFound,

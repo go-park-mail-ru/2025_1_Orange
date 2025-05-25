@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/metrics"
+	// "ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -10,9 +10,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 type ApplicantRepository struct {
@@ -106,7 +107,7 @@ func (r *ApplicantRepository) CreateApplicant(
 	)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "CreateApplicant").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "CreateApplicant").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -192,7 +193,7 @@ func (r *ApplicantRepository) GetApplicantByID(ctx context.Context, id int) (*en
 	applicant := scanApplicant.GetEntity()
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "GetApplicantByID").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "GetApplicantByID").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
 				entity.ErrNotFound,
@@ -256,7 +257,7 @@ func (r *ApplicantRepository) GetApplicantByEmail(ctx context.Context, email str
 	applicant := scanApplicant.GetEntity()
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "GetApplicantByEmail").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "GetApplicantByEmail").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
 				entity.ErrNotFound,
@@ -304,7 +305,7 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 	result, err := r.DB.ExecContext(ctx, query, args...)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "UpdateApplicant").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "UpdateApplicant").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -350,7 +351,7 @@ func (r *ApplicantRepository) UpdateApplicant(ctx context.Context, userID int, f
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "UpdateApplicant").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Applicant Repository", "UpdateApplicant").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        userID,

@@ -3,7 +3,8 @@ package postgres
 import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/metrics"
+
+	// "ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -33,7 +34,7 @@ func NewStaticRepository(db *sql.DB, bucket string, cfg config.MinioConfig) (rep
 	})
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Static Repository", "NewStaticRepository").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "NewStaticRepository").Inc()
 		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось создать minio клиента: %w", err),
@@ -42,7 +43,7 @@ func NewStaticRepository(db *sql.DB, bucket string, cfg config.MinioConfig) (rep
 
 	exists, err := S3.BucketExists(context.Background(), bucket)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Static Repository", "NewStaticRepository").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "NewStaticRepository").Inc()
 		return nil, entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось проверить существование бакета: %w", err),
@@ -51,7 +52,7 @@ func NewStaticRepository(db *sql.DB, bucket string, cfg config.MinioConfig) (rep
 
 	if !exists {
 		if err := S3.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{}); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Static Repository", "NewStaticRepository").Inc()
+			// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "NewStaticRepository").Inc()
 			return nil, entity.NewError(
 				entity.ErrInternal,
 				fmt.Errorf("не удалось создать бакет: %w", err),
@@ -79,7 +80,7 @@ func (r *StaticRepository) UploadStatic(ctx context.Context, fileName string, co
 		ContentType: contentType,
 	})
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Static Repository", "UploadStatic").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "UploadStatic").Inc()
 		return -1, "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось загрузить файл в бакет: %w", err),
@@ -101,7 +102,7 @@ func (r *StaticRepository) UploadStatic(ctx context.Context, fileName string, co
 	)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Static Repository", "UploadStatic").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "UploadStatic").Inc()
 		return -1, "", entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("внутренная ошибка при выполнении sql-запроса UploadStatic: %w", err),
@@ -125,7 +126,7 @@ func (r *StaticRepository) GetStatic(ctx context.Context, id int) (string, error
 	err := r.DB.QueryRow(query, id).Scan(&filePath, &fileName)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Static Repository", "GetStatic").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "GetStatic").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", entity.NewError(
 				entity.ErrNotFound,
@@ -158,7 +159,7 @@ func (r *StaticRepository) DeleteStatic(ctx context.Context, id int) error {
 	).Scan(&bucket, &fileName)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Static Repository", "DeleteStatic").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "DeleteStatic").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.NewError(entity.ErrNotFound, fmt.Errorf("файл не найден"))
 		}
@@ -166,7 +167,7 @@ func (r *StaticRepository) DeleteStatic(ctx context.Context, id int) error {
 	}
 
 	if err := r.S3.RemoveObject(ctx, bucket, fileName, minio.RemoveObjectOptions{}); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Static Repository", "DeleteStatic").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Static Repository", "DeleteStatic").Inc()
 		return entity.NewError(
 			entity.ErrInternal,
 			fmt.Errorf("не удалось удалить файл из minio: %w", err),

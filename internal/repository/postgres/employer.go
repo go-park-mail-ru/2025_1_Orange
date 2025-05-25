@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/metrics"
+	// "ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -10,9 +10,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 type EmployerRepository struct {
@@ -92,7 +93,7 @@ func (r *EmployerRepository) CreateEmployer(ctx context.Context, email, companyN
 	)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "CreateEmployer").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "CreateEmployer").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -175,7 +176,7 @@ func (r *EmployerRepository) GetEmployerByID(ctx context.Context, id int) (*enti
 
 	employer := scanEmployer.GetEntity()
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "GetEmployerByID").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "GetEmployerByID").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
 				entity.ErrNotFound,
@@ -235,7 +236,7 @@ func (r *EmployerRepository) GetEmployerByEmail(ctx context.Context, email strin
 
 	employer := scanEmployer.GetEntity()
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "GetEmployerByEmail").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "GetEmployerByEmail").Inc()
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
 				entity.ErrNotFound,
@@ -283,7 +284,7 @@ func (r *EmployerRepository) UpdateEmployer(ctx context.Context, userID int, fie
 	result, err := r.DB.ExecContext(ctx, query, args...)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "UpdateEmployer").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "UpdateEmployer").Inc()
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -329,7 +330,7 @@ func (r *EmployerRepository) UpdateEmployer(ctx context.Context, userID int, fie
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "UpdateEmployer").Inc()
+		// metrics.LayerErrorCounter.WithLabelValues("Employer Repository", "UpdateEmployer").Inc()
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        userID,

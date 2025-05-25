@@ -1,20 +1,19 @@
 package middleware
 
 import (
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 	"strconv"
 	"time"
 
 	"ResuMatch/internal/metrics"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func MetricsMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+			rec := &hijackableResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 			next.ServeHTTP(rec, r)
 
@@ -36,21 +35,4 @@ func MetricsMiddleware() func(http.Handler) http.Handler {
 
 func PrometheusHandler() http.Handler {
 	return promhttp.Handler()
-}
-
-type responseRecorder struct {
-	http.ResponseWriter
-	statusCode int
-	size       int
-}
-
-func (r *responseRecorder) WriteHeader(status int) {
-	r.statusCode = status
-	r.ResponseWriter.WriteHeader(status)
-}
-
-func (r *responseRecorder) Write(b []byte) (int, error) {
-	size, err := r.ResponseWriter.Write(b)
-	r.size += size
-	return size, err
 }

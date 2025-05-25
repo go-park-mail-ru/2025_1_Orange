@@ -13,20 +13,12 @@ type customResponseWriter struct {
 	statusCode int
 }
 
-func (c *customResponseWriter) WriteHeader(statusCode int) {
-	// Записываем статус код только если он ещё не установлен
-	if c.statusCode == 0 {
-		c.statusCode = statusCode
-		c.ResponseWriter.WriteHeader(statusCode)
-	}
-}
-
 func AccessLogMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
-			cw := &customResponseWriter{ResponseWriter: w}
+			cw := &hijackableResponseWriter{ResponseWriter: w}
 			next.ServeHTTP(cw, r)
 
 			requestID := utils.GetRequestID(r.Context())

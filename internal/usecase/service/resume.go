@@ -1056,40 +1056,43 @@ func (s *ResumeService) SearchResumesByProfession(ctx context.Context, userID in
 
 func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID, userID int, role string) ([]byte, entity.Notification, error) {
 	resume, err := s.GetByID(ctx, resumeID)
+	notification := entity.Notification{}
 	if err != nil {
-		return nil, entity.Notification{}, err
+		return nil, notification, err
 	}
 
 	applicant, err := s.applicantService.GetUser(ctx, resume.ApplicantID)
 	if err != nil {
-		return nil, entity.Notification{}, err
+		return nil, notification, err
 	}
 
 	templateData, err := s.prepareResumeTemplateData(applicant, resume)
 	if err != nil {
-		return nil, entity.Notification{}, err
+		return nil, notification, err
 	}
 
 	htmlContent, err := s.renderTemplate(templateData)
 	if err != nil {
-		return nil, entity.Notification{}, entity.NewError(entity.ErrInternal, err)
+		return nil, notification, entity.NewError(entity.ErrInternal, err)
 	}
 
 	pdfBytes, err := utils.GeneratePDF(htmlContent, s.cfg)
 	if err != nil {
-		return nil, entity.Notification{}, entity.NewError(entity.ErrInternal, err)
+		return nil, notification, entity.NewError(entity.ErrInternal, err)
 	}
 
 	senderType := entity.AllowedUserRoles[role]
 
-	notification := entity.Notification{
-		Type:         entity.DownloadResumeType,
-		SenderID:     userID,
-		SenderRole:   senderType,
-		ReceiverID:   resume.ApplicantID,
-		ReceiverRole: entity.ApplicantRole,
-		ObjectID:     resume.ID,
-		ResumeID:     resume.ID,
+	if senderType != entity.ApplicantRole {
+		notification = entity.Notification{
+			Type:         entity.DownloadResumeType,
+			SenderID:     userID,
+			SenderRole:   senderType,
+			ReceiverID:   resume.ApplicantID,
+			ReceiverRole: entity.ApplicantRole,
+			ObjectID:     resume.ID,
+			ResumeID:     resume.ID,
+		}
 	}
 	return pdfBytes, notification, nil
 }

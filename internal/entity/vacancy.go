@@ -31,6 +31,12 @@ type Vacancy struct {
 	Responded               bool                      `json:"responded"`
 }
 
+type VacancyChatInfo struct {
+	VacancyID  int
+	ResumeID   int
+	EmployerID int
+}
+
 func (v *Vacancy) Validate() error {
 	if v.Title == "" || len([]rune(v.Title)) < 3 || len([]rune(v.Title)) > 50 {
 		return NewError(

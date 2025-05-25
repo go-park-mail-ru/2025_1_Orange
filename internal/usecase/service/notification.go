@@ -29,6 +29,7 @@ func (s NotificationService) CreateNotification(ctx context.Context, notificatio
 			fmt.Errorf("неверный тип уведомления"),
 		)
 	}
+
 	if notification.SenderID == notification.ReceiverID && notification.SenderRole == notification.ReceiverRole {
 		return nil, nil
 	}

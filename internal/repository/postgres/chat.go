@@ -23,6 +23,45 @@ func NewChatRepository(db *sql.DB) repository.ChatRepository {
 	}
 }
 
+func (r *ChatRepository) GetForVacancy(ctx context.Context, vacancyID, applicantID int) (*entity.Chat, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":    requestID,
+		"vacancy_id":   vacancyID,
+		"applicant_id": applicantID,
+	}).Info("выполнение sql-запроса GetForVacancy")
+
+	query := `
+		SELECT id, vacancy_id, resume_id, employer_id, applicant_id, created_at, updated_at
+		FROM chat
+		WHERE vacancy_id = $1 AND applicant_id = $2
+		LIMIT 1
+	`
+
+	var chat entity.Chat
+	err := r.db.QueryRowContext(ctx, query, vacancyID, applicantID).Scan(
+		&chat.ID,
+		&chat.VacancyID,
+		&chat.ResumeID,
+		&chat.EmployerID,
+		&chat.ApplicantID,
+		&chat.CreatedAt,
+		&chat.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении чата: %w", err),
+		)
+	}
+	return &chat, nil
+}
+
 func (r *ChatRepository) CreateChat(ctx context.Context, vacancyID, resumeID, employerID, applicantID int) (*entity.Chat, error) {
 	requestID := utils.GetRequestID(ctx)
 
@@ -200,4 +239,40 @@ func (r *ChatRepository) GetForUser(ctx context.Context, userID int, isApplicant
 	}
 
 	return chats, nil
+}
+
+func (r *ChatRepository) GetVacancyChatInfo(ctx context.Context, vacancyID, applicantID int) (*entity.VacancyChatInfo, error) {
+	requestID := utils.GetRequestID(ctx)
+
+	l.Log.WithFields(logrus.Fields{
+		"requestID":    requestID,
+		"vacancy_id":   vacancyID,
+		"applicant_id": applicantID,
+	}).Info("выполнение sql-запроса GetVacancyChatInfo")
+
+	query := `
+		SELECT vr.vacancy_id, vr.resume_id, v.employer_id
+		FROM vacancy_response vr
+		JOIN vacancy v ON vr.vacancy_id = v.id
+		WHERE vr.vacancy_id = $1 AND vr.applicant_id = $2
+		LIMIT 1
+	`
+
+	var info entity.VacancyChatInfo
+	err := r.db.QueryRowContext(ctx, query, vacancyID, applicantID).Scan(
+		&info.VacancyID,
+		&info.ResumeID,
+		&info.EmployerID,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, entity.NewError(
+			entity.ErrInternal,
+			fmt.Errorf("ошибка при получении информации для чата GetVacancyChatInfo: %w", err),
+		)
+	}
+	return &info, nil
 }

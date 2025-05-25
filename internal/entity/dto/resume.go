@@ -156,9 +156,11 @@ type WorkExperienceShort struct {
 	UntilNow     bool   `json:"until_now"`
 }
 
+// easyjson:json
 type ResumeChatResponse struct {
 	ID          int    `json:"id"`
 	ApplicantID int    `json:"applicant_id"`
+	AvatarPath  string `json:"avatar_path"`
 	Profession  string `json:"profession"`
 }
 

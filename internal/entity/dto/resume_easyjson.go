@@ -1020,7 +1020,94 @@ func (v *ResumeResponse) UnmarshalJSON(data []byte) error {
 func (v *ResumeResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson39b3a2f5DecodeResuMatchInternalEntityDto6(l, v)
 }
-func easyjson39b3a2f5DecodeResuMatchInternalEntityDto7(in *jlexer.Lexer, out *ResumeApplicantShortResponseList) {
+func easyjson39b3a2f5DecodeResuMatchInternalEntityDto7(in *jlexer.Lexer, out *ResumeChatResponse) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "id":
+			out.ID = int(in.Int())
+		case "applicant_id":
+			out.ApplicantID = int(in.Int())
+		case "avatar_path":
+			out.AvatarPath = string(in.String())
+		case "profession":
+			out.Profession = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson39b3a2f5EncodeResuMatchInternalEntityDto7(out *jwriter.Writer, in ResumeChatResponse) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.Int(int(in.ID))
+	}
+	{
+		const prefix string = ",\"applicant_id\":"
+		out.RawString(prefix)
+		out.Int(int(in.ApplicantID))
+	}
+	{
+		const prefix string = ",\"avatar_path\":"
+		out.RawString(prefix)
+		out.String(string(in.AvatarPath))
+	}
+	{
+		const prefix string = ",\"profession\":"
+		out.RawString(prefix)
+		out.String(string(in.Profession))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v ResumeChatResponse) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto7(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v ResumeChatResponse) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto7(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *ResumeChatResponse) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto7(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *ResumeChatResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto7(l, v)
+}
+func easyjson39b3a2f5DecodeResuMatchInternalEntityDto8(in *jlexer.Lexer, out *ResumeApplicantShortResponseList) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		in.Skip()
@@ -1048,7 +1135,7 @@ func easyjson39b3a2f5DecodeResuMatchInternalEntityDto7(in *jlexer.Lexer, out *Re
 		in.Consumed()
 	}
 }
-func easyjson39b3a2f5EncodeResuMatchInternalEntityDto7(out *jwriter.Writer, in ResumeApplicantShortResponseList) {
+func easyjson39b3a2f5EncodeResuMatchInternalEntityDto8(out *jwriter.Writer, in ResumeApplicantShortResponseList) {
 	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 		out.RawString("null")
 	} else {
@@ -1066,27 +1153,27 @@ func easyjson39b3a2f5EncodeResuMatchInternalEntityDto7(out *jwriter.Writer, in R
 // MarshalJSON supports json.Marshaler interface
 func (v ResumeApplicantShortResponseList) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto7(&w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto8(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v ResumeApplicantShortResponseList) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto7(w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto8(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ResumeApplicantShortResponseList) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto7(&r, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto8(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ResumeApplicantShortResponseList) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto7(l, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto8(l, v)
 }
-func easyjson39b3a2f5DecodeResuMatchInternalEntityDto8(in *jlexer.Lexer, out *ResumeApplicantShortResponse) {
+func easyjson39b3a2f5DecodeResuMatchInternalEntityDto9(in *jlexer.Lexer, out *ResumeApplicantShortResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1162,7 +1249,7 @@ func easyjson39b3a2f5DecodeResuMatchInternalEntityDto8(in *jlexer.Lexer, out *Re
 		in.Consumed()
 	}
 }
-func easyjson39b3a2f5EncodeResuMatchInternalEntityDto8(out *jwriter.Writer, in ResumeApplicantShortResponse) {
+func easyjson39b3a2f5EncodeResuMatchInternalEntityDto9(out *jwriter.Writer, in ResumeApplicantShortResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1232,27 +1319,27 @@ func easyjson39b3a2f5EncodeResuMatchInternalEntityDto8(out *jwriter.Writer, in R
 // MarshalJSON supports json.Marshaler interface
 func (v ResumeApplicantShortResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto8(&w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto9(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v ResumeApplicantShortResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto8(w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto9(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ResumeApplicantShortResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto8(&r, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto9(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ResumeApplicantShortResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto8(l, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto9(l, v)
 }
-func easyjson39b3a2f5DecodeResuMatchInternalEntityDto9(in *jlexer.Lexer, out *DeleteResumeResponse) {
+func easyjson39b3a2f5DecodeResuMatchInternalEntityDto10(in *jlexer.Lexer, out *DeleteResumeResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1285,7 +1372,7 @@ func easyjson39b3a2f5DecodeResuMatchInternalEntityDto9(in *jlexer.Lexer, out *De
 		in.Consumed()
 	}
 }
-func easyjson39b3a2f5EncodeResuMatchInternalEntityDto9(out *jwriter.Writer, in DeleteResumeResponse) {
+func easyjson39b3a2f5EncodeResuMatchInternalEntityDto10(out *jwriter.Writer, in DeleteResumeResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1305,27 +1392,27 @@ func easyjson39b3a2f5EncodeResuMatchInternalEntityDto9(out *jwriter.Writer, in D
 // MarshalJSON supports json.Marshaler interface
 func (v DeleteResumeResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto9(&w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto10(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v DeleteResumeResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto9(w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto10(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DeleteResumeResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto9(&r, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto10(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *DeleteResumeResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto9(l, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto10(l, v)
 }
-func easyjson39b3a2f5DecodeResuMatchInternalEntityDto10(in *jlexer.Lexer, out *CreateResumeRequest) {
+func easyjson39b3a2f5DecodeResuMatchInternalEntityDto11(in *jlexer.Lexer, out *CreateResumeRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1435,7 +1522,7 @@ func easyjson39b3a2f5DecodeResuMatchInternalEntityDto10(in *jlexer.Lexer, out *C
 		in.Consumed()
 	}
 }
-func easyjson39b3a2f5EncodeResuMatchInternalEntityDto10(out *jwriter.Writer, in CreateResumeRequest) {
+func easyjson39b3a2f5EncodeResuMatchInternalEntityDto11(out *jwriter.Writer, in CreateResumeRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1523,23 +1610,23 @@ func easyjson39b3a2f5EncodeResuMatchInternalEntityDto10(out *jwriter.Writer, in 
 // MarshalJSON supports json.Marshaler interface
 func (v CreateResumeRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto10(&w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto11(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreateResumeRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson39b3a2f5EncodeResuMatchInternalEntityDto10(w, v)
+	easyjson39b3a2f5EncodeResuMatchInternalEntityDto11(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreateResumeRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto10(&r, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto11(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreateResumeRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson39b3a2f5DecodeResuMatchInternalEntityDto10(l, v)
+	easyjson39b3a2f5DecodeResuMatchInternalEntityDto11(l, v)
 }

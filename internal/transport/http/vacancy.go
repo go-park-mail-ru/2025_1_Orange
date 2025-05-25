@@ -8,7 +8,6 @@ import (
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/transport/ws"
 	"ResuMatch/internal/usecase"
-	l "ResuMatch/pkg/logger"
 	"ResuMatch/pkg/sanitizer"
 	"encoding/json"
 	"fmt"
@@ -20,7 +19,7 @@ type VacancyHandler struct {
 	auth         usecase.Auth
 	vacancy      usecase.Vacancy
 	cfg          config.CSRFConfig
-	wsPool       *ws.WebsocketPool
+	wsHub        *ws.Hub
 	notification usecase.Notification
 }
 
@@ -28,14 +27,14 @@ func NewVacancyHandler(
 	auth usecase.Auth,
 	vac usecase.Vacancy,
 	cfg config.CSRFConfig,
-	wsPool *ws.WebsocketPool,
+	wsHub *ws.Hub,
 	notification usecase.Notification,
 ) VacancyHandler {
 	return VacancyHandler{
 		auth:         auth,
 		vacancy:      vac,
 		cfg:          cfg,
-		wsPool:       wsPool,
+		wsHub:        wsHub,
 		notification: notification,
 	}
 }
@@ -395,10 +394,17 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.wsPool.SendNotification(notificationPreview)
-	if err != nil {
-		l.Log.Warnf("Не удалось отправить уведомление: %v", err)
+	if notificationPreview != nil {
+		h.wsHub.Broadcast <- ws.Message{
+			Type:    ws.MessageTypeNotification,
+			Payload: notificationPreview,
+		}
 	}
+
+	//err = h.wsHub.SendNotification(notificationPreview)
+	//if err != nil {
+	//	l.Log.Warnf("Не удалось отправить уведомление: %v", err)
+	//}
 
 	w.WriteHeader(http.StatusCreated)
 }

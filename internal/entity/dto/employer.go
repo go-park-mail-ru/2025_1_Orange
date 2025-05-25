@@ -32,9 +32,3 @@ type EmployerProfileUpdate struct {
 	Telegram     string `json:"telegram" valid:"url,runelength(7|128),optional"`
 	Facebook     string `json:"facebook" valid:"url,runelength(7|128),optional"`
 }
-
-type ChatShortResponseEmployer struct {
-	ID          int    `json:"id"`
-	CompanyName string `json:"company_name"`
-	LogoPath    string `json:"logo_path"`
-}

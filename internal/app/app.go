@@ -22,41 +22,6 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Не удалось установить соединение соединение с postgres: %v", err)
 	}
 
-	//resumeConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с resume postgres: %v", err)
-	//}
-	//
-	//vacancyConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с vacancy postgres: %v", err)
-	//}
-	//
-	//skillConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с skill postgres: %v", err)
-	//}
-	//
-	//specializationConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с specialization postgres: %v", err)
-	//}
-	//
-	//cityConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с city postgres: %v", err)
-	//}
-	//
-	//applicantConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с applicant postgres: %v", err)
-	//}
-	//
-	//employerConn, err := connector.NewPostgresConnection(cfg.Postgres)
-	//if err != nil {
-	//	l.Log.Errorf("Не удалось установить соединение соединение с employer postgres: %v", err)
-	//}
-
 	// Repositories Init
 	resumeRepo, err := postgres.NewResumeRepository(postgresConn)
 	if err != nil {
@@ -98,6 +63,16 @@ func Init(cfg *config.Config) *server.Server {
 		l.Log.Errorf("Ошибка создания репозитория уведомлений: %v", err)
 	}
 
+	chatRepo := postgres.NewChatRepository(postgresConn)
+	if err != nil {
+		l.Log.Errorf("Ошибка создания репозитория чата: %v", err)
+	}
+
+	messageRepo := postgres.NewMessageRepository(postgresConn)
+	if err != nil {
+		l.Log.Errorf("Ошибка создания репозитория сообщений: %v", err)
+	}
+
 	// Use Cases Init
 	staticService, err := static.NewGateway(cfg.Microservices.S3.Addr())
 	if err != nil {
@@ -117,22 +92,27 @@ func Init(cfg *config.Config) *server.Server {
 	resumeService := service.NewResumeService(resumeRepo, skillRepo, specializationRepo, applicantRepo, applicantService, cfg.Resume)
 	vacancyService := service.NewVacanciesService(vacancyRepo, applicantRepo, specializationRepo, employerService, resumeRepo, applicantService)
 	notificationService := service.NewNotificationService(notificationRepo)
+	chatService := service.NewChatService(applicantService, employerService, resumeService, vacancyService, chatRepo, messageRepo)
 
 	// Transport Init
-	wsPool := ws.NewWebsocketPool(authService)
+	wsHub := ws.NewHub(chatService)
+	go wsHub.Run()
 
 	authHandler := handler.NewAuthHandler(authService, cfg.CSRF)
 	applicantHandler := handler.NewApplicantHandler(authService, applicantService, cfg.CSRF)
 	employmentHandler := handler.NewEmployerHandler(authService, employerService, cfg.CSRF)
-	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF, wsPool, notificationService)
-	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF, wsPool, notificationService)
+	resumeHandler := handler.NewResumeHandler(authService, resumeService, cfg.CSRF, wsHub, notificationService)
+	vacancyHandler := handler.NewVacancyHandler(authService, vacancyService, cfg.CSRF, wsHub, notificationService)
 	specializationHandler := handler.NewSpecializationHandler(specializationService)
-	notificationHandler := handler.NewNotificationHandler(notificationService, authService, wsPool)
+	notificationHandler := handler.NewNotificationHandler(notificationService, authService)
+	chatHandler := handler.NewChatHandler(authService, chatService)
+	websocketHandler := ws.NewWebsocketHandler(authService, wsHub)
+
 	// Metrics Init
 	metrics.Init("resumatch")
 
 	// Server Init
-	srv := server.NewServer(cfg, wsPool)
+	srv := server.NewServer(cfg)
 
 	// Router config
 	srv.SetupRoutes(func(r *http.ServeMux) {
@@ -143,6 +123,8 @@ func Init(cfg *config.Config) *server.Server {
 		vacancyHandler.Configure(r)
 		specializationHandler.Configure(r)
 		notificationHandler.Configure(r)
+		chatHandler.Configure(r)
+		websocketHandler.Configure(r)
 	})
 
 	return srv

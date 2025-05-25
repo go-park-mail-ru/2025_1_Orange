@@ -38,11 +38,3 @@ type ApplicantProfileUpdate struct {
 	Telegram   string    `json:"telegram" valid:"url,runelength(7|128),optional"`
 	Facebook   string    `json:"facebook" valid:"url,runelength(7|128),optional"`
 }
-
-type ChatShortResponseApplicant struct {
-	ID         int    `json:"id"`
-	FirstName  string `json:"first_name"`
-	LastName   string `json:"last_name"`
-	MiddleName string `json:"middle_name"`
-	AvatarPath string `json:"avatar_path"`
-}

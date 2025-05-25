@@ -186,9 +186,11 @@ type SearchByQueryAndSpecializationsRequest struct {
 	Specializations []string `json:"specializations" valid:"required,min=1,max=10,dive,stringlength(3|50)"`
 }
 
+// easyjson:json
 type VacancyChatResponse struct {
 	ID         int    `json:"id"`
 	EmployerID int    `json:"employer_id"`
+	LogoPath   string `json:"logo_path"`
 	Title      string `json:"title"`
 }
 

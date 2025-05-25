@@ -460,20 +460,21 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 
 func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (entity.Notification, error) {
 	// Проверяем существование вакансии
+	notification := entity.Notification{}
 	vacancy, err := vs.vacanciesRepository.GetByID(ctx, vacancyID)
 	if err != nil {
-		return entity.Notification{}, fmt.Errorf("vacancy not found: %w", err)
+		return notification, fmt.Errorf("vacancy not found: %w", err)
 	}
 
 	hasResponded, err := vs.vacanciesRepository.ResponseExistsForApplicant(ctx, vacancyID, applicantID, resumeID)
 	if err != nil {
-		return entity.Notification{}, fmt.Errorf("failed to check existing responses: %w", err)
+		return notification, fmt.Errorf("failed to check existing responses: %w", err)
 	}
 	if hasResponded {
-		return entity.Notification{}, vs.vacanciesRepository.DeleteResponse(ctx, vacancyID, applicantID, resumeID)
+		return notification, vs.vacanciesRepository.DeleteResponse(ctx, vacancyID, applicantID, resumeID)
 	}
 
-	notification := entity.Notification{
+	notification = entity.Notification{
 		Type:         entity.ApplyNotificationType,
 		SenderID:     applicantID,
 		SenderRole:   entity.ApplicantRole,

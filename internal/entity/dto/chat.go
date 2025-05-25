@@ -2,6 +2,7 @@ package dto
 
 import "time"
 
+// easyjson:json
 type ChatResponse struct {
 	ID        int                  `json:"id"`
 	Vacancy   *VacancyChatResponse `json:"vacancy"`
@@ -10,14 +11,19 @@ type ChatResponse struct {
 	UpdatedAt time.Time            `json:"updated_at"`
 }
 
-type ApplicantChatResponse struct {
-	ID           int                        `json:"id"`
-	Employer     *ChatShortResponseEmployer `json:"employer"`
-	VacancyTitle string                     `json:"vacancy_title"`
+// easyjson:json
+type ChatShortResponse struct {
+	ID           int             `json:"id"`
+	VacancyTitle string          `json:"vacancy_title"`
+	User         ChatUserPreview `json:"user"`
 }
 
-type EmployerChatResponse struct {
-	ID           int                         `json:"id"`
-	Applicant    *ChatShortResponseApplicant `json:"applicant"`
-	VacancyTitle string                      `json:"vacancy_title"`
+// easyjson:json
+type ChatUserPreview struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	AvatarPath string `json:"avatar_path"`
 }
+
+// easyjson:json
+type ChatResponseList []*ChatShortResponse

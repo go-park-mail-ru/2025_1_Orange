@@ -5,8 +5,8 @@ CREATE TABLE chat (
     applicant_id INTEGER NOT NULL REFERENCES applicant(id) ON DELETE CASCADE,
     employer_id INTEGER NOT NULL REFERENCES employer(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (vacancy_id, resume_id, applicant_id, employer_id)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+--     UNIQUE (vacancy_id, resume_id, applicant_id, employer_id)
 );
 
 CREATE TABLE message (

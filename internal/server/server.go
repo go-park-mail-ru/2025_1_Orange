@@ -4,7 +4,6 @@ import (
 	_ "ResuMatch/docs"
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/middleware"
-	"ResuMatch/internal/transport/ws"
 	"context"
 	"net/http"
 	"time"
@@ -15,10 +14,9 @@ import (
 type Server struct {
 	httpServer *http.Server
 	config     *config.Config
-	wsPool     *ws.WebsocketPool
 }
 
-func NewServer(cfg *config.Config, wsPool *ws.WebsocketPool) *Server {
+func NewServer(cfg *config.Config) *Server {
 	return &Server{
 		config: cfg,
 		httpServer: &http.Server{
@@ -27,7 +25,6 @@ func NewServer(cfg *config.Config, wsPool *ws.WebsocketPool) *Server {
 			WriteTimeout:   cfg.HTTP.WriteTimeout,
 			MaxHeaderBytes: cfg.HTTP.MaxHeaderBytes,
 		},
-		wsPool: wsPool,
 	}
 }
 
@@ -39,6 +36,7 @@ func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", subrouter))
 
 	mainRouter.HandleFunc("/swagger/", swagger.WrapHandler)
+	//subrouter.HandleFunc("GET /ws", h.HandleWebsocket)
 	routeConfig(subrouter)
 
 	handler := middleware.CreateMiddlewareChain(

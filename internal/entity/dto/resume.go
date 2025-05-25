@@ -42,6 +42,7 @@ func init() {
 	}))
 }
 
+// easyjson:json
 type CreateResumeRequest struct {
 	AboutMe                   string               `json:"about_me" valid:"stringlength(10|500),optional"`
 	Specialization            string               `json:"specialization" valid:"required,stringlength(3|30)"`
@@ -54,6 +55,7 @@ type CreateResumeRequest struct {
 	WorkExperiences           []WorkExperienceDTO  `json:"work_experiences" valid:"optional"`
 }
 
+// easyjson:json
 type WorkExperienceDTO struct {
 	EmployerName string `json:"employer_name" valid:"required,stringlength(2|50)"`
 	Position     string `json:"position" valid:"required,stringlength(2|50)"`
@@ -65,6 +67,7 @@ type WorkExperienceDTO struct {
 	UntilNow  bool   `json:"until_now" valid:"optional"`
 }
 
+// easyjson:json
 type ResumeResponse struct {
 	ID                        int                      `json:"id"`
 	ApplicantID               int                      `json:"applicant_id"`
@@ -81,6 +84,7 @@ type ResumeResponse struct {
 	WorkExperiences           []WorkExperienceResponse `json:"work_experiences"`
 }
 
+// easyjson:json
 type WorkExperienceResponse struct {
 	ID           int    `json:"id"`
 	EmployerName string `json:"employer_name"`
@@ -94,6 +98,7 @@ type WorkExperienceResponse struct {
 }
 
 // Updated UpdateResumeRequest - similar changes as CreateResumeRequest
+// easyjson:json
 type UpdateResumeRequest struct {
 	AboutMe                   string               `json:"about_me" valid:"stringlength(10|500), optional"`
 	Specialization            string               `json:"specialization" valid:"required,stringlength(3|30)"`
@@ -106,12 +111,14 @@ type UpdateResumeRequest struct {
 	WorkExperiences           []WorkExperienceDTO  `json:"work_experiences" valid:"optional"`
 }
 
+// easyjson:json
 type DeleteResumeResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
 // New DTO for resume list
+// easyjson:json
 type ResumeShortResponse struct {
 	ID             int                       `json:"id"`
 	ApplicantID    int                       `json:"applicant_id,omitempty"` // Keep for backward compatibility
@@ -124,6 +131,7 @@ type ResumeShortResponse struct {
 }
 
 // Добавляем новое DTO для вывода списка резюме соискателя с навыками
+// easyjson:json
 type ResumeApplicantShortResponse struct {
 	ID             int                       `json:"id"`
 	ApplicantID    int                       `json:"applicant_id,omitempty"`
@@ -136,6 +144,7 @@ type ResumeApplicantShortResponse struct {
 	UpdatedAt      string                    `json:"updated_at"`
 }
 
+// easyjson:json
 type WorkExperienceShort struct {
 	ID           int    `json:"id"`
 	EmployerName string `json:"employer_name"`
@@ -152,3 +161,9 @@ type ResumeChatResponse struct {
 	ApplicantID int    `json:"applicant_id"`
 	Profession  string `json:"profession"`
 }
+
+// easyjson:json
+type ResumeApplicantShortResponseList []ResumeApplicantShortResponse
+
+// easyjson:json
+type ResumeShortResponseList []ResumeShortResponse

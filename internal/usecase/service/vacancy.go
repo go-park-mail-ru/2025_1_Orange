@@ -770,14 +770,8 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 	var vacancies []*entity.Vacancy
 	var err error
 
-	// В зависимости от роли пользователя выбираем метод поиска
-	if userRole == "employer" {
-		// Для работодателя ищем только его вакансии
-		vacancies, err = s.vacanciesRepository.SearchVacanciesByEmployerID(ctx, userID, searchQuery, limit, offset)
-	} else {
-		// Для соискателя или неавторизованного пользователя ищем все вакансии
-		vacancies, err = s.vacanciesRepository.SearchVacancies(ctx, searchQuery, limit, offset)
-	}
+	// Для соискателя или неавторизованного пользователя ищем все вакансии
+	vacancies, err = s.vacanciesRepository.SearchVacancies(ctx, searchQuery, limit, offset)
 
 	if err != nil {
 		return nil, err

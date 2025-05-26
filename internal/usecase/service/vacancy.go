@@ -961,16 +961,20 @@ func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.
 		"offset":          offset,
 	}).Info("Комбинированный поиск вакансий по запросу и специализациям")
 
-	// Находим ID специализаций по их названиям
-	specializationIDs, err := s.vacanciesRepository.FindSpecializationIDsByNames(ctx, specializations)
-	if err != nil {
-		return nil, err
+	var specializationIDs []int
+	var err error
+
+	if len(specializations) > 0 {
+		specializationIDs, err = s.vacanciesRepository.FindSpecializationIDsByNames(ctx, specializations)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// Если не найдено ни одной специализации, возвращаем пустой список
-	if len(specializationIDs) == 0 {
-		return []dto.VacancyShortResponse{}, nil
-	}
+	// // Если не найдено ни одной специализации, возвращаем пустой список
+	// if len(specializationIDs) == 0 {
+	// 	return []dto.VacancyShortResponse{}, nil
+	// }
 
 	// Ищем вакансии по текстовому запросу и ID специализаций
 	vacancies, err := s.vacanciesRepository.SearchVacanciesByQueryAndSpecializations(ctx, searchQuery, specializationIDs, limit, offset)

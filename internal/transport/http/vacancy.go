@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type VacancyHandler struct {
@@ -51,7 +52,7 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	vacancyMux.HandleFunc("GET /applicant/{id}/vacancies", h.GetVacanciesByApplicant)
 	vacancyMux.HandleFunc("GET /search", h.SearchVacancies)
 	vacancyMux.HandleFunc("POST /search/specializations", h.SearchVacanciesBySpecializations)
-	vacancyMux.HandleFunc("POST /search/combined", h.SearchVacanciesByQueryAndSpecializations)
+	vacancyMux.HandleFunc("GET /search/combined", h.SearchVacanciesByQueryAndSpecializations)
 	vacancyMux.HandleFunc("GET /applicant/{id}/liked", h.GetLikedVacancies)
 	vacancyMux.HandleFunc("POST /vacancy/{id}/like", h.LikeVacancy)
 	vacancyMux.HandleFunc("GET /vacancy/{id}/response/list", h.GetResponsesOnVacancy)
@@ -784,11 +785,6 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 
 	// Получаем параметр поиска из URL
 	searchQuery := r.URL.Query().Get("query")
-	if searchQuery == "" {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacanciesByQueryAndSpecializations").Inc()
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("параметр query обязателен"))
-		return
-	}
 
 	// Получаем параметры пагинации из URL
 	limitStr := r.URL.Query().Get("limit")
@@ -814,27 +810,94 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 		}
 	}
 
-	// Декодируем тело запроса для получения списка специализаций
-	var searchRequest dto.SearchByQueryAndSpecializationsRequest
-	if err := json.NewDecoder(r.Body).Decode(&searchRequest); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacanciesByQueryAndSpecializations").Inc()
-		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
-		return
+	var specializations []string
+	// Получаем специализации из URL параметра
+	if specsParam := r.URL.Query().Get("specializations"); specsParam != "" {
+		specializations = strings.Split(specsParam, ",")
+
+		// Очищаем от пустых значений
+		var cleanedSpecs []string
+		for _, spec := range specializations {
+			spec = strings.TrimSpace(spec)
+			if spec != "" {
+				cleanedSpecs = append(cleanedSpecs, spec)
+			}
+		}
+		specializations = cleanedSpecs
 	}
 
-	// Санитизация входных данных
-	for i, spec := range searchRequest.Specializations {
-		searchRequest.Specializations[i] = sanitizer.StrictPolicy.Sanitize(spec)
+	// Получаем минимальную зарплату
+	minSalary := 0
+	if minSalaryStr := r.URL.Query().Get("min_salary"); minSalaryStr != "" {
+		minSalary, err = strconv.Atoi(minSalaryStr)
+		if err != nil || minSalary < 0 {
+			utils.WriteError(w, http.StatusBadRequest, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректное значение min_salary: %s", minSalaryStr),
+			))
+			return
+		}
 	}
 
-	// Если список специализаций пуст, возвращаем ошибку
-	if len(searchRequest.Specializations) == 0 {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("список специализаций не может быть пустым"))
-		return
+	// Получаем тип занятости
+	var employment []string
+	if empParam := r.URL.Query().Get("employment"); empParam != "" {
+		employment = strings.Split(empParam, ",")
+		var cleanedEmp []string
+		validEmployment := map[string]bool{
+			"full_time":  true,
+			"part_time":  true,
+			"contract":   true,
+			"internship": true,
+			"freelance":  true,
+			"watch":      true,
+		}
+		for _, emp := range employment {
+			emp = strings.TrimSpace(emp)
+			if emp != "" && validEmployment[emp] {
+				cleanedEmp = append(cleanedEmp, emp)
+			}
+		}
+		if len(cleanedEmp) == 0 && len(employment) > 0 {
+			utils.WriteError(w, http.StatusBadRequest, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректные значения employment: %s", empParam),
+			))
+			return
+		}
+		employment = cleanedEmp
+	}
+
+	// Получаем опыт работы
+	var experience []string
+	if expParam := r.URL.Query().Get("experience"); expParam != "" {
+		experience = strings.Split(expParam, ",")
+		var cleanedExp []string
+		validExperience := map[string]bool{
+			"no_matter":     true,
+			"no_experience": true,
+			"1_3_years":     true,
+			"3_6_years":     true,
+			"6_plus_years":  true,
+		}
+		for _, exp := range experience {
+			exp = strings.TrimSpace(exp)
+			if exp != "" && validExperience[exp] {
+				cleanedExp = append(cleanedExp, exp)
+			}
+		}
+		if len(cleanedExp) == 0 && len(experience) > 0 {
+			utils.WriteError(w, http.StatusBadRequest, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректные значения experience: %s", expParam),
+			))
+			return
+		}
+		experience = cleanedExp
 	}
 
 	// Выполняем комбинированный поиск вакансий
-	vacancies, err := h.vacancy.SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, searchRequest.Specializations, limit, offset)
+	vacancies, err := h.vacancy.SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, specializations, minSalary, employment, experience, limit, offset)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

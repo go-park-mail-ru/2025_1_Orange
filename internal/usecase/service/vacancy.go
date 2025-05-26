@@ -466,7 +466,7 @@ func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, appli
 		return notification, fmt.Errorf("vacancy not found: %w", err)
 	}
 
-	hasResponded, err := vs.vacanciesRepository.ResponseExistsForApplicant(ctx, vacancyID, applicantID, resumeID)
+	hasResponded, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
 	if err != nil {
 		return notification, fmt.Errorf("failed to check existing responses: %w", err)
 	}

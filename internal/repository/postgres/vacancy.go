@@ -1248,13 +1248,6 @@ func (r *VacancyRepository) ResponseExists(ctx context.Context, vacancyID, appli
 	return exists, err
 }
 
-func (r *VacancyRepository) ResponseExistsForApplicant(ctx context.Context, vacancyID, applicantID, resumeID int) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM vacancy_response WHERE vacancy_id = $1 AND applicant_id = $2 AND resume_id = $3)`
-	var exists bool
-	err := r.DB.QueryRowContext(ctx, query, vacancyID, applicantID, resumeID).Scan(&exists)
-	return exists, err
-}
-
 func (r *VacancyRepository) CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error {
 	requestID := utils.GetRequestID(ctx)
 

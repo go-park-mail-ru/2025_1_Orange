@@ -948,7 +948,7 @@ func (s *VacanciesService) SearchVacanciesBySpecializations(ctx context.Context,
 }
 
 // SearchVacanciesByQueryAndSpecializations ищет вакансии по текстовому запросу и списку специализаций
-func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole string, searchQuery string, specializations []string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
+func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole string, searchQuery string, specializations []string, minSalary int, employment, experience []string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -957,9 +957,54 @@ func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.
 		"role":            userRole,
 		"query":           searchQuery,
 		"specializations": specializations,
+		"minSalary":       minSalary,
+		"employment":      employment,
+		"experience":      experience,
 		"limit":           limit,
 		"offset":          offset,
 	}).Info("Комбинированный поиск вакансий по запросу и специализациям")
+
+	// Валидация входных параметров
+	validEmployment := map[string]bool{
+		"full_time":  true,
+		"part_time":  true,
+		"contract":   true,
+		"internship": true,
+		"freelance":  true,
+		"watch":      true,
+	}
+	validExperience := map[string]bool{
+		"no_matter":     true,
+		"no_experience": true,
+		"1_3_years":     true,
+		"3_6_years":     true,
+		"6_plus_years":  true,
+	}
+
+	for _, emp := range employment {
+		if !validEmployment[emp] {
+			return nil, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректное значение employment: %s", emp),
+			)
+		}
+	}
+
+	for _, exp := range experience {
+		if !validExperience[exp] {
+			return nil, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректное значение experience: %s", exp),
+			)
+		}
+	}
+
+	if minSalary < 0 {
+		return nil, entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("минимальная зарплата не может быть отрицательной"),
+		)
+	}
 
 	var specializationIDs []int
 	var err error
@@ -977,7 +1022,7 @@ func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.
 	// }
 
 	// Ищем вакансии по текстовому запросу и ID специализаций
-	vacancies, err := s.vacanciesRepository.SearchVacanciesByQueryAndSpecializations(ctx, searchQuery, specializationIDs, limit, offset)
+	vacancies, err := s.vacanciesRepository.SearchVacanciesByQueryAndSpecializations(ctx, searchQuery, specializationIDs, minSalary, employment, experience, limit, offset)
 	if err != nil {
 		return nil, err
 	}

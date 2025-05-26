@@ -826,8 +826,78 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 		specializations = cleanedSpecs
 	}
 
+	// Получаем минимальную зарплату
+	minSalary := 0
+	if minSalaryStr := r.URL.Query().Get("min_salary"); minSalaryStr != "" {
+		minSalary, err = strconv.Atoi(minSalaryStr)
+		if err != nil || minSalary < 0 {
+			utils.WriteError(w, http.StatusBadRequest, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректное значение min_salary: %s", minSalaryStr),
+			))
+			return
+		}
+	}
+
+	// Получаем тип занятости
+	var employment []string
+	if empParam := r.URL.Query().Get("employment"); empParam != "" {
+		employment = strings.Split(empParam, ",")
+		var cleanedEmp []string
+		validEmployment := map[string]bool{
+			"full_time":  true,
+			"part_time":  true,
+			"contract":   true,
+			"internship": true,
+			"freelance":  true,
+			"watch":      true,
+		}
+		for _, emp := range employment {
+			emp = strings.TrimSpace(emp)
+			if emp != "" && validEmployment[emp] {
+				cleanedEmp = append(cleanedEmp, emp)
+			}
+		}
+		if len(cleanedEmp) == 0 && len(employment) > 0 {
+			utils.WriteError(w, http.StatusBadRequest, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректные значения employment: %s", empParam),
+			))
+			return
+		}
+		employment = cleanedEmp
+	}
+
+	// Получаем опыт работы
+	var experience []string
+	if expParam := r.URL.Query().Get("experience"); expParam != "" {
+		experience = strings.Split(expParam, ",")
+		var cleanedExp []string
+		validExperience := map[string]bool{
+			"no_matter":     true,
+			"no_experience": true,
+			"1_3_years":     true,
+			"3_6_years":     true,
+			"6_plus_years":  true,
+		}
+		for _, exp := range experience {
+			exp = strings.TrimSpace(exp)
+			if exp != "" && validExperience[exp] {
+				cleanedExp = append(cleanedExp, exp)
+			}
+		}
+		if len(cleanedExp) == 0 && len(experience) > 0 {
+			utils.WriteError(w, http.StatusBadRequest, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректные значения experience: %s", expParam),
+			))
+			return
+		}
+		experience = cleanedExp
+	}
+
 	// Выполняем комбинированный поиск вакансий
-	vacancies, err := h.vacancy.SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, specializations, limit, offset)
+	vacancies, err := h.vacancy.SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, specializations, minSalary, employment, experience, limit, offset)
 	if err != nil {
 		utils.WriteAPIError(w, utils.ToAPIError(err))
 		return

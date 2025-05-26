@@ -468,18 +468,18 @@ func (mr *MockVacancyRepositoryMockRecorder) SearchVacanciesByEmployerID(ctx, em
 }
 
 // SearchVacanciesByQueryAndSpecializations mocks base method.
-func (m *MockVacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context.Context, searchQuery string, specializationIDs []int, limit, offset int) ([]*entity.Vacancy, error) {
+func (m *MockVacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context.Context, searchQuery string, specializationIDs []int, minSalary int, employment, experience []string, limit, offset int) ([]*entity.Vacancy, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchVacanciesByQueryAndSpecializations", ctx, searchQuery, specializationIDs, limit, offset)
+	ret := m.ctrl.Call(m, "SearchVacanciesByQueryAndSpecializations", ctx, searchQuery, specializationIDs, minSalary, employment, experience, limit, offset)
 	ret0, _ := ret[0].([]*entity.Vacancy)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SearchVacanciesByQueryAndSpecializations indicates an expected call of SearchVacanciesByQueryAndSpecializations.
-func (mr *MockVacancyRepositoryMockRecorder) SearchVacanciesByQueryAndSpecializations(ctx, searchQuery, specializationIDs, limit, offset any) *gomock.Call {
+func (mr *MockVacancyRepositoryMockRecorder) SearchVacanciesByQueryAndSpecializations(ctx, searchQuery, specializationIDs, minSalary, employment, experience, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchVacanciesByQueryAndSpecializations", reflect.TypeOf((*MockVacancyRepository)(nil).SearchVacanciesByQueryAndSpecializations), ctx, searchQuery, specializationIDs, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchVacanciesByQueryAndSpecializations", reflect.TypeOf((*MockVacancyRepository)(nil).SearchVacanciesByQueryAndSpecializations), ctx, searchQuery, specializationIDs, minSalary, employment, experience, limit, offset)
 }
 
 // SearchVacanciesBySpecializations mocks base method.

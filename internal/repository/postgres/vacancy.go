@@ -2010,13 +2010,16 @@ func (r *VacancyRepository) SearchVacanciesBySpecializations(ctx context.Context
 }
 
 // SearchVacanciesByQueryAndSpecializations ищет вакансии по текстовому запросу и списку ID специализаций
-func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context.Context, searchQuery string, specializationIDs []int, limit int, offset int) ([]*entity.Vacancy, error) {
+func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context.Context, searchQuery string, specializationIDs []int, minSalary int, employment, experience []string, limit int, offset int) ([]*entity.Vacancy, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
 		"requestID":         requestID,
 		"query":             searchQuery,
 		"specializationIDs": specializationIDs,
+		"minSalary":         minSalary,
+		"employment":        employment,
+		"experience":        experience,
 		"limit":             limit,
 		"offset":            offset,
 	}).Info("sql-запрос в БД на комбинированный поиск вакансий SearchVacanciesByQueryAndSpecializations")
@@ -2038,6 +2041,9 @@ func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context
 
 	hasQuery := searchQuery != ""
 	hasSpecializations := len(specializationIDs) > 0
+	hasMinSalary := minSalary > 0
+	hasEmployment := len(employment) > 0
+	hasExperience := len(experience) > 0
 
 	if hasQuery {
 		whereClauses = append(whereClauses, fmt.Sprintf("(v.title ILIKE $%d OR s.name ILIKE $%d OR e.company_name ILIKE $%d)", paramIndex, paramIndex, paramIndex))
@@ -2055,6 +2061,31 @@ func (r *VacancyRepository) SearchVacanciesByQueryAndSpecializations(ctx context
 		whereClauses = append(whereClauses, fmt.Sprintf("v.specialization_id IN (%s)", strings.Join(placeholders, ", ")))
 	}
 
+	if hasMinSalary {
+		whereClauses = append(whereClauses, fmt.Sprintf("v.salary_from >= $%d", paramIndex))
+		params = append(params, minSalary)
+		paramIndex++
+	}
+
+	if hasEmployment {
+		placeholders := make([]string, len(employment))
+		for i, emp := range employment {
+			placeholders[i] = fmt.Sprintf("$%d", paramIndex)
+			params = append(params, emp)
+			paramIndex++
+		}
+		whereClauses = append(whereClauses, fmt.Sprintf("v.employment IN (%s)", strings.Join(placeholders, ", ")))
+	}
+
+	if hasExperience {
+		placeholders := make([]string, len(experience))
+		for i, exp := range experience {
+			placeholders[i] = fmt.Sprintf("$%d", paramIndex)
+			params = append(params, exp)
+			paramIndex++
+		}
+		whereClauses = append(whereClauses, fmt.Sprintf("v.experience IN (%s)", strings.Join(placeholders, ", ")))
+	}
 	// Собираем WHERE-часть
 	if len(whereClauses) > 0 {
 		query += "\nWHERE " + strings.Join(whereClauses, " AND ")

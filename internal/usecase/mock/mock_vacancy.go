@@ -133,10 +133,10 @@ func (mr *MockVacancyMockRecorder) GetLikedVacancies(ctx, applicantID, limit, of
 }
 
 // GetRespondedResumeOnVacancy mocks base method.
-func (m *MockVacancy) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID, limit, offset int) ([]dto.ResumeShortResponse, error) {
+func (m *MockVacancy) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID, limit, offset int) ([]dto.ResumeApplicantShortResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRespondedResumeOnVacancy", ctx, vacancyID, limit, offset)
-	ret0, _ := ret[0].([]dto.ResumeShortResponse)
+	ret0, _ := ret[0].([]dto.ResumeApplicantShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

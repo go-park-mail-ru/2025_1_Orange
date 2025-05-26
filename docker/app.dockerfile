@@ -37,6 +37,9 @@ COPY --from=builder /go/bin/migrate .
 COPY --from=builder /app/docs ./docs
 COPY --from=builder /app/static/templates ./static/templates
 
+RUN apk add --no-cache tzdata libc6-compat
+ENV TZ=Europe/Moscow
+
 # Директория для аватарок
 RUN mkdir -p /app/assets
 

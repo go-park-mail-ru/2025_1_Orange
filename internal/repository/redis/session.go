@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
@@ -13,21 +14,54 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"strconv"
+	"time"
 )
 
 const (
 	userSessionsPrefix = "user_sessions:"
 )
 
+func NewRedisPool(cfg config.RedisConfig) *redis.Pool {
+	address := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+
+	return &redis.Pool{
+		MaxIdle:     10,
+		MaxActive:   100,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			conn, err := redis.Dial("tcp", address,
+				redis.DialPassword(cfg.Password),
+				redis.DialDatabase(cfg.DB),
+				redis.DialConnectTimeout(5*time.Second),
+			)
+			if err != nil {
+				l.Log.WithField("error", err).Error("не удалось установить соединение с Redis")
+				return nil, fmt.Errorf("не удалось установить соединение с Redis: %w", err)
+			}
+
+			// проверка соединения
+			if _, pingErr := conn.Do("PING"); pingErr != nil {
+				closeErr := conn.Close()
+				if closeErr != nil {
+					return nil, fmt.Errorf("не удалось закрыть соединение с Redis: %w", closeErr)
+				}
+				l.Log.WithField("error", pingErr).Error("не удалось выполнить ping Redis")
+				return nil, fmt.Errorf("не удалось выполнить ping Redis: %w", pingErr)
+			}
+			return conn, nil
+		},
+	}
+}
+
 type SessionRepository struct {
-	conn             redis.Conn
+	pool             *redis.Pool
 	sessionAliveTime int
 	ctx              context.Context
 }
 
-func NewSessionRepository(conn redis.Conn, ttl int) (repository.SessionRepository, error) {
+func NewSessionRepository(pool *redis.Pool, ttl int) (repository.SessionRepository, error) {
 	return &SessionRepository{
-		conn:             conn,
+		pool:             pool,
 		sessionAliveTime: ttl,
 		ctx:              context.Background(),
 	}, nil
@@ -42,10 +76,17 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 		"role":      role,
 	}).Info("создание сессии в Redis CreateSession")
 
+	conn := r.pool.Get()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения redis: %v", err)
+		}
+	}()
+
 	sessionToken := uuid.NewString()
 
 	for {
-		exists, err := redis.Int(r.conn.Do("EXISTS", sessionToken))
+		exists, err := redis.Int(conn.Do("EXISTS", sessionToken))
 		if err != nil {
 			metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 			return "", entity.NewError(
@@ -59,7 +100,7 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 		sessionToken = uuid.NewString()
 	}
 
-	_, err := r.conn.Do("SET", sessionToken, fmt.Sprintf("%d:%s", userID, role), "EX", r.sessionAliveTime)
+	_, err := conn.Do("SET", sessionToken, fmt.Sprintf("%d:%s", userID, role), "EX", r.sessionAliveTime)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 		return "", entity.NewError(
@@ -69,7 +110,7 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 	}
 
 	userSessionsKey := userSessionsPrefix + strconv.Itoa(userID) + ":" + role
-	_, err = r.conn.Do("SADD", userSessionsKey, sessionToken)
+	_, err = conn.Do("SADD", userSessionsKey, sessionToken)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 		return "", entity.NewError(
@@ -78,7 +119,7 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 		)
 	}
 
-	_, err = r.conn.Do("EXPIRE", userSessionsKey, r.sessionAliveTime)
+	_, err = conn.Do("EXPIRE", userSessionsKey, r.sessionAliveTime)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "CreateSession").Inc()
 		return "", entity.NewError(
@@ -86,7 +127,6 @@ func (r *SessionRepository) CreateSession(ctx context.Context, userID int, role 
 			fmt.Errorf("не удалось установить TTL на сессию пользователя с id=%d, role=%s :%w", userID, role, err),
 		)
 	}
-
 	return sessionToken, nil
 }
 
@@ -98,7 +138,14 @@ func (r *SessionRepository) GetSession(ctx context.Context, sessionToken string)
 		"sessionToken": sessionToken,
 	}).Info("получение сессии в Redis GetSession")
 
-	reply, err := redis.String(r.conn.Do("GET", sessionToken))
+	conn := r.pool.Get()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения redis: %v", err)
+		}
+	}()
+
+	reply, err := redis.String(conn.Do("GET", sessionToken))
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "GetSession").Inc()
 		if errors.Is(err, redis.ErrNil) {
@@ -135,7 +182,14 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken stri
 		"sessionToken": sessionToken,
 	}).Info("удаление сессии в Redis DeleteSession")
 
-	reply, err := redis.String(r.conn.Do("GET", sessionToken))
+	conn := r.pool.Get()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения redis: %v", err)
+		}
+	}()
+
+	reply, err := redis.String(conn.Do("GET", sessionToken))
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteSession").Inc()
 		if errors.Is(err, redis.ErrNil) {
@@ -147,7 +201,7 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken stri
 		)
 	}
 
-	_, err = r.conn.Do("DEL", sessionToken)
+	_, err = conn.Do("DEL", sessionToken)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteSession").Inc()
 		return entity.NewError(
@@ -168,7 +222,7 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionToken stri
 	}
 
 	userSessionsKey := userSessionsPrefix + strconv.Itoa(userID) + ":" + role
-	_, err = r.conn.Do("SREM", userSessionsKey, sessionToken)
+	_, err = conn.Do("SREM", userSessionsKey, sessionToken)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteSession").Inc()
 		return entity.NewError(
@@ -189,9 +243,16 @@ func (r *SessionRepository) DeleteAllSessions(ctx context.Context, userID int, r
 		"role":      role,
 	}).Info("удаление всех активных сессий пользователя в Redis DeleteAllSessions")
 
+	conn := r.pool.Get()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения redis: %v", err)
+		}
+	}()
+
 	userSessionsKey := userSessionsPrefix + strconv.Itoa(userID) + ":" + role
 
-	sessions, err := redis.Strings(r.conn.Do("SMEMBERS", userSessionsKey))
+	sessions, err := redis.Strings(conn.Do("SMEMBERS", userSessionsKey))
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteAllSessions").Inc()
 		return entity.NewError(
@@ -201,7 +262,7 @@ func (r *SessionRepository) DeleteAllSessions(ctx context.Context, userID int, r
 	}
 
 	for _, session := range sessions {
-		_, err = r.conn.Do("DEL", session)
+		_, err = conn.Do("DEL", session)
 		if err != nil {
 			metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteAllSessions").Inc()
 			return entity.NewError(
@@ -211,7 +272,7 @@ func (r *SessionRepository) DeleteAllSessions(ctx context.Context, userID int, r
 		}
 	}
 
-	_, err = r.conn.Do("DEL", userSessionsKey)
+	_, err = conn.Do("DEL", userSessionsKey)
 	if err != nil {
 		metrics.LayerErrorCounter.WithLabelValues("Session Repository", "DeleteAllSessions").Inc()
 		return entity.NewError(

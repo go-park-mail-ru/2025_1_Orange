@@ -8,7 +8,6 @@ import (
 	authPROTO "ResuMatch/internal/transport/grpc/auth/proto"
 	"ResuMatch/internal/transport/grpc/interceptors"
 	"ResuMatch/internal/usecase/service"
-	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -27,14 +26,9 @@ func main() {
 
 	metrics.Init("resumatch")
 
-	// Redis Connection
-	sessionConn, err := connector.NewRedisConnection(cfg.Redis)
-	if err != nil {
-		l.Log.Errorf("Не удалось установить соедиение с Redis: %v", err)
-	}
-
 	// Redis repository
-	sessionRepo, err := redis.NewSessionRepository(sessionConn, cfg.Redis.TTL)
+	connPool := redis.NewRedisPool(cfg.Redis)
+	sessionRepo, err := redis.NewSessionRepository(connPool, cfg.Redis.TTL)
 	if err != nil {
 		l.Log.Errorf("Не удалось создать репозиторий сессий: %v", err)
 	}

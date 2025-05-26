@@ -487,7 +487,7 @@ func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, appli
 	return notification, vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)
 }
 
-func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID int, limit, offset int) ([]dto.ResumeShortResponse, error) {
+func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID int, limit, offset int) ([]dto.ResumeApplicantShortResponse, error) {
 
 	requestID := utils.GetRequestID(ctx)
 
@@ -501,7 +501,7 @@ func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vac
 		return nil, fmt.Errorf("failed to get vacancy responses: %w", err)
 	}
 
-	response := make([]dto.ResumeShortResponse, 0, len(responses))
+	response := make([]dto.ResumeApplicantShortResponse, 0, len(responses))
 
 	for _, r := range responses {
 		resume, err := vs.resumeRepository.GetByID(ctx, r.ResumeID)
@@ -544,9 +544,26 @@ func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vac
 			continue
 		}
 
-		shortResume := dto.ResumeShortResponse{
+		skills, err := vs.resumeRepository.GetSkillsByResumeID(ctx, resume.ID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"resumeID":  resume.ID,
+				"error":     err,
+			}).Error("ошибка при получении навыков резюме")
+			continue
+		}
+
+		// Преобразуем навыки в массив строк
+		skillNames := make([]string, 0, len(skills))
+		for _, skill := range skills {
+			skillNames = append(skillNames, skill.Name)
+		}
+
+		shortResume := dto.ResumeApplicantShortResponse{
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
+			Skills:         skillNames,
 			Specialization: specializationName,
 			Profession:     resume.Profession,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),

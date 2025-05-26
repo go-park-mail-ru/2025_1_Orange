@@ -56,6 +56,7 @@ type ResumeService struct {
 	applicantRepository      repository.ApplicantRepository
 	applicantService         usecase.Applicant
 	cfg                      config.ResumeConfig
+	template                 *template.Template
 }
 
 // Update the constructor to include the new dependencies
@@ -67,13 +68,41 @@ func NewResumeService(
 	applicantService usecase.Applicant,
 	cfg config.ResumeConfig,
 ) usecase.ResumeUsecase {
-	return &ResumeService{
+	s := &ResumeService{
 		resumeRepository:         resumeRepo,
 		skillRepository:          skillRepo,
 		specializationRepository: specializationRepo,
 		applicantRepository:      applicantRepo,
 		applicantService:         applicantService,
 		cfg:                      cfg,
+	}
+
+	s.initTemplate()
+
+	go s.warmupGotenberg()
+	return s
+}
+
+func (s *ResumeService) initTemplate() {
+	funcMap := template.FuncMap{
+		"safeURL": func(s string) template.URL {
+			return template.URL(s)
+		},
+	}
+
+	templatePath := filepath.Join(s.cfg.StaticPath, s.cfg.StaticFile)
+	tmpl, err := template.New(s.cfg.StaticFile).Funcs(funcMap).ParseFiles(templatePath)
+	if err != nil {
+		l.Log.Errorf("Не удалось распарсить шаблон резюме: %v", err)
+	}
+
+	s.template = tmpl
+}
+
+func (s *ResumeService) warmupGotenberg() {
+	_, err := utils.GeneratePDF("<html><body>Warmup</body></html>", s.cfg)
+	if err != nil {
+		l.Log.Errorf("Не удалось сделать предзапрос к Gotenberg: %v", err)
 	}
 }
 
@@ -1098,19 +1127,8 @@ func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID, userID int, 
 }
 
 func (s *ResumeService) renderTemplate(data *ResumeTemplateData) (string, error) {
-	funcMap := template.FuncMap{
-		"safeURL": func(s string) template.URL {
-			return template.URL(s)
-		},
-	}
-	templatePath := filepath.Join(s.cfg.StaticPath, s.cfg.StaticFile)
-	tmpl, err := template.New(s.cfg.StaticFile).Funcs(funcMap).ParseFiles(templatePath)
-	if err != nil {
-		return "", err
-	}
-
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
+	if err := s.template.Execute(&buf, data); err != nil {
 		return "", err
 	}
 

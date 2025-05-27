@@ -3,9 +3,9 @@ port: "8083"
 metric_port: ":8096"
 minio:
   internal_endpoint: "minio:9000"
-  public_endpoint: "localhost:9000"
+  public_endpoint: "resumatch.tech"
   use_ssl: false
-  scheme: "http"
+  scheme: "https"
   bucket: "assets"
 postgres:
   host: "localhost"

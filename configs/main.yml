@@ -5,7 +5,7 @@ http:
   writeTimeout: "10s"
   maxHeaderBytes: 1048576
   corsAllowedOrigins:
-    - "http://localhost:8001"
+    - "https://resumatch.tech"
 
 microservices:
   auth_service:

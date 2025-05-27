@@ -1,0 +1,39 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Prepare dependencies
+        run: go mod tidy
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.1.2
+
+  deploy:
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Deploy with SSH to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+              cd /home/ubuntu/backend/2025_1_Orange
+              sudo docker compose down app auth static postgres redis minio gotenberg orange-nginx
+              git checkout main
+              git pull origin main
+              sudo docker compose up --build
+              sudo docker compose up orange-nginx

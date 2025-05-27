@@ -39,7 +39,7 @@ jobs:
             sudo docker compose down resumatch auth static postgres redis minio gotenberg || exit 1
             git checkout main || exit 1
             git pull origin main || exit 1
-            sudo docker compose up --build || exit 1
+            sudo docker compose up -d --build || exit 1
             cd /home/ubuntu/front/2025_1_Orange
-            sudo docker compose up nginx || exit 1
+            sudo docker compose up -d nginx || exit 1
             cd /home/ubuntu/backend/2025_1_Orange

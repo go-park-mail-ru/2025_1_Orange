@@ -6,8 +6,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
+
+	// "regexp"
 	"testing"
 	"time"
 
@@ -41,115 +42,155 @@ func TestApplicantRepository_CreateApplicant(t *testing.T) {
 	}
 
 	testQuery := `
-        INSERT INTO applicant (email, password_hashed, password_salt, first_name, last_name)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO applicant \(email, password_hashed, password_salt, first_name, last_name\)
+        VALUES \(\$1, \$2, \$3, \$4, \$5\)
         RETURNING id, email, password_hashed, password_salt, first_name, last_name
-	`
+    `
 
 	testCases := []struct {
 		name           string
-		applicant      *entity.Applicant
+		email          string
+		firstName      string
+		lastName       string
+		passwordHash   []byte
+		passwordSalt   []byte
 		expectedResult *entity.Applicant
 		expectedErr    error
-		setupMock      func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string)
+		setupMock      func(mock sqlmock.Sqlmock)
 	}{
 		{
-			name:           "Успешное создание соискателя",
-			applicant:      createTestApplicant(1, "test@example.com", "Николай", "Иванов", []byte("hash"), []byte("salt")),
-			expectedResult: createTestApplicant(1, "test@example.com", "Николай", "Иванов", []byte("hash"), []byte("salt")),
-			expectedErr:    nil,
-			setupMock: func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName).
+			name:         "Успешное создание соискателя",
+			email:        "test@example.com",
+			firstName:    "Николай",
+			lastName:     "Иванов",
+			passwordHash: []byte("hash"),
+			passwordSalt: []byte("salt"),
+			expectedResult: createTestApplicant(1, "test@example.com", "Николай", "Иванов",
+				[]byte("hash"), []byte("salt")),
+			expectedErr: nil,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(testQuery).
+					WithArgs("test@example.com", []byte("hash"), []byte("salt"), "Николай", "Иванов").
 					WillReturnRows(sqlmock.NewRows([]string{"id", "email", "password_hashed", "password_salt", "first_name", "last_name"}).
-						AddRow(1, applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName))
+						AddRow(1, "test@example.com", []byte("hash"), []byte("salt"), "Николай", "Иванов"))
+				mock.ExpectClose()
 			},
 		},
 		{
 			name:           "Email уже занят",
-			applicant:      createTestApplicant(1, "existing@example.com", "Николай", "Иванов", []byte("hash"), []byte("salt")),
+			email:          "existing@example.com",
+			firstName:      "Николай",
+			lastName:       "Иванов",
+			passwordHash:   []byte("hash"),
+			passwordSalt:   []byte("salt"),
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrAlreadyExists,
 				errors.New("соискатель с таким email уже зарегистрирован"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(testQuery).
+					WithArgs("existing@example.com", []byte("hash"), []byte("salt"), "Николай", "Иванов").
 					WillReturnError(&pq.Error{Code: entity.PSQLUniqueViolation})
+				mock.ExpectClose()
 			},
 		},
 		{
 			name:           "Отсутствует обязательное поле",
-			applicant:      createTestApplicant(1, "", "Николай", "Иванов", []byte("hash"), []byte("salt")),
+			email:          "",
+			firstName:      "Николай",
+			lastName:       "Иванов",
+			passwordHash:   []byte("hash"),
+			passwordSalt:   []byte("salt"),
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
 				errors.New("обязательное поле отсутствует"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(testQuery).
+					WithArgs("", []byte("hash"), []byte("salt"), "Николай", "Иванов").
 					WillReturnError(&pq.Error{Code: entity.PSQLNotNullViolation})
+				mock.ExpectClose()
 			},
 		},
 		{
 			name:           "Проверка CHECK ограничения",
-			applicant:      createTestApplicant(1, "existing@example.com", "Николай", "Иванов", []byte("hash"), []byte("salt")),
+			email:          "existing@example.com",
+			firstName:      "Николай",
+			lastName:       "Иванов",
+			passwordHash:   []byte("hash"),
+			passwordSalt:   []byte("salt"),
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
 				fmt.Errorf("неправильные данные"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(testQuery).
+					WithArgs("existing@example.com", []byte("hash"), []byte("salt"), "Николай", "Иванов").
 					WillReturnError(&pq.Error{Code: entity.PSQLCheckViolation})
+				mock.ExpectClose()
 			},
 		},
 		{
 			name:           "Неверный формат данных",
-			applicant:      createTestApplicant(1, "@user.mail.ru", "Николай", "Иванов", []byte("очень много байтов для хеша пароля, так что будет ошибка..."), []byte("salt")),
+			email:          "@user.mail.ru",
+			firstName:      "Николай",
+			lastName:       "Иванов",
+			passwordHash:   []byte("очень много байтов для хеша пароля, так что будет ошибка..."),
+			passwordSalt:   []byte("salt"),
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrBadRequest,
 				fmt.Errorf("неправильный формат данных"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(testQuery).
+					WithArgs("@user.mail.ru", []byte("очень много байтов для хеша пароля, так что будет ошибка..."), []byte("salt"), "Николай", "Иванов").
 					WillReturnError(&pq.Error{Code: entity.PSQLDatatypeViolation})
+				mock.ExpectClose()
 			},
 		},
 		{
 			name:           "Неизвестная ошибка сервера",
-			applicant:      createTestApplicant(1, "@user.mail.ru", "Николай", "Иванов", []byte("hash"), []byte("salt")),
+			email:          "@user.mail.ru",
+			firstName:      "Николай",
+			lastName:       "Иванов",
+			passwordHash:   []byte("hash"),
+			passwordSalt:   []byte("salt"),
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
 				errors.New("неизвестная ошибка при создании соискателя err=pq: test pq error"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(testQuery).
+					WithArgs("@user.mail.ru", []byte("hash"), []byte("salt"), "Николай", "Иванов").
 					WillReturnError(&pq.Error{
 						Code:    "12345",
 						Message: "test pq error",
 					})
+				mock.ExpectClose()
 			},
 		},
 		{
 			name:           "Обычная ошибка (не PostgreSQL)",
-			applicant:      createTestApplicant(1, "test@example.com", "Николай", "Иванов", []byte("hash"), []byte("salt")),
+			email:          "test@example.com",
+			firstName:      "Николай",
+			lastName:       "Иванов",
+			passwordHash:   []byte("hash"),
+			passwordSalt:   []byte("salt"),
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
 				errors.New("ошибка при создании соискателя: test non-pq error"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, applicant *entity.Applicant, query string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(applicant.Email, applicant.PasswordHash, applicant.PasswordSalt, applicant.FirstName, applicant.LastName).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(testQuery).
+					WithArgs("test@example.com", []byte("hash"), []byte("salt"), "Николай", "Иванов").
 					WillReturnError(errors.New("test non-pq error"))
+				mock.ExpectClose()
 			},
 		},
 	}
@@ -162,23 +203,18 @@ func TestApplicantRepository_CreateApplicant(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
-
 			repo := &ApplicantRepository{DB: db}
 
-			tc.setupMock(mock, tc.applicant, testQuery)
+			tc.setupMock(mock)
 
 			ctx := context.Background()
 			result, err := repo.CreateApplicant(
 				ctx,
-				tc.applicant.Email,
-				tc.applicant.FirstName,
-				tc.applicant.LastName,
-				tc.applicant.PasswordHash,
-				tc.applicant.PasswordSalt,
+				tc.email,
+				tc.firstName,
+				tc.lastName,
+				tc.passwordHash,
+				tc.passwordSalt,
 			)
 
 			if tc.expectedErr != nil {
@@ -190,6 +226,8 @@ func TestApplicantRepository_CreateApplicant(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
 			}
+
+			require.NoError(t, db.Close())
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
@@ -201,12 +239,12 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 	fixedTime := time.Date(2025, 4, 2, 12, 0, 0, 0, time.UTC)
 
 	query := `
-		SELECT id, first_name, last_name, middle_name, city_id, 
-		       birth_date, sex, email, status, quote, vk,
-		       telegram, facebook, avatar_id,
-		       password_hashed, password_salt, created_at, updated_at
-		FROM applicant WHERE id = $1
-	`
+        SELECT id, first_name, last_name, middle_name, city_id,
+               birth_date, sex, email, status, quote, vk,
+               telegram, facebook, avatar_id,
+               password_hashed, password_salt, created_at, updated_at
+        FROM applicant WHERE id = \$1
+    `
 
 	columns := []string{
 		"id", "first_name", "last_name", "middle_name", "city_id",
@@ -220,7 +258,7 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 		id             int
 		expectedResult *entity.Applicant
 		expectedErr    error
-		setupMock      func(mock sqlmock.Sqlmock, id int)
+		setupMock      func(mock sqlmock.Sqlmock)
 	}{
 		{
 			name: "Успешное получение соискателя по ID",
@@ -236,9 +274,9 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 				PasswordSalt: []byte("salt"),
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, id int) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(id).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs(5).
 					WillReturnRows(sqlmock.NewRows(columns).AddRow(
 						5,
 						"Николай",
@@ -259,6 +297,7 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 						sql.NullTime{Time: fixedTime, Valid: true},
 						sql.NullTime{Time: fixedTime, Valid: true},
 					))
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -276,9 +315,9 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 				PasswordSalt: []byte("salt"),
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, id int) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(id).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs(5).
 					WillReturnRows(sqlmock.NewRows(columns).AddRow(
 						5,
 						"Николай",
@@ -299,6 +338,7 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 						sql.NullTime{Time: fixedTime, Valid: true},
 						sql.NullTime{Time: fixedTime, Valid: true},
 					))
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -309,10 +349,11 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 				entity.ErrNotFound,
 				fmt.Errorf("соискатель с id=777 не найден"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, id int) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(id).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs(777).
 					WillReturnError(sql.ErrNoRows)
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -323,10 +364,11 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 				entity.ErrInternal,
 				fmt.Errorf("не удалось получить соискателя по id=5"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, id int) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(id).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs(5).
 					WillReturnError(errors.New("database connection error"))
+				mock.ExpectClose()
 			},
 		},
 	}
@@ -339,16 +381,11 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
-
-			tc.setupMock(mock, tc.id)
-
 			repo := &ApplicantRepository{DB: db}
-			ctx := context.Background()
 
+			tc.setupMock(mock)
+
+			ctx := context.Background()
 			result, err := repo.GetApplicantByID(ctx, tc.id)
 
 			if tc.expectedErr != nil {
@@ -360,6 +397,8 @@ func TestApplicantRepository_GetApplicantByID(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
 			}
+
+			require.NoError(t, db.Close())
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
@@ -371,12 +410,12 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 	fixedTime := time.Date(2025, 4, 2, 12, 0, 0, 0, time.UTC)
 
 	query := `
-		SELECT id, first_name, last_name, middle_name, city_id, 
-		       birth_date, sex, email, status, quote, vk,
-		       telegram, facebook, avatar_id,
-		       password_hashed, password_salt, created_at, updated_at
-		FROM applicant WHERE email = $1
-	`
+        SELECT id, first_name, last_name, middle_name, city_id,
+               birth_date, sex, email, status, quote, vk,
+               telegram, facebook, avatar_id,
+               password_hashed, password_salt, created_at, updated_at
+        FROM applicant WHERE email = \$1
+    `
 
 	columns := []string{
 		"id", "first_name", "last_name", "middle_name", "city_id",
@@ -390,7 +429,7 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 		email          string
 		expectedResult *entity.Applicant
 		expectedErr    error
-		setupMock      func(mock sqlmock.Sqlmock, email string)
+		setupMock      func(mock sqlmock.Sqlmock)
 	}{
 		{
 			name:  "Успешное получение соискателя по Email",
@@ -406,9 +445,9 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 				PasswordSalt: []byte("salt"),
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, email string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(email).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs("ivan@example.com").
 					WillReturnRows(sqlmock.NewRows(columns).AddRow(
 						5,
 						"Николай",
@@ -429,6 +468,7 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 						sql.NullTime{Time: fixedTime, Valid: true},
 						sql.NullTime{Time: fixedTime, Valid: true},
 					))
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -446,9 +486,9 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 				PasswordSalt: []byte("salt"),
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, email string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(email).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs("ivan@example.com").
 					WillReturnRows(sqlmock.NewRows(columns).AddRow(
 						5,
 						"Николай",
@@ -469,6 +509,7 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 						sql.NullTime{Time: fixedTime, Valid: true},
 						sql.NullTime{Time: fixedTime, Valid: true},
 					))
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -479,10 +520,11 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 				entity.ErrNotFound,
 				fmt.Errorf("соискатель с email=unknown@example.com не найден"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, email string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(email).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs("unknown@example.com").
 					WillReturnError(sql.ErrNoRows)
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -493,10 +535,11 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 				entity.ErrInternal,
 				fmt.Errorf("не удалось найти соискателя с email=ivan@example.com"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, email string) {
-				mock.ExpectQuery(regexp.QuoteMeta(query)).
-					WithArgs(email).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(query).
+					WithArgs("ivan@example.com").
 					WillReturnError(errors.New("database connection error"))
+				mock.ExpectClose()
 			},
 		},
 	}
@@ -509,16 +552,11 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
-
-			tc.setupMock(mock, tc.email)
-
 			repo := &ApplicantRepository{DB: db}
-			ctx := context.Background()
 
+			tc.setupMock(mock)
+
+			ctx := context.Background()
 			result, err := repo.GetApplicantByEmail(ctx, tc.email)
 
 			if tc.expectedErr != nil {
@@ -530,6 +568,8 @@ func TestApplicantRepository_GetApplicantByEmail(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
 			}
+
+			require.NoError(t, db.Close())
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
@@ -543,7 +583,7 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 		userID      int
 		fields      map[string]interface{}
 		expectedErr error
-		setupMock   func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{})
+		setupMock   func(mock sqlmock.Sqlmock)
 	}{
 		{
 			name:   "Успешное обновление информации соискателя",
@@ -554,17 +594,12 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				"quote":      "Новый статус",
 			},
 			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET first_name = $1, last_name = $2, quote = $3 WHERE id = $4"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["first_name"],
-						fields["last_name"],
-						fields["quote"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET first_name = \$1, last_name = \$2, quote = \$3 WHERE id = \$4`
+				mock.ExpectExec(query).
+					WithArgs("Николай", "Петров", "Новый статус", 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -577,18 +612,14 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrBadRequest,
 				fmt.Errorf("обязательное поле отсутствует"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET first_name = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["first_name"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET first_name = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs(nil, 3).
 					WillReturnError(&pq.Error{Code: entity.PSQLNotNullViolation})
+				mock.ExpectClose()
 			},
 		},
-
 		{
 			name:   "Ошибка DATA TYPE",
 			userID: 3,
@@ -599,15 +630,12 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrBadRequest,
 				fmt.Errorf("неправильный формат данных"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET birth_date = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["birth_date"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET birth_date = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs("29 августа", 3).
 					WillReturnError(&pq.Error{Code: entity.PSQLDatatypeViolation})
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -620,15 +648,12 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrBadRequest,
 				fmt.Errorf("неправильные данные"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET first_name = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["first_name"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET first_name = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs(strings.Repeat("a", 50), 1).
 					WillReturnError(&pq.Error{Code: entity.PSQLCheckViolation})
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -641,15 +666,12 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrAlreadyExists,
 				fmt.Errorf("ошибка уникальности"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET vk = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["vk"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET vk = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs("https://vk.com/existing", 1).
 					WillReturnError(&pq.Error{Code: entity.PSQLUniqueViolation})
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -662,18 +684,15 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrInternal,
 				fmt.Errorf("неизвестная ошибка при обновлении соискателя err=pq: unknown error"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET quote = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["quote"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET quote = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs("Новая цитата", 1).
 					WillReturnError(&pq.Error{
 						Code:    "99999",
 						Message: "unknown error",
 					})
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -686,15 +705,12 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrInternal,
 				fmt.Errorf("не удалось обновить соискателя с id=8"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET telegram = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["telegram"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET telegram = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs("@newtelegram", 8).
 					WillReturnError(errors.New("connection error"))
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -707,15 +723,12 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrInternal,
 				fmt.Errorf("не удалось получить обновленные строки при обновлении соискателя с id=1"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET first_name = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["first_name"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET first_name = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs("Артем", 1).
 					WillReturnResult(&mockResultWithError{})
+				mock.ExpectClose()
 			},
 		},
 		{
@@ -728,15 +741,12 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				entity.ErrInternal,
 				fmt.Errorf("не удалось найти при обновлении соискателя с id=1"),
 			),
-			setupMock: func(mock sqlmock.Sqlmock, userID int, fields map[string]interface{}) {
-				query := "UPDATE applicant SET quote = $1 WHERE id = $2"
-
-				mock.ExpectExec(regexp.QuoteMeta(query)).
-					WithArgs(
-						fields["quote"],
-						userID,
-					).
+			setupMock: func(mock sqlmock.Sqlmock) {
+				query := `UPDATE applicant SET quote = \$1 WHERE id = \$2`
+				mock.ExpectExec(query).
+					WithArgs("Не обновилось", 1).
 					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectClose()
 			},
 		},
 	}
@@ -749,13 +759,9 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 
-			defer func() {
-				err := db.Close()
-				require.NoError(t, err)
-			}()
-
 			repo := &ApplicantRepository{DB: db}
-			tc.setupMock(mock, tc.userID, tc.fields)
+
+			tc.setupMock(mock)
 
 			ctx := context.Background()
 			err = repo.UpdateApplicant(ctx, tc.userID, tc.fields)
@@ -767,6 +773,7 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 				require.NoError(t, err)
 			}
 
+			require.NoError(t, db.Close())
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}

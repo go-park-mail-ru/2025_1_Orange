@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -38,13 +37,13 @@ func (r *SpecializationRepository) GetByID(ctx context.Context, id int) (*entity
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "GetByID").Inc()
+
 		return nil, entity.NewError(
 			entity.ErrNotFound,
 			fmt.Errorf("специализация с id=%d не найдена", id),
 		)
 	} else if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "GetByID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"id":        id,
@@ -71,7 +70,7 @@ func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Special
 
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "GetAll").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -86,7 +85,7 @@ func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Special
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "GetAll").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -97,7 +96,7 @@ func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Special
 	for rows.Next() {
 		var specialization entity.Specialization
 		if err := rows.Scan(&specialization.ID, &specialization.Name); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "GetAll").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -112,7 +111,7 @@ func (r *SpecializationRepository) GetAll(ctx context.Context) ([]entity.Special
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "GetAll").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -151,7 +150,7 @@ func (r *SpecializationRepository) GetSpecializationSalaries(ctx context.Context
 
 	rows, err := r.DB.QueryContext(ctx, query)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -166,7 +165,7 @@ func (r *SpecializationRepository) GetSpecializationSalaries(ctx context.Context
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -183,7 +182,7 @@ func (r *SpecializationRepository) GetSpecializationSalaries(ctx context.Context
 			&specialization.MaxSalary,
 			&specialization.AvgSalary,
 		); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -198,7 +197,7 @@ func (r *SpecializationRepository) GetSpecializationSalaries(ctx context.Context
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Specialization Repository", "getSpecializationSalaries").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,

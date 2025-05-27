@@ -187,4 +187,12 @@ type SearchByQueryAndSpecializationsRequest struct {
 }
 
 // easyjson:json
+type VacancyChatResponse struct {
+	ID         int    `json:"id"`
+	EmployerID int    `json:"employer_id"`
+	LogoPath   string `json:"logo_path"`
+	Title      string `json:"title"`
+}
+
+// easyjson:json
 type VacancyShortResponseList []VacancyShortResponse

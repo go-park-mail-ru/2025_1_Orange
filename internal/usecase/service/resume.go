@@ -56,6 +56,7 @@ type ResumeService struct {
 	applicantRepository      repository.ApplicantRepository
 	applicantService         usecase.Applicant
 	cfg                      config.ResumeConfig
+	template                 *template.Template
 }
 
 // Update the constructor to include the new dependencies
@@ -67,13 +68,41 @@ func NewResumeService(
 	applicantService usecase.Applicant,
 	cfg config.ResumeConfig,
 ) usecase.ResumeUsecase {
-	return &ResumeService{
+	s := &ResumeService{
 		resumeRepository:         resumeRepo,
 		skillRepository:          skillRepo,
 		specializationRepository: specializationRepo,
 		applicantRepository:      applicantRepo,
 		applicantService:         applicantService,
 		cfg:                      cfg,
+	}
+
+	s.initTemplate()
+
+	go s.warmupGotenberg()
+	return s
+}
+
+func (s *ResumeService) initTemplate() {
+	funcMap := template.FuncMap{
+		"safeURL": func(s string) template.URL {
+			return template.URL(s)
+		},
+	}
+
+	templatePath := filepath.Join(s.cfg.StaticPath, s.cfg.StaticFile)
+	tmpl, err := template.New(s.cfg.StaticFile).Funcs(funcMap).ParseFiles(templatePath)
+	if err != nil {
+		l.Log.Errorf("Не удалось распарсить шаблон резюме: %v", err)
+	}
+
+	s.template = tmpl
+}
+
+func (s *ResumeService) warmupGotenberg() {
+	_, err := utils.GeneratePDF("<html><body>Warmup</body></html>", s.cfg)
+	if err != nil {
+		l.Log.Errorf("Не удалось сделать предзапрос к Gotenberg: %v", err)
 	}
 }
 
@@ -1056,58 +1085,50 @@ func (s *ResumeService) SearchResumesByProfession(ctx context.Context, userID in
 
 func (s *ResumeService) GetResumePDF(ctx context.Context, resumeID, userID int, role string) ([]byte, entity.Notification, error) {
 	resume, err := s.GetByID(ctx, resumeID)
+	notification := entity.Notification{}
 	if err != nil {
-		return nil, entity.Notification{}, err
+		return nil, notification, err
 	}
 
 	applicant, err := s.applicantService.GetUser(ctx, resume.ApplicantID)
 	if err != nil {
-		return nil, entity.Notification{}, err
+		return nil, notification, err
 	}
 
 	templateData, err := s.prepareResumeTemplateData(applicant, resume)
 	if err != nil {
-		return nil, entity.Notification{}, err
+		return nil, notification, err
 	}
 
 	htmlContent, err := s.renderTemplate(templateData)
 	if err != nil {
-		return nil, entity.Notification{}, entity.NewError(entity.ErrInternal, err)
+		return nil, notification, entity.NewError(entity.ErrInternal, err)
 	}
 
 	pdfBytes, err := utils.GeneratePDF(htmlContent, s.cfg)
 	if err != nil {
-		return nil, entity.Notification{}, entity.NewError(entity.ErrInternal, err)
+		return nil, notification, entity.NewError(entity.ErrInternal, err)
 	}
 
 	senderType := entity.AllowedUserRoles[role]
 
-	notification := entity.Notification{
-		Type:         entity.DownloadResumeType,
-		SenderID:     userID,
-		SenderRole:   senderType,
-		ReceiverID:   resume.ApplicantID,
-		ReceiverRole: entity.ApplicantRole,
-		ObjectID:     resume.ID,
-		ResumeID:     resume.ID,
+	if senderType != entity.ApplicantRole {
+		notification = entity.Notification{
+			Type:         entity.DownloadResumeType,
+			SenderID:     userID,
+			SenderRole:   senderType,
+			ReceiverID:   resume.ApplicantID,
+			ReceiverRole: entity.ApplicantRole,
+			ObjectID:     resume.ID,
+			ResumeID:     resume.ID,
+		}
 	}
 	return pdfBytes, notification, nil
 }
 
 func (s *ResumeService) renderTemplate(data *ResumeTemplateData) (string, error) {
-	funcMap := template.FuncMap{
-		"safeURL": func(s string) template.URL {
-			return template.URL(s)
-		},
-	}
-	templatePath := filepath.Join(s.cfg.StaticPath, s.cfg.StaticFile)
-	tmpl, err := template.New(s.cfg.StaticFile).Funcs(funcMap).ParseFiles(templatePath)
-	if err != nil {
-		return "", err
-	}
-
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
+	if err := s.template.Execute(&buf, data); err != nil {
 		return "", err
 	}
 

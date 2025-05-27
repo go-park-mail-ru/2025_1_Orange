@@ -28,7 +28,7 @@ func TestNewServer(t *testing.T) {
 		},
 	}
 
-	server := NewServer(cfg, nil)
+	server := NewServer(cfg)
 
 	require.NotNil(t, server)
 	require.Equal(t, "localhost:8080", server.httpServer.Addr)
@@ -53,7 +53,7 @@ func TestSetupRoutes(t *testing.T) {
 			Secret:     "secret",
 		},
 	}
-	server := NewServer(cfg, nil)
+	server := NewServer(cfg)
 
 	// Мокируем функцию routeConfig
 	called := false
@@ -84,7 +84,7 @@ func TestRunAndStop(t *testing.T) {
 			MaxHeaderBytes: 1 << 10,
 		},
 	}
-	server := NewServer(cfg, nil)
+	server := NewServer(cfg)
 	server.SetupRoutes(func(mux *http.ServeMux) {
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)

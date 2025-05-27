@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"ResuMatch/internal/entity"
-	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
@@ -66,7 +65,7 @@ func (r *ResumeRepository) Create(ctx context.Context, resume *entity.Resume) (*
 	)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "Create").Inc()
+
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -116,7 +115,7 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSkills").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -129,7 +128,7 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 	}
 	defer func() {
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSkills").Inc()
+
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				l.Log.WithFields(logrus.Fields{
 					"requestID": requestID,
@@ -144,7 +143,7 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 		VALUES ($1, $2)
 	`)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSkills").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -158,7 +157,7 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSkills").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть statement: %v", err)
@@ -168,7 +167,7 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 	for _, skillID := range skillIDs {
 		_, err = stmt.ExecContext(ctx, resumeID, skillID)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSkills").Inc()
+
 			var pqErr *pq.Error
 			if errors.As(err, &pqErr) {
 				switch pqErr.Code {
@@ -207,7 +206,7 @@ func (r *ResumeRepository) AddSkills(ctx context.Context, resumeID int, skillIDs
 	}
 
 	if err = tx.Commit(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSkills").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -276,7 +275,7 @@ func (r *ResumeRepository) AddWorkExperience(ctx context.Context, workExperience
 	}
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddWorkExperience").Inc()
+
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -346,7 +345,7 @@ func (r *ResumeRepository) GetByID(ctx context.Context, id int) (*entity.Resume,
 	)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddWorkExperience").Inc()
+
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.NewError(
 				entity.ErrNotFound,
@@ -385,7 +384,7 @@ func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int
 
 	rows, err := r.DB.QueryContext(ctx, query, resumeID)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSkillsByResumeID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -401,7 +400,7 @@ func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSkillsByResumeID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -412,7 +411,7 @@ func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int
 	for rows.Next() {
 		var skill entity.Skill
 		if err := rows.Scan(&skill.ID, &skill.Name); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSkillsByResumeID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"resumeID":  resumeID,
@@ -428,7 +427,7 @@ func (r *ResumeRepository) GetSkillsByResumeID(ctx context.Context, resumeID int
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSkillsByResumeID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -461,7 +460,7 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 
 	rows, err := r.DB.QueryContext(ctx, query, resumeID)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetWorkExperienceByResumeID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -477,7 +476,7 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetWorkExperienceByResumeID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -501,7 +500,7 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 			&experience.UntilNow,
 			&experience.UpdatedAt,
 		); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetWorkExperienceByResumeID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"resumeID":  resumeID,
@@ -522,7 +521,7 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetWorkExperienceByResumeID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -547,7 +546,7 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSpecializations").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -560,7 +559,7 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 	}
 	defer func() {
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSpecializations").Inc()
+
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				l.Log.WithFields(logrus.Fields{
 					"requestID": requestID,
@@ -575,7 +574,7 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 		VALUES ($1, $2)
 	`)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSpecializations").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -590,7 +589,7 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSpecializations").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть statement: %v", err)
@@ -600,7 +599,7 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 	for _, specializationID := range specializationIDs {
 		_, err = stmt.ExecContext(ctx, resumeID, specializationID)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSpecializations").Inc()
+
 			var pqErr *pq.Error
 			if errors.As(err, &pqErr) {
 				switch pqErr.Code {
@@ -639,7 +638,7 @@ func (r *ResumeRepository) AddSpecializations(ctx context.Context, resumeID int,
 	}
 
 	if err = tx.Commit(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "AddSpecializations").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -670,7 +669,7 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 
 	rows, err := r.DB.QueryContext(ctx, query, resumeID)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSpecializationsByResumeID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -686,7 +685,7 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSpecializationsByResumeID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -697,7 +696,7 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 	for rows.Next() {
 		var specialization entity.Specialization
 		if err := rows.Scan(&specialization.ID, &specialization.Name); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSpecializationsByResumeID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"resumeID":  resumeID,
@@ -713,7 +712,7 @@ func (r *ResumeRepository) GetSpecializationsByResumeID(ctx context.Context, res
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetSpecializationsByResumeID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -777,7 +776,7 @@ func (r *ResumeRepository) Update(ctx context.Context, resume *entity.Resume) (*
 	)
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "Update").Inc()
+
 		if errors.Is(err, sql.ErrNoRows) {
 			l.Log.WithFields(logrus.Fields{
 				"requestID":   requestID,
@@ -848,7 +847,7 @@ func (r *ResumeRepository) Delete(ctx context.Context, id int) error {
 
 	result, err := r.DB.ExecContext(ctx, query, id)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "Delete").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  id,
@@ -863,7 +862,7 @@ func (r *ResumeRepository) Delete(ctx context.Context, id int) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "Delete").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  id,
@@ -906,7 +905,7 @@ func (r *ResumeRepository) DeleteSkills(ctx context.Context, resumeID int) error
 
 	_, err := r.DB.ExecContext(ctx, query, resumeID)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "DeleteSkills").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -937,7 +936,7 @@ func (r *ResumeRepository) DeleteSpecializations(ctx context.Context, resumeID i
 
 	_, err := r.DB.ExecContext(ctx, query, resumeID)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "DeleteSpecializations").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -968,7 +967,7 @@ func (r *ResumeRepository) DeleteWorkExperiences(ctx context.Context, resumeID i
 
 	_, err := r.DB.ExecContext(ctx, query, resumeID)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "DeleteWorkExperiences").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -1047,7 +1046,7 @@ func (r *ResumeRepository) UpdateWorkExperience(ctx context.Context, workExperie
 	}
 
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "UpdateWorkExperience").Inc()
+
 		if errors.Is(err, sql.ErrNoRows) {
 			l.Log.WithFields(logrus.Fields{
 				"requestID":        requestID,
@@ -1119,7 +1118,7 @@ func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) err
 
 	result, err := r.DB.ExecContext(ctx, query, id)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "DeleteWorkExperience").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID":        requestID,
 			"workExperienceID": id,
@@ -1134,7 +1133,7 @@ func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) err
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "DeleteWorkExperience").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID":        requestID,
 			"workExperienceID": id,
@@ -1180,7 +1179,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 
 	rows, err := r.DB.QueryContext(ctx, query, limit, offset)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAll").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1195,7 +1194,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAll").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1218,7 +1217,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 			&resume.UpdatedAt,
 		)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAll").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1233,7 +1232,7 @@ func (r *ResumeRepository) GetAll(ctx context.Context, limit int, offset int) ([
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAll").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1268,7 +1267,7 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, limit, offset)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAllResumesByApplicantID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1283,7 +1282,7 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAllResumesByApplicantID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1306,7 +1305,7 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 			&resume.UpdatedAt,
 		)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAllResumesByApplicantID").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1321,7 +1320,7 @@ func (r *ResumeRepository) GetAllResumesByApplicantID(ctx context.Context, appli
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "GetAllResumesByApplicantID").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1604,7 +1603,7 @@ func (r *ResumeRepository) CreateSkillIfNotExists(ctx context.Context, skillName
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "CreateSkillIfNotExists").Inc()
+
 		// Произошла ошибка, отличная от "запись не найдена"
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
@@ -1626,7 +1625,7 @@ func (r *ResumeRepository) CreateSkillIfNotExists(ctx context.Context, skillName
     `
 	err = r.DB.QueryRowContext(ctx, query, skillName).Scan(&id)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "CreateSkillIfNotExists").Inc()
+
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -1710,7 +1709,7 @@ func (r *ResumeRepository) CreateSpecializationIfNotExists(ctx context.Context, 
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "CreateSpecializationIfNotExists").Inc()
+
 		// Произошла ошибка, отличная от "запись не найдена"
 		l.Log.WithFields(logrus.Fields{
 			"requestID":          requestID,
@@ -1732,7 +1731,7 @@ func (r *ResumeRepository) CreateSpecializationIfNotExists(ctx context.Context, 
     `
 	err = r.DB.QueryRowContext(ctx, query, specializationName).Scan(&id)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "CreateSpecializationIfNotExists").Inc()
+
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -1813,7 +1812,7 @@ func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profes
 
 	rows, err := r.DB.QueryContext(ctx, query, "%"+profession+"%", limit, offset)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfession").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1827,7 +1826,7 @@ func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profes
 	// defer rows.Close()
 	defer func() {
 		if err := rows.Close(); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfession").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1850,7 +1849,7 @@ func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profes
 			&resume.UpdatedAt,
 		)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfession").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1865,7 +1864,7 @@ func (r *ResumeRepository) SearchResumesByProfession(ctx context.Context, profes
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfession").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1901,7 +1900,7 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, "%"+profession+"%", limit, offset)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfessionForApplicant").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1915,7 +1914,7 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 	// defer rows.Close()
 	defer func() {
 		if err := rows.Close(); err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfessionForApplicant").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 			}).Errorf("не удалось закрыть rows: %v", err)
@@ -1938,7 +1937,7 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 			&resume.UpdatedAt,
 		)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfessionForApplicant").Inc()
+
 			l.Log.WithFields(logrus.Fields{
 				"requestID": requestID,
 				"error":     err,
@@ -1953,7 +1952,7 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 	}
 
 	if err := rows.Err(); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Resume Repository", "SearchResumesByProfessionForApplicant").Inc()
+
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,

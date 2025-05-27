@@ -3,7 +3,6 @@ package http
 import (
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/transport/http/utils"
-	"ResuMatch/internal/transport/ws"
 	"ResuMatch/internal/usecase"
 	"net/http"
 	"strconv"
@@ -12,19 +11,15 @@ import (
 type NotificationHandler struct {
 	notification usecase.Notification
 	auth         usecase.Auth
-	wsPool       *ws.WebsocketPool
 }
 
 func NewNotificationHandler(
 	notification usecase.Notification,
 	auth usecase.Auth,
-	wsPool *ws.WebsocketPool,
-
 ) NotificationHandler {
 	return NotificationHandler{
 		notification: notification,
 		auth:         auth,
-		wsPool:       wsPool,
 	}
 }
 
@@ -35,8 +30,6 @@ func (h *NotificationHandler) Configure(r *http.ServeMux) {
 	notificationMux.HandleFunc("PUT /read/{id}", h.ReadNotification)
 	notificationMux.HandleFunc("PUT /readAll", h.ReadAllNotifications)
 	notificationMux.HandleFunc("DELETE /clear", h.DeleteAllNotifications)
-	notificationMux.HandleFunc("GET /ws", h.wsPool.Connect)
-	//r.Handle("/notification/ws", http.HandlerFunc(h.wsPool.Connect))
 	r.Handle("/notification/", http.StripPrefix("/notification", notificationMux))
 }
 

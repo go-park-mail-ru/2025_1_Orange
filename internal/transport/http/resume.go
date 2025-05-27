@@ -8,7 +8,6 @@ import (
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/transport/ws"
 	"ResuMatch/internal/usecase"
-	l "ResuMatch/pkg/logger"
 	"ResuMatch/pkg/sanitizer"
 	"fmt"
 	"net/http"
@@ -21,22 +20,22 @@ type ResumeHandler struct {
 	auth         usecase.Auth
 	resume       usecase.ResumeUsecase
 	cfg          config.CSRFConfig
-	wsPool       *ws.WebsocketPool
 	notification usecase.Notification
+	wsHub        *ws.Hub
 }
 
 func NewResumeHandler(
 	auth usecase.Auth,
 	resume usecase.ResumeUsecase,
 	cfg config.CSRFConfig,
-	wsPool *ws.WebsocketPool,
+	wsHub *ws.Hub,
 	notification usecase.Notification,
 ) ResumeHandler {
 	return ResumeHandler{
 		auth:         auth,
 		resume:       resume,
 		cfg:          cfg,
-		wsPool:       wsPool,
+		wsHub:        wsHub,
 		notification: notification,
 	}
 }
@@ -562,10 +561,17 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.wsPool.SendNotification(notificationPreview)
-	if err != nil {
-		l.Log.Warnf("Не удалось отправить уведомление: %v", err)
+	//err = h.wsHub.SendNotification(notificationPreview)
+	if notificationPreview != nil {
+		h.wsHub.Broadcast <- ws.Message{
+			Type:    ws.MessageTypeNotification,
+			Payload: notificationPreview,
+		}
 	}
+
+	//if err != nil {
+	//	l.Log.Warnf("Не удалось отправить уведомление: %v", err)
+	//}
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=resume.pdf")

@@ -1,6 +1,8 @@
 package dto
 
-import "time"
+import (
+	"time"
+)
 
 // easyjson:json
 type EmployerProfileResponse struct {

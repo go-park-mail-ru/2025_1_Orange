@@ -2,6 +2,7 @@ package utils
 
 import (
 	"ResuMatch/internal/entity"
+	l "ResuMatch/pkg/logger"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -47,6 +48,11 @@ func WriteError(w http.ResponseWriter, status int, err error) {
 }
 
 func WriteAPIError(w http.ResponseWriter, apiError APIError) {
+	if apiError.Status < 500 {
+		l.Log.Warnf("StatusCode: %d, Message: %s", apiError.Status, apiError.Message)
+	} else {
+		l.Log.Errorf("StatusCode: %d, Message: %s", apiError.Status, apiError.Message)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(apiError.Status)
 	err := json.NewEncoder(w).Encode(apiError)

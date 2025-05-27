@@ -1,0 +1,109 @@
+package ws
+
+import (
+	"ResuMatch/internal/entity"
+	"ResuMatch/internal/entity/dto"
+	l "ResuMatch/pkg/logger"
+	"github.com/gorilla/websocket"
+	"net/http"
+)
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+type Client struct {
+	hub  *Hub
+	conn *websocket.Conn
+	send chan Message
+	Key  ConnectionKey
+}
+
+func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID int, role string) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+
+	var userRole entity.UserRole
+	switch role {
+	case "employer":
+		userRole = entity.EmployerRole
+	case "applicant":
+		userRole = entity.ApplicantRole
+	default:
+		http.Error(w, "неверная роль пользователя", http.StatusForbidden)
+		return
+	}
+
+	client := &Client{
+		hub:  hub,
+		conn: conn,
+		send: make(chan Message, 256),
+		Key: ConnectionKey{
+			UserID: userID,
+			Type:   userRole,
+		},
+	}
+
+	hub.register <- client
+
+	go client.writePump()
+	go client.readPump()
+}
+
+func (c *Client) readPump() {
+	defer func() {
+		c.hub.unregister <- c
+		if err := c.conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения: %v", err)
+		}
+	}()
+
+	for {
+		var msg struct {
+			Type    MessageType `json:"type"`
+			ChatID  int         `json:"chat_id"`
+			Payload string      `json:"payload"`
+		}
+
+		l.Log.Infof("Чтение сообщения: %v", msg)
+		if err := c.conn.ReadJSON(&msg); err != nil {
+			l.Log.Error("Ошибка при чтении сообщения:", err)
+			break
+		}
+
+		if msg.Type == MessageTypeChat {
+			newMsg := Message{
+				Type: MessageTypeChat,
+				Payload: dto.MessageRequest{
+					ChatID:     msg.ChatID,
+					SenderID:   c.Key.UserID,
+					SenderRole: c.Key.Type,
+					Payload:    msg.Payload,
+				},
+			}
+			c.hub.Broadcast <- newMsg
+		}
+	}
+}
+
+func (c *Client) writePump() {
+	defer func() {
+		if err := c.conn.Close(); err != nil {
+			l.Log.Warnf("Ошибка при закрытии соединения: %v", err)
+		}
+	}()
+
+	for msg := range c.send {
+		l.Log.Infof("Отправка сообщения: payload=%v, type=%v", msg.Payload, msg.Type)
+		if err := c.conn.WriteJSON(msg); err != nil {
+			l.Log.Error("Ошибка при отправке сообщения:", err)
+			break
+		}
+	}
+}

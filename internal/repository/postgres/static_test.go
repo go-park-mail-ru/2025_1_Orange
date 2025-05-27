@@ -31,7 +31,7 @@ func TestStaticRepository_GetStatic(t *testing.T) {
 		{
 			name:           "Успешное получение пути до файла по ID",
 			id:             1,
-			expectedResult: fmt.Sprintf("%s/%s", filePath, fileName),
+			expectedResult: fmt.Sprintf("/%s/%s", filePath, fileName),
 			expectedErr:    nil,
 			setupMock: func(mock sqlmock.Sqlmock, id int) {
 				mock.ExpectQuery(regexp.QuoteMeta(query)).
@@ -62,7 +62,7 @@ func TestStaticRepository_GetStatic(t *testing.T) {
 			expectedResult: "",
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("ошибка при выполнении запроса GetStatic: postgresql error"),
+				fmt.Errorf("ошибка при выполнении запроса GetStatic: %w", errors.New("postgresql error")),
 			),
 			setupMock: func(mock sqlmock.Sqlmock, id int) {
 				mock.ExpectQuery(regexp.QuoteMeta(query)).
@@ -80,6 +80,7 @@ func TestStaticRepository_GetStatic(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				err := db.Close()
 				require.NoError(t, err)
 			}()

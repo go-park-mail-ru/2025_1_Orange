@@ -157,6 +157,14 @@ type WorkExperienceShort struct {
 }
 
 // easyjson:json
+type ResumeChatResponse struct {
+	ID          int    `json:"id"`
+	ApplicantID int    `json:"applicant_id"`
+	AvatarPath  string `json:"avatar_path"`
+	Profession  string `json:"profession"`
+}
+
+// easyjson:json
 type ResumeApplicantShortResponseList []ResumeApplicantShortResponse
 
 // easyjson:json

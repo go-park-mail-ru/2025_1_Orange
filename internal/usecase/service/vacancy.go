@@ -459,21 +459,21 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 }
 
 func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (entity.Notification, error) {
-	// Проверяем существование вакансии
+	notification := entity.Notification{}
 	vacancy, err := vs.vacanciesRepository.GetByID(ctx, vacancyID)
 	if err != nil {
-		return entity.Notification{}, fmt.Errorf("vacancy not found: %w", err)
+		return notification, fmt.Errorf("vacancy not found: %w", err)
 	}
 
-	hasResponded, err := vs.vacanciesRepository.ResponseExistsForApplicant(ctx, vacancyID, applicantID, resumeID)
+	hasResponded, err := vs.vacanciesRepository.ResponseExists(ctx, vacancyID, applicantID)
 	if err != nil {
-		return entity.Notification{}, fmt.Errorf("failed to check existing responses: %w", err)
+		return notification, fmt.Errorf("failed to check existing responses: %w", err)
 	}
 	if hasResponded {
-		return entity.Notification{}, vs.vacanciesRepository.DeleteResponse(ctx, vacancyID, applicantID, resumeID)
+		return notification, vs.vacanciesRepository.DeleteResponse(ctx, vacancyID, applicantID, resumeID)
 	}
 
-	notification := entity.Notification{
+	notification = entity.Notification{
 		Type:         entity.ApplyNotificationType,
 		SenderID:     applicantID,
 		SenderRole:   entity.ApplicantRole,
@@ -486,7 +486,7 @@ func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, appli
 	return notification, vs.vacanciesRepository.CreateResponse(ctx, vacancyID, applicantID, resumeID)
 }
 
-func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID int, limit, offset int) ([]dto.ResumeShortResponse, error) {
+func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID int, limit, offset int) ([]dto.ResumeApplicantShortResponse, error) {
 
 	requestID := utils.GetRequestID(ctx)
 
@@ -500,7 +500,7 @@ func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vac
 		return nil, fmt.Errorf("failed to get vacancy responses: %w", err)
 	}
 
-	response := make([]dto.ResumeShortResponse, 0, len(responses))
+	response := make([]dto.ResumeApplicantShortResponse, 0, len(responses))
 
 	for _, r := range responses {
 		resume, err := vs.resumeRepository.GetByID(ctx, r.ResumeID)
@@ -543,9 +543,26 @@ func (vs *VacanciesService) GetRespondedResumeOnVacancy(ctx context.Context, vac
 			continue
 		}
 
-		shortResume := dto.ResumeShortResponse{
+		skills, err := vs.resumeRepository.GetSkillsByResumeID(ctx, resume.ID)
+		if err != nil {
+			l.Log.WithFields(logrus.Fields{
+				"requestID": requestID,
+				"resumeID":  resume.ID,
+				"error":     err,
+			}).Error("ошибка при получении навыков резюме")
+			continue
+		}
+
+		// Преобразуем навыки в массив строк
+		skillNames := make([]string, 0, len(skills))
+		for _, skill := range skills {
+			skillNames = append(skillNames, skill.Name)
+		}
+
+		shortResume := dto.ResumeApplicantShortResponse{
 			ID:             resume.ID,
 			Applicant:      applicantDTO,
+			Skills:         skillNames,
 			Specialization: specializationName,
 			Profession:     resume.Profession,
 			CreatedAt:      resume.CreatedAt.Format(time.RFC3339),
@@ -752,14 +769,8 @@ func (s *VacanciesService) SearchVacancies(ctx context.Context, userID int, user
 	var vacancies []*entity.Vacancy
 	var err error
 
-	// В зависимости от роли пользователя выбираем метод поиска
-	if userRole == "employer" {
-		// Для работодателя ищем только его вакансии
-		vacancies, err = s.vacanciesRepository.SearchVacanciesByEmployerID(ctx, userID, searchQuery, limit, offset)
-	} else {
-		// Для соискателя или неавторизованного пользователя ищем все вакансии
-		vacancies, err = s.vacanciesRepository.SearchVacancies(ctx, searchQuery, limit, offset)
-	}
+	// Для соискателя или неавторизованного пользователя ищем все вакансии
+	vacancies, err = s.vacanciesRepository.SearchVacancies(ctx, searchQuery, limit, offset)
 
 	if err != nil {
 		return nil, err
@@ -936,7 +947,7 @@ func (s *VacanciesService) SearchVacanciesBySpecializations(ctx context.Context,
 }
 
 // SearchVacanciesByQueryAndSpecializations ищет вакансии по текстовому запросу и списку специализаций
-func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole string, searchQuery string, specializations []string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
+func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole string, searchQuery string, specializations []string, minSalary int, employment, experience []string, limit int, offset int) ([]dto.VacancyShortResponse, error) {
 	requestID := utils.GetRequestID(ctx)
 
 	l.Log.WithFields(logrus.Fields{
@@ -945,23 +956,72 @@ func (s *VacanciesService) SearchVacanciesByQueryAndSpecializations(ctx context.
 		"role":            userRole,
 		"query":           searchQuery,
 		"specializations": specializations,
+		"minSalary":       minSalary,
+		"employment":      employment,
+		"experience":      experience,
 		"limit":           limit,
 		"offset":          offset,
 	}).Info("Комбинированный поиск вакансий по запросу и специализациям")
 
-	// Находим ID специализаций по их названиям
-	specializationIDs, err := s.vacanciesRepository.FindSpecializationIDsByNames(ctx, specializations)
-	if err != nil {
-		return nil, err
+	// Валидация входных параметров
+	validEmployment := map[string]bool{
+		"full_time":  true,
+		"part_time":  true,
+		"contract":   true,
+		"internship": true,
+		"freelance":  true,
+		"watch":      true,
+	}
+	validExperience := map[string]bool{
+		"no_matter":     true,
+		"no_experience": true,
+		"1_3_years":     true,
+		"3_6_years":     true,
+		"6_plus_years":  true,
 	}
 
-	// Если не найдено ни одной специализации, возвращаем пустой список
-	if len(specializationIDs) == 0 {
-		return []dto.VacancyShortResponse{}, nil
+	for _, emp := range employment {
+		if !validEmployment[emp] {
+			return nil, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректное значение employment: %s", emp),
+			)
+		}
 	}
+
+	for _, exp := range experience {
+		if !validExperience[exp] {
+			return nil, entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("некорректное значение experience: %s", exp),
+			)
+		}
+	}
+
+	if minSalary < 0 {
+		return nil, entity.NewError(
+			entity.ErrBadRequest,
+			fmt.Errorf("минимальная зарплата не может быть отрицательной"),
+		)
+	}
+
+	var specializationIDs []int
+	var err error
+
+	if len(specializations) > 0 {
+		specializationIDs, err = s.vacanciesRepository.FindSpecializationIDsByNames(ctx, specializations)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// // Если не найдено ни одной специализации, возвращаем пустой список
+	// if len(specializationIDs) == 0 {
+	// 	return []dto.VacancyShortResponse{}, nil
+	// }
 
 	// Ищем вакансии по текстовому запросу и ID специализаций
-	vacancies, err := s.vacanciesRepository.SearchVacanciesByQueryAndSpecializations(ctx, searchQuery, specializationIDs, limit, offset)
+	vacancies, err := s.vacanciesRepository.SearchVacanciesByQueryAndSpecializations(ctx, searchQuery, specializationIDs, minSalary, employment, experience, limit, offset)
 	if err != nil {
 		return nil, err
 	}

@@ -133,10 +133,10 @@ func (mr *MockVacancyMockRecorder) GetLikedVacancies(ctx, applicantID, limit, of
 }
 
 // GetRespondedResumeOnVacancy mocks base method.
-func (m *MockVacancy) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID, limit, offset int) ([]dto.ResumeShortResponse, error) {
+func (m *MockVacancy) GetRespondedResumeOnVacancy(ctx context.Context, vacancyID, limit, offset int) ([]dto.ResumeApplicantShortResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRespondedResumeOnVacancy", ctx, vacancyID, limit, offset)
-	ret0, _ := ret[0].([]dto.ResumeShortResponse)
+	ret0, _ := ret[0].([]dto.ResumeApplicantShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -207,18 +207,18 @@ func (mr *MockVacancyMockRecorder) SearchVacancies(ctx, userID, userRole, search
 }
 
 // SearchVacanciesByQueryAndSpecializations mocks base method.
-func (m *MockVacancy) SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole, searchQuery string, specializations []string, limit, offset int) ([]dto.VacancyShortResponse, error) {
+func (m *MockVacancy) SearchVacanciesByQueryAndSpecializations(ctx context.Context, userID int, userRole, searchQuery string, specializations []string, minSalary int, employment, experience []string, limit, offset int) ([]dto.VacancyShortResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchVacanciesByQueryAndSpecializations", ctx, userID, userRole, searchQuery, specializations, limit, offset)
+	ret := m.ctrl.Call(m, "SearchVacanciesByQueryAndSpecializations", ctx, userID, userRole, searchQuery, specializations, minSalary, employment, experience, limit, offset)
 	ret0, _ := ret[0].([]dto.VacancyShortResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SearchVacanciesByQueryAndSpecializations indicates an expected call of SearchVacanciesByQueryAndSpecializations.
-func (mr *MockVacancyMockRecorder) SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, specializations, limit, offset any) *gomock.Call {
+func (mr *MockVacancyMockRecorder) SearchVacanciesByQueryAndSpecializations(ctx, userID, userRole, searchQuery, specializations, minSalary, employment, experience, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchVacanciesByQueryAndSpecializations", reflect.TypeOf((*MockVacancy)(nil).SearchVacanciesByQueryAndSpecializations), ctx, userID, userRole, searchQuery, specializations, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchVacanciesByQueryAndSpecializations", reflect.TypeOf((*MockVacancy)(nil).SearchVacanciesByQueryAndSpecializations), ctx, userID, userRole, searchQuery, specializations, minSalary, employment, experience, limit, offset)
 }
 
 // SearchVacanciesBySpecializations mocks base method.

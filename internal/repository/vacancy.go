@@ -20,7 +20,6 @@ type VacancyRepository interface {
 	FindSkillIDsByNames(ctx context.Context, skillNames []string) ([]int, error)
 	FindCityIDsByNames(ctx context.Context, cityNames []string) ([]int, error)
 	ResponseExists(ctx context.Context, vacancyID, applicantID int) (bool, error)
-	ResponseExistsForApplicant(ctx context.Context, vacancyID, applicantID, resumeID int) (bool, error)
 	CreateResponse(ctx context.Context, vacancyID, applicantID, resumeID int) error
 	FindSpecializationIDByName(ctx context.Context, specializationName string) (int, error)
 	CreateSkillIfNotExists(ctx context.Context, skillName string) (int, error)
@@ -31,7 +30,7 @@ type VacancyRepository interface {
 	SearchVacanciesByEmployerID(ctx context.Context, employerID int, searchQuery string, limit int, offset int) ([]*entity.Vacancy, error)
 	SearchVacanciesBySpecializations(ctx context.Context, specializationIDs []int, limit int, offset int) ([]*entity.Vacancy, error)
 	FindSpecializationIDsByNames(ctx context.Context, specializationNames []string) ([]int, error)
-	SearchVacanciesByQueryAndSpecializations(ctx context.Context, searchQuery string, specializationIDs []int, limit int, offset int) ([]*entity.Vacancy, error)
+	SearchVacanciesByQueryAndSpecializations(ctx context.Context, searchQuery string, specializationIDs []int, minSalary int, employment, experience []string, limit int, offset int) ([]*entity.Vacancy, error)
 	CreateLike(ctx context.Context, vacancyID, applicantID int) error
 	DeleteLike(ctx context.Context, vacancyID, applicantID int) error
 	GetlikedVacancies(ctx context.Context, applicantID int, limit, offset int) ([]*entity.Vacancy, error)

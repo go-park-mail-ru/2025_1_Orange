@@ -1,4 +1,4 @@
-name: Deploy Backend
+name: Deploy ResuMatch Backend
 
 on:
   push:
@@ -31,9 +31,10 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-              cd /home/ubuntu/backend/2025_1_Orange
-              sudo docker compose down app auth static postgres redis minio gotenberg orange-nginx
-              git checkout main
-              git pull origin main
-              sudo docker compose up --build
-              sudo docker compose up orange-nginx
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/backend/2025_1_Orange
+            cd /home/ubuntu/backend/2025_1_Orange
+            sudo docker compose down resumatch auth static postgres redis minio gotenberg nginx || exit 1
+            git checkout main || exit 1
+            git pull origin main || exit 1
+            sudo docker compose up --build || exit 1
+            sudo docker compose up nginx || exit 1

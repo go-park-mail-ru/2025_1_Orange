@@ -32,9 +32,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sudo chown -R ubuntu:ubuntu /home/ubuntu/backend/2025_1_Orange
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/front/2025_1_Orange
+            cd /home/ubuntu/front/2025_1_Orange
+            sudo docker compose down nginx || exit 1
             cd /home/ubuntu/backend/2025_1_Orange
-            sudo docker compose down resumatch auth static postgres redis minio gotenberg nginx || exit 1
+            sudo docker compose down resumatch auth static postgres redis minio gotenberg || exit 1
             git checkout main || exit 1
             git pull origin main || exit 1
             sudo docker compose up --build || exit 1
+            cd /home/ubuntu/front/2025_1_Orange
             sudo docker compose up nginx || exit 1
+            cd /home/ubuntu/backend/2025_1_Orange

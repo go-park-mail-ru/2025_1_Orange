@@ -31,11 +31,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-              cd /home/ubuntu/deploy/backend/2025_1_Orange
-              sudo docker compose down app auth static postgres redis minio gotenberg
-              git stash
+              cd /home/ubuntu/backend/2025_1_Orange
+              sudo docker compose down app auth static postgres redis minio gotenberg orange-nginx
               git checkout main
               git pull origin main
-              git stash pop
-              sudo docker compose build
-              sudo docker compose up
+              sudo docker compose up --build
+              sudo docker compose up orange-nginx

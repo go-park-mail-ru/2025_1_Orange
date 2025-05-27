@@ -459,7 +459,6 @@ func (s *VacanciesService) GetAll(ctx context.Context, currentUserID int, userRo
 }
 
 func (vs *VacanciesService) ApplyToVacancy(ctx context.Context, vacancyID, applicantID, resumeID int) (entity.Notification, error) {
-	// Проверяем существование вакансии
 	notification := entity.Notification{}
 	vacancy, err := vs.vacanciesRepository.GetByID(ctx, vacancyID)
 	if err != nil {

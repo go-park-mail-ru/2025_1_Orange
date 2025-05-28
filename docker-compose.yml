@@ -22,6 +22,8 @@ services:
         ./migrate -path ./migrations -database 'postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:$POSTGRES_CONTAINER_PORT/$POSTGRES_DB?sslmode=disable' up &&
         ./.bin run
       "
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - resumatch-network
     volumes:

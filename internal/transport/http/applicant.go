@@ -144,7 +144,6 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -158,7 +157,6 @@ func (h *ApplicantHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	requestedID := r.PathValue("id")
 	applicantID, err := strconv.Atoi(requestedID)
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -203,7 +201,6 @@ func (h *ApplicantHandler) UpdateProfile(w http.ResponseWriter, r *http.Request)
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UpdateProfile").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -254,7 +251,6 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UploadAvatar").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -272,7 +268,6 @@ func (h *ApplicantHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 
 	file, _, err := r.FormFile("avatar")
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Applicant Handler", "UploadAvatar").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}

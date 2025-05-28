@@ -6,6 +6,7 @@ import (
 	l "ResuMatch/pkg/logger"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"time"
 )
 
 var upgrader = websocket.Upgrader{
@@ -64,6 +65,16 @@ func (c *Client) readPump() {
 		}
 	}()
 
+	if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		l.Log.Errorf("initial set read deadline error: %v", err)
+	}
+	c.conn.SetPongHandler(func(string) error {
+		if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+			l.Log.Errorf("set read deadline (pong) error: %v", err)
+		}
+		return nil
+	})
+
 	for {
 		var msg struct {
 			Type    MessageType `json:"type"`
@@ -93,17 +104,47 @@ func (c *Client) readPump() {
 }
 
 func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+
 	defer func() {
+		ticker.Stop()
 		if err := c.conn.Close(); err != nil {
 			l.Log.Warnf("Ошибка при закрытии соединения: %v", err)
 		}
 	}()
 
-	for msg := range c.send {
-		l.Log.Infof("Отправка сообщения: payload=%v, type=%v", msg.Payload, msg.Type)
-		if err := c.conn.WriteJSON(msg); err != nil {
-			l.Log.Error("Ошибка при отправке сообщения:", err)
-			break
+	for {
+		select {
+		case msg, ok := <-c.send:
+			l.Log.Infof("Отправка сообщения: payload=%v, type=%v", msg.Payload, msg.Type)
+
+			if err := c.conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+				l.Log.Errorf("Ошибка при установке write deadline: %v", err)
+				return
+			}
+
+			if !ok {
+				if err := c.conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+					l.Log.Errorf("Ошибка при отправке CloseMessage: %v", err)
+				}
+				return
+			}
+
+			if err := c.conn.WriteJSON(msg); err != nil {
+				l.Log.Error("Ошибка при отправке сообщения:", err)
+				return
+			}
+
+		case <-ticker.C:
+			if err := c.conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+				l.Log.Errorf("Ошибка при установке write deadline перед ping: %v", err)
+				return
+			}
+
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				l.Log.Error("Ошибка при отправке ping:", err)
+				return
+			}
 		}
 	}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"ResuMatch/internal/app"
 	"ResuMatch/internal/config"
+	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
 	"errors"
 	"net/http"
@@ -22,16 +23,19 @@ import (
 // @in cookie
 // @name session_id
 func main() {
-	// 1. Загрузка конфигурации
-	cfg, err := config.LoadAppConfig()
+	// 1. создание vault client
+	vaultClient := connector.GetVaultClient()
+
+	// 2. Загрузка конфигурации
+	cfg, err := config.LoadAppConfig(vaultClient)
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}
 
-	// 2. Инициализация приложения
+	// 3. Инициализация приложения
 	srv := app.Init(cfg)
 
-	// 3. Настройка graceful shutdown
+	// 4. Настройка graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
@@ -43,7 +47,7 @@ func main() {
 		}
 	}()
 
-	// 4. Запуск сервера
+	// 5. Запуск сервера
 	l.Log.Infof("Запуск сервера на порте %s", cfg.HTTP.Port)
 	if err := srv.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		l.Log.Fatalf("Не удалось запустить сервер: %v", err)

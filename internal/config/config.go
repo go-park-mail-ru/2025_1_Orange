@@ -1,6 +1,7 @@
 package config
 
 import (
+	"ResuMatch/internal/vault"
 	"fmt"
 	"os"
 	"time"
@@ -78,11 +79,18 @@ func (s3 *S3Config) Addr() string {
 }
 
 type RedisConfig struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	Password string `yaml:"-"`
-	DB       int    `yaml:"db"`
-	TTL      int    `yaml:"ttl"`
+	Host     string       `yaml:"host"`
+	Port     string       `yaml:"port"`
+	Password string       `yaml:"-"`
+	DB       int          `yaml:"db"`
+	TTL      int          `yaml:"ttl"`
+	Pool     RedisPoolCfg `yaml:"pool"`
+}
+
+type RedisPoolCfg struct {
+	MaxIdle     int           `yaml:"maxIdle"`
+	MaxActive   int           `yaml:"maxActive"`
+	IdleTimeout time.Duration `yaml:"idleTimeout"`
 }
 
 type MicroservicesConfig struct {
@@ -127,7 +135,7 @@ type Config struct {
 	Resume        ResumeConfig        `yaml:"resume"`
 }
 
-func LoadAppConfig() (*Config, error) {
+func LoadAppConfig(vaultClient *vault.VaultClient) (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		return nil, fmt.Errorf("error loading .env: %w", err)
 	}
@@ -142,6 +150,36 @@ func LoadAppConfig() (*Config, error) {
 		return nil, fmt.Errorf("error parsing YAML: %w", err)
 	}
 
+	secret, err := vaultClient.GetSecret("http")
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения секрета Redis: %w", err)
+	}
+
+	data, ok := secret.Data["data"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("не удалось привести secret.Data[\"data\"] к map[string]interface{}")
+	}
+
+	if val, ok := data["readTimeout"]; ok {
+		duration, err := time.ParseDuration(val.(string))
+		if err != nil {
+			return nil, fmt.Errorf("не удалось распарсить readTimeout: %w", err)
+		}
+		cfg.HTTP.ReadTimeout = duration
+	}
+
+	if val, ok := data["writeTimeout"]; ok {
+		duration, err := time.ParseDuration(val.(string))
+		if err != nil {
+			return nil, fmt.Errorf("не удалось распарсить writeTimeout: %w", err)
+		}
+		cfg.HTTP.WriteTimeout = duration
+	}
+
+	if val, ok := data["maxHeaderBytes"]; ok {
+		cfg.HTTP.MaxHeaderBytes = int(val.(float64))
+	}
+
 	cfg.CSRF.Secret = os.Getenv("CSRF_SECRET")
 
 	cfg.Postgres = loadPostgresConfig()
@@ -149,19 +187,44 @@ func LoadAppConfig() (*Config, error) {
 	return &cfg, nil
 }
 
-func LoadAuthConfig() (*AuthConfig, error) {
+func LoadAuthConfig(vaultClient *vault.VaultClient) (*AuthConfig, error) {
 	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("error loading .env: %w", err)
+		return nil, fmt.Errorf("ошибка загрузки .env: %w", err)
 	}
 
 	yamlFile, err := os.ReadFile("configs/auth.yml")
 	if err != nil {
-		return nil, fmt.Errorf("error reading auth config file: %w", err)
+		return nil, fmt.Errorf("ошибка чтения файла конфигурации сервиса авторизации: %w", err)
 	}
 
 	var cfg AuthConfig
 	if err := yaml.Unmarshal(yamlFile, &cfg); err != nil {
-		return nil, fmt.Errorf("error parsing auth YAML: %w", err)
+		return nil, fmt.Errorf("ошибка парсинга YAML: %w", err)
+	}
+
+	secret, err := vaultClient.GetSecret("redis")
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения секрета Redis: %w", err)
+	}
+
+	data, ok := secret.Data["data"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("не удалось привести secret.Data[\"data\"] к map[string]interface{}")
+	}
+
+	pool := RedisPoolCfg{}
+	if val, ok := data["pool.maxIdle"]; ok {
+		pool.MaxIdle = int(val.(float64))
+	}
+	if val, ok := data["pool.maxActive"]; ok {
+		pool.MaxActive = int(val.(float64))
+	}
+	if val, ok := data["pool.idleTimeout"]; ok {
+		duration, err := time.ParseDuration(val.(string))
+		if err != nil {
+			return nil, fmt.Errorf("не удалось распарсить idleTimeout: %w", err)
+		}
+		pool.IdleTimeout = duration
 	}
 
 	cfg.Redis = RedisConfig{
@@ -170,8 +233,8 @@ func LoadAuthConfig() (*AuthConfig, error) {
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       cfg.Redis.DB,
 		TTL:      cfg.Redis.TTL,
+		Pool:     pool,
 	}
-
 	return &cfg, nil
 }
 

@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/repository"
@@ -14,44 +13,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"strconv"
-	"time"
 )
 
 const (
 	userSessionsPrefix = "user_sessions:"
 )
-
-func NewRedisPool(cfg config.RedisConfig) *redis.Pool {
-	address := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-
-	return &redis.Pool{
-		MaxIdle:     10,
-		MaxActive:   100,
-		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", address,
-				redis.DialPassword(cfg.Password),
-				redis.DialDatabase(cfg.DB),
-				redis.DialConnectTimeout(5*time.Second),
-			)
-			if err != nil {
-				l.Log.WithField("error", err).Error("не удалось установить соединение с Redis")
-				return nil, fmt.Errorf("не удалось установить соединение с Redis: %w", err)
-			}
-
-			// проверка соединения
-			if _, pingErr := conn.Do("PING"); pingErr != nil {
-				closeErr := conn.Close()
-				if closeErr != nil {
-					return nil, fmt.Errorf("не удалось закрыть соединение с Redis: %w", closeErr)
-				}
-				l.Log.WithField("error", pingErr).Error("не удалось выполнить ping Redis")
-				return nil, fmt.Errorf("не удалось выполнить ping Redis: %w", pingErr)
-			}
-			return conn, nil
-		},
-	}
-}
 
 type SessionRepository struct {
 	pool             *redis.Pool

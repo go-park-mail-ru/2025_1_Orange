@@ -35,7 +35,7 @@ func main() {
 	// 3. Инициализация приложения
 	srv := app.Init(cfg)
 
-	// 5. Настройка graceful shutdown
+	// 4. Настройка graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 

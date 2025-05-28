@@ -74,7 +74,6 @@ func (h *ResumeHandler) CreateResume(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "CreateResume").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}

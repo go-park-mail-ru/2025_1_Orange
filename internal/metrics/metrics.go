@@ -1,9 +1,10 @@
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"regexp"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (

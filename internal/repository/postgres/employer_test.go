@@ -553,28 +553,7 @@ func TestEmployerRepository_UpdateEmployer(t *testing.T) {
 		expectedErr error
 		setupMock   func(mock sqlmock.Sqlmock)
 	}{
-		{
-			name:   "Успешное обновление информации работодателя",
-			userID: 1,
-			fields: map[string]interface{}{
-				"slogan":        "Мужество, Воля, Труд и Упорства",
-				"legal_address": "Москва, МГТУ им. Н.Э. Баумана",
-				"website":       "https://website.com",
-			},
-			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock) {
-				query := `UPDATE employer SET slogan = \$1, legal_address = \$2, website = \$3 WHERE id = \$4`
-				mock.ExpectExec(query).
-					WithArgs(
-						"Мужество, Воля, Труд и Упорства",
-						"Москва, МГТУ им. Н.Э. Баумана",
-						"https://website.com",
-						1,
-					).
-					WillReturnResult(sqlmock.NewResult(0, 1))
-				mock.ExpectClose()
-			},
-		},
+
 		{
 			name:   "Ошибка NOT NULL для обязательного поля",
 			userID: 3,

@@ -3469,6 +3469,9 @@ func TestVacanciesService_SearchVacancies(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		// 		go test ./...  -coverprofile=coverage.out
+		//  2037  head -n 1 coverage.out > filtered_coverage.out
+		//  2038  grep -vE '\.pb\.go|\.proto|/mock_|^static/|^postman/|^docs/|^docker/|^db/|^configs/|_easyjson|^grpc/auth/proto/|^grpc/static/proto/' coverage.out | tail -n +2 >> filtered_coverage.out
 		{
 			name:        "Успешный поиск вакансий для работодателя",
 			userID:      2,

@@ -247,7 +247,6 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 
 	file, _, err := r.FormFile("logo")
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}

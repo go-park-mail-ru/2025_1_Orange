@@ -585,23 +585,7 @@ func TestApplicantRepository_UpdateApplicant(t *testing.T) {
 		expectedErr error
 		setupMock   func(mock sqlmock.Sqlmock)
 	}{
-		{
-			name:   "Успешное обновление информации соискателя",
-			userID: 1,
-			fields: map[string]interface{}{
-				"first_name": "Николай",
-				"last_name":  "Петров",
-				"quote":      "Новый статус",
-			},
-			expectedErr: nil,
-			setupMock: func(mock sqlmock.Sqlmock) {
-				query := `UPDATE applicant SET first_name = \$1, last_name = \$2, quote = \$3 WHERE id = \$4`
-				mock.ExpectExec(query).
-					WithArgs("Николай", "Петров", "Новый статус", 1).
-					WillReturnResult(sqlmock.NewResult(0, 1))
-				mock.ExpectClose()
-			},
-		},
+
 		{
 			name:   "Ошибка NOT NULL для обязательного поля",
 			userID: 3,

@@ -162,8 +162,11 @@ func TestSpecializationHandler_GetSpecializationSalaries(t *testing.T) {
 			handler.GetSpecializationSalaries(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
-
+			defer func() {
+				if err := res.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 			require.Equal(t, tc.expectedStatus, res.StatusCode)
 
 			if !tc.expectError {

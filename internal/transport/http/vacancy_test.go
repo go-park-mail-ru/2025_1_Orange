@@ -149,7 +149,11 @@ func TestVacancyHandler_CreateVacancy(t *testing.T) {
 			handler.CreateVacancy(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -255,7 +259,11 @@ func TestVacancyHandler_GetVacancy(t *testing.T) {
 			handler.GetVacancy(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -450,7 +458,11 @@ func TestVacancyHandler_UpdateVacancy(t *testing.T) {
 			handler.UpdateVacancy(rec, req)
 
 			resp := rec.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -621,7 +633,11 @@ func TestVacancyHandler_DeleteVacancy(t *testing.T) {
 			handler.DeleteVacancy(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -872,7 +888,11 @@ func TestVacancyHandler_ApplyToVacancy(t *testing.T) {
 			handler.ApplyToVacancy(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 		})
@@ -1226,7 +1246,11 @@ func TestVacancyHandler_GetActiveVacanciesByEmployer(t *testing.T) {
 			handler.GetActiveVacanciesByEmployer(rec, req)
 
 			resp := rec.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 			body, _ := io.ReadAll(resp.Body)
 
 			require.Equal(t, tt.expectedStatus, resp.StatusCode)
@@ -1386,7 +1410,11 @@ func TestVacancyHandler_GetResponsesOnVacancy(t *testing.T) {
 			handler.GetResponsesOnVacancy(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 
 			body, _ := io.ReadAll(resp.Body)
 
@@ -1534,8 +1562,11 @@ func TestVacancyHandler_GetVacanciesByApplicant(t *testing.T) {
 			handler.GetVacanciesByApplicant(rec, req)
 
 			res := rec.Result()
-			defer res.Body.Close()
-
+			defer func() {
+				if err := res.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 			body, _ := io.ReadAll(res.Body)
 
 			require.Equal(t, tt.expectedStatus, res.StatusCode)
@@ -1689,7 +1720,11 @@ func TestVacancyHandler_GetLikedVacancies(t *testing.T) {
 			handler.GetLikedVacancies(rec, req)
 
 			res := rec.Result()
-			defer res.Body.Close()
+			defer func() {
+				if err := res.Body.Close(); err != nil {
+					t.Errorf("Failed to close response body: %v", err)
+				}
+			}()
 			body, _ := io.ReadAll(res.Body)
 
 			require.Equal(t, tt.expectedStatus, res.StatusCode)

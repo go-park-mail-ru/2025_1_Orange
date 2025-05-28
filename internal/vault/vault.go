@@ -3,10 +3,11 @@ package vault
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/hashicorp/vault/api"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/vault/api"
 )
 
 type VaultConfig struct {

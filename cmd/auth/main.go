@@ -8,6 +8,7 @@ import (
 	authPROTO "ResuMatch/internal/transport/grpc/auth/proto"
 	"ResuMatch/internal/transport/grpc/interceptors"
 	"ResuMatch/internal/usecase/service"
+	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -19,7 +20,9 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadAuthConfig()
+	vaultClient := connector.GetVaultClient()
+
+	cfg, err := config.LoadAuthConfig(vaultClient)
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}
@@ -27,7 +30,7 @@ func main() {
 	metrics.Init("resumatch")
 
 	// Redis repository
-	connPool := redis.NewRedisPool(cfg.Redis)
+	connPool := connector.NewRedisPool(cfg.Redis)
 	sessionRepo, err := redis.NewSessionRepository(connPool, cfg.Redis.TTL)
 	if err != nil {
 		l.Log.Errorf("Не удалось создать репозиторий сессий: %v", err)

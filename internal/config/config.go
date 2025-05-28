@@ -4,6 +4,7 @@ import (
 	"ResuMatch/internal/vault"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -161,23 +162,33 @@ func LoadAppConfig(vaultClient *vault.VaultClient) (*Config, error) {
 	}
 
 	if val, ok := data["readTimeout"]; ok {
-		duration, err := time.ParseDuration(val.(string))
-		if err != nil {
-			return nil, fmt.Errorf("не удалось распарсить readTimeout: %w", err)
+		if strVal, ok := val.(string); ok {
+			duration, err := time.ParseDuration(strVal)
+			if err != nil {
+				return nil, fmt.Errorf("не удалось распарсить readTimeout: %w", err)
+			}
+			cfg.HTTP.ReadTimeout = duration
 		}
-		cfg.HTTP.ReadTimeout = duration
 	}
 
 	if val, ok := data["writeTimeout"]; ok {
-		duration, err := time.ParseDuration(val.(string))
-		if err != nil {
-			return nil, fmt.Errorf("не удалось распарсить writeTimeout: %w", err)
+		if strVal, ok := val.(string); ok {
+			duration, err := time.ParseDuration(strVal)
+			if err != nil {
+				return nil, fmt.Errorf("не удалось распарсить writeTimeout: %w", err)
+			}
+			cfg.HTTP.WriteTimeout = duration
 		}
-		cfg.HTTP.WriteTimeout = duration
 	}
 
 	if val, ok := data["maxHeaderBytes"]; ok {
-		cfg.HTTP.MaxHeaderBytes = int(val.(float64))
+		if strVal, ok := val.(string); ok {
+			intVal, err := strconv.Atoi(strVal)
+			if err != nil {
+				return nil, fmt.Errorf("не удалось преобразовать maxHeaderBytes в int: %w", err)
+			}
+			cfg.HTTP.MaxHeaderBytes = intVal
+		}
 	}
 
 	cfg.CSRF.Secret = os.Getenv("CSRF_SECRET")
@@ -214,17 +225,33 @@ func LoadAuthConfig(vaultClient *vault.VaultClient) (*AuthConfig, error) {
 
 	pool := RedisPoolCfg{}
 	if val, ok := data["pool.maxIdle"]; ok {
-		pool.MaxIdle = int(val.(float64))
-	}
-	if val, ok := data["pool.maxActive"]; ok {
-		pool.MaxActive = int(val.(float64))
-	}
-	if val, ok := data["pool.idleTimeout"]; ok {
-		duration, err := time.ParseDuration(val.(string))
-		if err != nil {
-			return nil, fmt.Errorf("не удалось распарсить idleTimeout: %w", err)
+		if strVal, ok := val.(string); ok {
+			if intVal, err := strconv.Atoi(strVal); err == nil {
+				pool.MaxIdle = intVal
+			} else {
+				return nil, fmt.Errorf("не удалось преобразовать pool.maxIdle: %w", err)
+			}
 		}
-		pool.IdleTimeout = duration
+	}
+
+	if val, ok := data["pool.maxActive"]; ok {
+		if strVal, ok := val.(string); ok {
+			if intVal, err := strconv.Atoi(strVal); err == nil {
+				pool.MaxActive = intVal
+			} else {
+				return nil, fmt.Errorf("не удалось преобразовать pool.maxActive: %w", err)
+			}
+		}
+	}
+
+	if val, ok := data["pool.idleTimeout"]; ok {
+		if strVal, ok := val.(string); ok {
+			if duration, err := time.ParseDuration(strVal); err == nil {
+				pool.IdleTimeout = duration
+			} else {
+				return nil, fmt.Errorf("не удалось распарсить pool.idleTimeout: %w", err)
+			}
+		}
 	}
 
 	cfg.Redis = RedisConfig{
@@ -233,7 +260,7 @@ func LoadAuthConfig(vaultClient *vault.VaultClient) (*AuthConfig, error) {
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       cfg.Redis.DB,
 		TTL:      cfg.Redis.TTL,
-		Pool:     cfg.Redis.Pool,
+		Pool:     pool,
 	}
 	return &cfg, nil
 }

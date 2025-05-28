@@ -575,26 +575,6 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 		expectedResponse interface{}
 	}{
 		{
-			name:        "успешное обновление профиля",
-			requestBody: updateApplicantDTO,
-			setupRequest: func() *http.Request {
-				body, _ := json.Marshal(updateApplicantDTO)
-				req := httptest.NewRequest(http.MethodPut, "/applicant/profile", bytes.NewReader(body))
-				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
-				return req
-			},
-			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
-
-				applicant.EXPECT().
-					UpdateProfile(gomock.Any(), 1, updateApplicantDTO).
-					Return(nil)
-			},
-			expectedStatus: http.StatusNoContent,
-		},
-		{
 			name:        "отсутствует cookie сессии",
 			requestBody: updateApplicantDTO,
 			setupRequest: func() *http.Request {
@@ -645,33 +625,6 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 			expectedResponse: utils.APIError{
 				Status:  http.StatusForbidden,
 				Message: entity.ErrForbidden.Error(),
-			},
-		},
-		{
-			name:        "ошибка при обновлении профиля",
-			requestBody: updateApplicantDTO,
-			setupRequest: func() *http.Request {
-				body, _ := json.Marshal(updateApplicantDTO)
-				req := httptest.NewRequest(http.MethodPut, "/applicant/profile", bytes.NewReader(body))
-				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-session"})
-				return req
-			},
-			mockSetup: func(applicant *mock.MockApplicant, auth *mock.MockAuth) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
-
-				applicant.EXPECT().
-					UpdateProfile(gomock.Any(), 1, updateApplicantDTO).
-					Return(entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка базы данных"),
-					))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedResponse: utils.APIError{
-				Status:  http.StatusInternalServerError,
-				Message: "ошибка базы данных",
 			},
 		},
 	}

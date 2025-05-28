@@ -20,7 +20,9 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadAuthConfig()
+	vaultClient := connector.GetVaultClient()
+
+	cfg, err := config.LoadAuthConfig(vaultClient)
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}

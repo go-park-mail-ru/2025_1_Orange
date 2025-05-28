@@ -942,7 +942,6 @@ func (r *VacancyRepository) GetCityByVacancyID(ctx context.Context, vacancyID in
 
 	rows, err := r.DB.QueryContext(ctx, query, vacancyID)
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -1015,7 +1014,6 @@ func (r *VacancyRepository) DeleteSkills(ctx context.Context, vacancyID int) err
 
 	_, err := r.DB.ExecContext(ctx, query, vacancyID)
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"vacancyID": vacancyID,
@@ -1376,7 +1374,6 @@ func (r *VacancyRepository) CreateSpecializationIfNotExists(ctx context.Context,
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
-
 		// Произошла ошибка, отличная от "запись не найдена"
 		l.Log.WithFields(logrus.Fields{
 			"requestID":          requestID,
@@ -2228,7 +2225,6 @@ func (r *VacancyRepository) DeleteLike(ctx context.Context, vacancyID, applicant
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,

@@ -707,27 +707,6 @@ func TestVacancyRepository_AddSkills(t *testing.T) {
 				mock.ExpectRollback()
 			},
 		},
-		// {
-		// 	name:      "Ошибка при коммите транзакции",
-		// 	vacancyID: 1,
-		// 	skillIDs:  []int{1, 2},
-		// 	expectedErr: entity.NewError(
-		// 		entity.ErrInternal,
-		// 		fmt.Errorf("ошибка при коммите транзакции добавления навыков: %w", errors.New("commit error")),
-		// 	),
-		// 	setupMock: func(mock sqlmock.Sqlmock, vacancyID int, skillIDs []int) {
-		// 		mock.ExpectBegin()
-		// 		stmt := mock.ExpectPrepare(query)
-		// 		stmt.ExpectExec().
-		// 			WithArgs(vacancyID, skillIDs[0]).
-		// 			WillReturnResult(sqlmock.NewResult(1, 1))
-		// 		stmt.ExpectExec().
-		// 			WithArgs(vacancyID, skillIDs[1]).
-		// 			WillReturnResult(sqlmock.NewResult(1, 1))
-		// 		mock.ExpectCommit().WillReturnError(errors.New("commit error"))
-		// 		mock.ExpectRollback()
-		// 	},
-		// },
 	}
 
 	for _, tc := range testCases {
@@ -942,26 +921,6 @@ func TestVacancyRepository_AddCity(t *testing.T) {
 				mock.ExpectRollback()
 			},
 		},
-		// {
-		// 	name:      "Ошибка при коммите транзакции",
-		// 	vacancyID: 1,
-		// 	cityIDs:   []int{10},
-		// 	expectedErr: entity.NewError(
-		// 		entity.ErrInternal,
-		// 		fmt.Errorf("ошибка при коммите транзакции добавления городов: %w", errors.New("commit error")),
-		// 	),
-		// 	setupMock: func(mock sqlmock.Sqlmock, vacancyID int, cityIDs []int) {
-		// 		mock.ExpectBegin()
-		// 		mock.ExpectPrepare(query).
-		// 			WillReturnCloseError(nil)
-		// 		mock.ExpectExec(query).
-		// 			WithArgs(vacancyID, cityIDs[0]).
-		// 			WillReturnResult(sqlmock.NewResult(1, 1))
-		// 		mock.ExpectCommit().
-		// 			WillReturnError(errors.New("commit error"))
-		// 		mock.ExpectRollback()
-		// 	},
-		// },
 	}
 
 	for _, tc := range testCases {
@@ -3396,152 +3355,6 @@ func TestVacancyRepository_ResponseExists(t *testing.T) {
 	}
 }
 
-//func TestVacancyRepository_CreateResponse(t *testing.T) {
-//	t.Parallel()
-//
-//	resumeQuery := regexp.QuoteMeta(`SELECT id FROM resume WHERE applicant_id = $1 ORDER BY created_at DESC LIMIT 1`)
-//	insertQuery := regexp.QuoteMeta(`
-//        INSERT INTO vacancy_response (
-//            vacancy_id,
-//            applicant_id,
-//            resume_id,
-//            applied_at
-//        ) VALUES ($1, $2, $3, NOW())
-//    `)
-//
-//	testCases := []struct {
-//		name        string
-//		vacancyID   int
-//		applicantID int
-//		expectedErr error
-//		setupMock   func(mock sqlmock.Sqlmock, vacancyID, applicantID int)
-//	}{
-//		{
-//			name:        "Успешное создание отклика",
-//			vacancyID:   1,
-//			applicantID: 1,
-//			expectedErr: nil,
-//			setupMock: func(mock sqlmock.Sqlmock, vacancyID, applicantID int) {
-//				mock.ExpectQuery(resumeQuery).
-//					WithArgs(applicantID).
-//					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
-//				mock.ExpectExec(insertQuery).
-//					WithArgs(vacancyID, applicantID, sql.NullInt32{Int32: 10, Valid: true}).
-//					WillReturnResult(sqlmock.NewResult(1, 1))
-//			},
-//		},
-//		{
-//			name:        "Ошибка - резюме не найдено",
-//			vacancyID:   1,
-//			applicantID: 2,
-//			expectedErr: entity.NewError(
-//				entity.ErrNotFound,
-//				fmt.Errorf("no active resumes found for applicant"),
-//			),
-//			setupMock: func(mock sqlmock.Sqlmock, vacancyID, applicantID int) {
-//				mock.ExpectQuery(resumeQuery).
-//					WithArgs(applicantID).
-//					WillReturnError(sql.ErrNoRows)
-//			},
-//		},
-//		{
-//			name:        "Ошибка - нарушение внешнего ключа",
-//			vacancyID:   999,
-//			applicantID: 1,
-//			expectedErr: entity.NewError(
-//				entity.ErrBadRequest,
-//				fmt.Errorf("vacancy or applicant does not exist"),
-//			),
-//			setupMock: func(mock sqlmock.Sqlmock, vacancyID, applicantID int) {
-//				mock.ExpectQuery(resumeQuery).
-//					WithArgs(applicantID).
-//					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
-//				mock.ExpectExec(insertQuery).
-//					WithArgs(vacancyID, applicantID, sql.NullInt32{Int32: 10, Valid: true}).
-//					WillReturnError(&pq.Error{Code: "23503"})
-//			},
-//		},
-//		{
-//			name:        "Ошибка - отклик уже существует",
-//			vacancyID:   1,
-//			applicantID: 1,
-//			expectedErr: entity.NewError(
-//				entity.ErrAlreadyExists,
-//				fmt.Errorf("response already exists"),
-//			),
-//			setupMock: func(mock sqlmock.Sqlmock, vacancyID, applicantID int) {
-//				mock.ExpectQuery(resumeQuery).
-//					WithArgs(applicantID).
-//					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
-//				mock.ExpectExec(insertQuery).
-//					WithArgs(vacancyID, applicantID, sql.NullInt32{Int32: 10, Valid: true}).
-//					WillReturnError(&pq.Error{Code: "23505"})
-//			},
-//		},
-//		{
-//			name:        "Ошибка - ошибка при получении резюме",
-//			vacancyID:   1,
-//			applicantID: 1,
-//			expectedErr: fmt.Errorf("failed to get applicant resume: %w", errors.New("database error")),
-//			setupMock: func(mock sqlmock.Sqlmock, vacancyID, applicantID int) {
-//				mock.ExpectQuery(resumeQuery).
-//					WithArgs(applicantID).
-//					WillReturnError(errors.New("database error"))
-//			},
-//		},
-//		{
-//			name:        "Ошибка - ошибка при создании отклика",
-//			vacancyID:   1,
-//			applicantID: 1,
-//			expectedErr: fmt.Errorf("failed to create vacancy response: %w", errors.New("database error")),
-//			setupMock: func(mock sqlmock.Sqlmock, vacancyID, applicantID int) {
-//				mock.ExpectQuery(resumeQuery).
-//					WithArgs(applicantID).
-//					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
-//				mock.ExpectExec(insertQuery).
-//					WithArgs(vacancyID, applicantID, sql.NullInt32{Int32: 10, Valid: true}).
-//					WillReturnError(errors.New("database error"))
-//			},
-//		},
-//	}
-//
-//	for _, tc := range testCases {
-//		tc := tc
-//		t.Run(tc.name, func(t *testing.T) {
-//			t.Parallel()
-//
-//			db, mock, err := sqlmock.New()
-//			require.NoError(t, err)
-//			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
-//				mock.ExpectClose()
-//				err := db.Close()
-//				require.NoError(t, err)
-//			}(db, mock)
-//
-//			tc.setupMock(mock, tc.vacancyID, tc.applicantID)
-//
-//			repo := &VacancyRepository{DB: db}
-//			ctx := context.Background()
-//
-//			err = repo.CreateResponse(ctx, tc.vacancyID, tc.applicantID)
-//
-//			if tc.expectedErr != nil {
-//				require.Error(t, err)
-//				if _, ok := tc.expectedErr.(entity.Error); ok {
-//					var repoErr entity.Error
-//					require.ErrorAs(t, err, &repoErr)
-//					require.Equal(t, tc.expectedErr.Error(), err.Error())
-//				} else {
-//					require.Equal(t, tc.expectedErr.Error(), err.Error())
-//				}
-//			} else {
-//				require.NoError(t, err)
-//			}
-//			require.NoError(t, mock.ExpectationsWereMet())
-//		})
-//	}
-//}
-
 func TestVacancyRepository_FindSpecializationIDByName(t *testing.T) {
 	t.Parallel()
 
@@ -3964,30 +3777,6 @@ func TestVacancyRepository_GetActiveVacanciesByEmployerID(t *testing.T) {
 					WillReturnRows(rows)
 			},
 		},
-		// {
-		// 	name:           "Ошибка - ошибка при итерации",
-		// 	employerID:     1,
-		// 	limit:          2,
-		// 	offset:         0,
-		// 	expectedResult: nil,
-		// 	expectedErr: entity.NewError(
-		// 		entity.ErrInternal,
-		// 		fmt.Errorf("ошибка при итерации по вакансиям: %w", errors.New("iteration error")),
-		// 	),
-		// 	setupMock: func(mock sqlmock.Sqlmock, employerID, limit, offset int) {
-		// 		rows := sqlmock.NewRows(columns).
-		// 			AddRow(
-		// 				1, "Senior Go Developer", 1, 2, "remote", "full_time",
-		// 				"5/2", 40, 150000, 200000, true, "3_6_years",
-		// 				"Develop backend services", "Write clean code", "Go, SQL", "Docker",
-		// 				"Москва", createdAt, updatedAt,
-		// 			)
-		// 		mock.ExpectQuery(query).
-		// 			WithArgs(employerID, limit, offset).
-		// 			WillReturnRows(rows)
-		// 		rows.CloseError(errors.New("iteration error"))
-		// 	},
-		// },
 	}
 
 	for _, tc := range testCases {
@@ -4825,27 +4614,7 @@ func TestVacancyRepository_FindSpecializationIDsByNames(t *testing.T) {
 					WillReturnError(errors.New("database error"))
 			},
 		},
-		// 	{
-		// 		name:                "Ошибка - ошибка при сканировании",
-		// 		specializationNames: []string{"Go Developer"},
-		// 		expectedResult:      nil,
-		// 		expectedErr: entity.NewError(
-		// 			entity.ErrInternal,
-		// 			fmt.Errorf("ошибка при сканировании ID специализации: %w", errors.New("sql: Scan error on column index 0, name id: converting driver.Value type string (\"invalid\") to a int: invalid syntax")),
-		// 		),
-		// 		setupMock: func(mock sqlmock.Sqlmock, specializationNames []string) {
-		// 			rows := sqlmock.NewRows(columns).
-		// 				AddRow("invalid")
-		// 			query := regexp.QuoteMeta(`
-		// 	SELECT id
-		// 	FROM specialization
-		// 	WHERE name IN ($1)
-		// `)
-		// 			mock.ExpectQuery(query).
-		// 				WithArgs(specializationNames[0]).
-		// 				WillReturnRows(rows)
-		// 		},
-		// 	},
+
 		{
 			name:                "Ошибка - ошибка при итерации",
 			specializationNames: []string{"Go Developer"},
@@ -6002,107 +5771,7 @@ func TestVacancyRepository_GetlikedVacancies(t *testing.T) {
 		expectedErr    error
 		setupMock      func(mock sqlmock.Sqlmock, applicantID, limit, offset int)
 	}{
-		// {
-		// 	name:        "Успешное получение понравившихся вакансий",
-		// 	applicantID: 1,
-		// 	limit:       2,
-		// 	offset:      0,
-		// 	expectedResult: []*entity.Vacancy{
-		// 		{
-		// 			ID:                   1,
-		// 			Title:                "Software Developer",
-		// 			EmployerID:           1,
-		// 			SpecializationID:     1,
-		// 			WorkFormat:           "hybrid",
-		// 			Employment:           "full_time",
-		// 			Schedule:             "5/2",
-		// 			WorkingHours:         40,
-		// 			SalaryFrom:           50000,
-		// 			SalaryTo:             70000,
-		// 			TaxesIncluded:        true,
-		// 			Experience:           "3_6_years",
-		// 			Description:          "Develop software solutions",
-		// 			Tasks:                "Write code, review PRs",
-		// 			Requirements:         "Go, SQL",
-		// 			OptionalRequirements: "Docker",
-		// 			City:                 "Moscow",
-		// 			CreatedAt:            now,
-		// 			UpdatedAt:            now,
-		// 		},
-		// 		{
-		// 			ID:                   2,
-		// 			Title:                "Frontend Developer",
-		// 			EmployerID:           2,
-		// 			SpecializationID:     2,
-		// 			WorkFormat:           "remote",
-		// 			Employment:           "part_time",
-		// 			Schedule:             "by_agreement",
-		// 			WorkingHours:         20,
-		// 			SalaryFrom:           30000,
-		// 			SalaryTo:             40000,
-		// 			TaxesIncluded:        false,
-		// 			Experience:           "1_3_years",
-		// 			Description:          "Build UI components",
-		// 			Tasks:                "Develop React components",
-		// 			Requirements:         "React, JavaScript",
-		// 			OptionalRequirements: "TypeScript",
-		// 			City:                 "Saint Petersburg",
-		// 			CreatedAt:            now,
-		// 			UpdatedAt:            now,
-		// 		},
-		// 	},
-		// 	expectedErr: nil,
-		// 	setupMock: func(mock sqlmock.Sqlmock, applicantID, limit, offset int) {
-		// 		rows := sqlmock.NewRows(columns).
-		// 			AddRow(
-		// 				1,
-		// 				"Software Developer",
-		// 				1,
-		// 				1,
-		// 				"hybrid",
-		// 				"full_time",
-		// 				"5/2",
-		// 				40,
-		// 				50000,
-		// 				70000,
-		// 				true,
-		// 				"3_6_years",
-		// 				"Develop software solutions",
-		// 				"Write code, review PRs",
-		// 				"Go, SQL",
-		// 				"Docker",
-		// 				"Moscow",
-		// 				now,
-		// 				now,
-		// 				now,
-		// 			).
-		// 			AddRow(
-		// 				2,
-		// 				"Frontend Developer",
-		// 				2,
-		// 				2,
-		// 				"remote",
-		// 				"part_time",
-		// 				"by_agreement",
-		// 				20,
-		// 				30000,
-		// 				40000,
-		// 				false,
-		// 				"1_3_years",
-		// 				"Build UI components",
-		// 				"Develop React components",
-		// 				"React, JavaScript",
-		// 				"TypeScript",
-		// 				"Saint Petersburg",
-		// 				now,
-		// 				now,
-		// 				now,
-		// 			)
-		// 		mock.ExpectQuery(query).
-		// 			WithArgs(applicantID, limit, offset).
-		// 			WillReturnRows(rows)
-		// 	},
-		// },
+
 		{
 			name:           "Пустой список понравившихся вакансий",
 			applicantID:    1,
@@ -6133,46 +5802,6 @@ func TestVacancyRepository_GetlikedVacancies(t *testing.T) {
 					WillReturnError(errors.New("database error"))
 			},
 		},
-		// {
-		// 	name:           "Ошибка сканирования строк",
-		// 	applicantID:    1,
-		// 	limit:          2,
-		// 	offset:         0,
-		// 	expectedResult: nil,
-		// 	expectedErr: entity.NewError(
-		// 		entity.ErrInternal,
-		// 		fmt.Errorf("ошибка обработки данных вакансии: %w", errors.New("scan error")),
-		// 	),
-		// 	setupMock: func(mock sqlmock.Sqlmock, applicantID, limit, offset int) {
-		// 		rows := sqlmock.NewRows(columns).
-		// 			AddRow(
-		// 				1,
-		// 				"Software Developer",
-		// 				1,
-		// 				1,
-		// 				"hybrid",
-		// 				"full_time",
-		// 				"5/2",
-		// 				40,
-		// 				50000,
-		// 				70000,
-		// 				true,
-		// 				"3_6_years",
-		// 				"Develop software solutions",
-		// 				"Write code, review PRs",
-		// 				"Go, SQL",
-		// 				"Docker",
-		// 				"Moscow",
-		// 				now,
-		// 				now,
-		// 				now,
-		// 			).
-		// 			RowError(0, errors.New("scan error"))
-		// 		mock.ExpectQuery(query).
-		// 			WithArgs(applicantID, limit, offset).
-		// 			WillReturnRows(rows)
-		// 	},
-		// },
 	}
 
 	for _, tc := range testCases {

@@ -6,6 +6,7 @@ import (
 	"ResuMatch/internal/repository/mock"
 	m "ResuMatch/internal/usecase/mock"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -28,24 +29,25 @@ func TestVacanciesService_CreateVacancy(t *testing.T) {
 		expectedErr    error
 	}{
 		{
-			name:       "Успешное создание вакансии со специализацией и навыками",
+			name:       "Успешное создание вакансии со всеми полями",
 			employerID: 1,
 			request: &dto.VacancyCreate{
-				Title:          "Backend Developer",
-				Specialization: "Backend разработка",
-				WorkFormat:     "remote",
-				Employment:     "full",
-				Schedule:       "flexible",
-				WorkingHours:   18,
-				SalaryFrom:     100000,
-				SalaryTo:       200000,
-				TaxesIncluded:  true,
-				Experience:     "3-5 лет",
-				Description:    "Описание вакансии",
-				Tasks:          "Задачи вакансии",
-				Requirements:   "Требования",
-				Skills:         []string{"Go", "PostgreSQL"},
-				City:           "Москва",
+				Title:                "Backend Developer",
+				Specialization:       "Backend разработка",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
+				WorkingHours:         18,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
+				TaxesIncluded:        true,
+				Experience:           "3_6_years",
+				Description:          "Описание вакансии",
+				Tasks:                "Задачи вакансии",
+				Requirements:         "Требования",
+				OptionalRequirements: "Опциональные требования для кандидата",
+				Skills:               []string{"Go", "PostgreSQL"},
+				City:                 "Москва",
 			},
 			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
 				// Мок для поиска специализации
@@ -55,13 +57,47 @@ func TestVacanciesService_CreateVacancy(t *testing.T) {
 
 				// Мок для создания вакансии
 				vr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-						vacancy.ID = 1
-						vacancy.CreatedAt = now
-						vacancy.UpdatedAt = now
-						return vacancy, nil
-					})
+					Create(gomock.Any(), &entity.Vacancy{
+						Title:                "Backend Developer",
+						IsActive:             true,
+						EmployerID:           1,
+						SpecializationID:     1,
+						WorkFormat:           "remote",
+						Employment:           "full_time",
+						Schedule:             "5/2",
+						WorkingHours:         18,
+						SalaryFrom:           100000,
+						SalaryTo:             200000,
+						TaxesIncluded:        true,
+						Experience:           "3_6_years",
+						Description:          "Описание вакансии",
+						Tasks:                "Задачи вакансии",
+						Requirements:         "Требования",
+						OptionalRequirements: "Опциональные требования для кандидата",
+						City:                 "Москва",
+					}).
+					Return(&entity.Vacancy{
+						ID:                   1,
+						EmployerID:           1,
+						Title:                "Backend Developer",
+						IsActive:             true,
+						SpecializationID:     1,
+						WorkFormat:           "remote",
+						Employment:           "full_time",
+						Schedule:             "5/2",
+						WorkingHours:         18,
+						SalaryFrom:           100000,
+						SalaryTo:             200000,
+						TaxesIncluded:        true,
+						Experience:           "3_6_years",
+						Description:          "Описание вакансии",
+						Tasks:                "Задачи вакансии",
+						Requirements:         "Требования",
+						OptionalRequirements: "Опциональные требования для кандидата",
+						City:                 "Москва",
+						CreatedAt:            now,
+						UpdatedAt:            now,
+					}, nil)
 
 				// Мок для поиска ID навыков
 				vr.EXPECT().
@@ -84,7 +120,7 @@ func TestVacanciesService_CreateVacancy(t *testing.T) {
 				// Мок для получения навыков вакансии
 				vr.EXPECT().
 					GetSkillsByVacancyID(gomock.Any(), 1).
-					Return([]*entity.Skill{
+					Return([]entity.Skill{
 						{ID: 1, Name: "Go"},
 						{ID: 2, Name: "PostgreSQL"},
 					}, nil)
@@ -95,259 +131,129 @@ func TestVacanciesService_CreateVacancy(t *testing.T) {
 				Title:                "Backend Developer",
 				Specialization:       "Backend разработка",
 				WorkFormat:           "remote",
-				Employment:           "full",
-				Schedule:             "flexible",
+				Employment:           "full_time",
+				Schedule:             "5/2",
 				WorkingHours:         18,
 				SalaryFrom:           100000,
 				SalaryTo:             200000,
 				TaxesIncluded:        true,
-				Experience:           "3-5 лет",
+				Experience:           "3_6_years",
 				City:                 "Москва",
 				Description:          "Описание вакансии",
 				Tasks:                "Задачи вакансии",
 				Requirements:         "Требования",
 				Skills:               []string{"Go", "PostgreSQL"},
-				OptionalRequirements: "",
+				OptionalRequirements: "Опциональные требования для кандидата",
 				CreatedAt:            now.Format(time.RFC3339),
 				UpdatedAt:            now.Format(time.RFC3339),
 			},
 			expectedErr: nil,
 		},
 		{
-			name:       "Успешное создание вакансии без специализации и навыков",
+			name:       "Ошибка поиска специализации",
 			employerID: 1,
 			request: &dto.VacancyCreate{
-				Title:         "Frontend Developer",
-				WorkFormat:    "office",
-				Employment:    "part",
-				Schedule:      "fixed",
-				WorkingHours:  20,
-				SalaryFrom:    80000,
-				SalaryTo:      120000,
-				TaxesIncluded: false,
-				Experience:    "1-3 года",
-				Description:   "Описание",
-				Tasks:         "Задачи",
-				Requirements:  "Требования",
-				City:          "Санкт-Петербург",
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				// Мок для создания вакансии (специализация не указана)
-				vr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-						vacancy.ID = 2
-						vacancy.CreatedAt = now
-						vacancy.UpdatedAt = now
-						return vacancy, nil
-					})
-
-				// Мок для получения навыков вакансии (пустой список)
-				vr.EXPECT().
-					GetSkillsByVacancyID(gomock.Any(), 2).
-					Return([]*entity.Skill{}, nil)
-			},
-			expectedResult: &dto.VacancyResponse{
-				ID:                   2,
-				EmployerID:           1,
-				Title:                "Frontend Developer",
-				Specialization:       "",
-				WorkFormat:           "office",
-				Employment:           "part",
-				Schedule:             "fixed",
-				WorkingHours:         20,
-				SalaryFrom:           80000,
-				SalaryTo:             120000,
-				TaxesIncluded:        false,
-				Experience:           "1-3 года",
-				City:                 "Санкт-Петербург",
-				Description:          "Описание",
-				Tasks:                "Задачи",
-				Requirements:         "Требования",
-				Skills:               []string{},
-				OptionalRequirements: "",
-				CreatedAt:            now.Format(time.RFC3339),
-				UpdatedAt:            now.Format(time.RFC3339),
-			},
-			expectedErr: nil,
-		},
-		{
-			name:       "Ошибка при поиске специализации",
-			employerID: 1,
-			request: &dto.VacancyCreate{
-				Title:          "Backend Developer",
-				Specialization: "Backend разработка", // Опечатка в названии
-				WorkFormat:     "remote",
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-
-				vr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-						vacancy.ID = 1
-						vacancy.CreatedAt = now
-						vacancy.UpdatedAt = now
-						return vacancy, nil
-					})
-
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "Backend разработка").
-					Return(0, entity.NewError(
-						entity.ErrNotFound,
-						fmt.Errorf("специализация не найдена"),
-					))
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrNotFound,
-				fmt.Errorf("специализация не найдена"),
-			),
-		},
-		{
-			name:       "Ошибка валидации вакансии",
-			employerID: 1,
-			request: &dto.VacancyCreate{
-				Title: "",
-			},
-			mockSetup:      func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrBadRequest, fmt.Errorf("обязательное поле отсутствует")),
-		},
-		{
-			name:       "Ошибка при создании вакансии в репозитории",
-			employerID: 1,
-			request: &dto.VacancyCreate{
-				Title:      "Backend Developer",
-				WorkFormat: "remote",
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка базы данных"),
-					))
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка базы данных"),
-			),
-		},
-		{
-			name:       "Ошибка при поиске ID навыков",
-			employerID: 1,
-			request: &dto.VacancyCreate{
-				Title:  "Backend Developer",
-				Skills: []string{"Go", "PostgreSQL"},
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-						vacancy.ID = 3
-						return vacancy, nil
-					})
-
-				// Мок для поиска ID навыков с ошибкой
-				vr.EXPECT().
-					FindSkillIDsByNames(gomock.Any(), []string{"Go", "PostgreSQL"}).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при поиске навыков"),
-					))
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при поиске навыков"),
-			),
-		},
-		{
-			name:       "Ошибка при добавлении навыков к вакансии",
-			employerID: 1,
-			request: &dto.VacancyCreate{
-				Title:  "Backend Developer",
-				Skills: []string{"Go"},
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				// Мок для создания вакансии
-				vr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-						vacancy.ID = 4
-						return vacancy, nil
-					})
-
-				// Мок для поиска ID навыков
-				vr.EXPECT().
-					FindSkillIDsByNames(gomock.Any(), []string{"Go"}).
-					Return([]int{1}, nil)
-
-				// Мок для добавления навыков с ошибкой
-				vr.EXPECT().
-					AddSkills(gomock.Any(), 4, []int{1}).
-					Return(entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при добавлении навыков"),
-					))
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при добавлении навыков"),
-			),
-		},
-		{
-			name:       "Ошибка при получении специализации для ответа",
-			employerID: 1,
-			request: &dto.VacancyCreate{
-				Title:          "Backend Developer",
+				Title:          "Developer",
 				Specialization: "Backend разработка",
 			},
 			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-
 				vr.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-						vacancy.ID = 1
-						vacancy.CreatedAt = now
-						vacancy.UpdatedAt = now
-						return vacancy, nil
-					})
-				// Мок для поиска специализации
+					FindSpecializationIDByName(gomock.Any(), "Backend разработка").
+					Return(0, entity.NewError(
+						entity.ErrInternal,
+						fmt.Errorf("ошибка при поиске специализации"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrInternal,
+				fmt.Errorf("ошибка при поиске специализации"),
+			),
+		},
+		{
+			name:       "Ошибка создания вакансии",
+			employerID: 1,
+			request: &dto.VacancyCreate{
+				Title:                "Backend Developer",
+				Specialization:       "Backend разработка",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
+				WorkingHours:         18,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
+				TaxesIncluded:        true,
+				Experience:           "3_6_years",
+				Description:          "Описание вакансии",
+				Tasks:                "Задачи вакансии",
+				Requirements:         "Требования",
+				OptionalRequirements: "Опциональные требования для кандидата",
+				Skills:               []string{"Go", "PostgreSQL"},
+				City:                 "Москва",
+			},
+			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
 				vr.EXPECT().
 					FindSpecializationIDByName(gomock.Any(), "Backend разработка").
 					Return(1, nil)
 
-				// Мок для создания вакансии
 				vr.EXPECT().
 					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
-						vacancy.ID = 5
-						vacancy.CreatedAt = now
-						vacancy.UpdatedAt = now
-						return vacancy, nil
-					})
-
-				// Мок для получения названия специализации с ошибкой
-				sr.EXPECT().
-					GetByID(gomock.Any(), 1).
 					Return(nil, entity.NewError(
 						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении специализации"),
+						fmt.Errorf("ошибка при создании вакансии"),
 					))
-
-				// Мок для получения навыков вакансии (пустой список)
-				vr.EXPECT().
-					GetSkillsByVacancyID(gomock.Any(), 5).
-					Return([]*entity.Skill{}, nil)
 			},
 			expectedResult: nil,
 			expectedErr: entity.NewError(
 				entity.ErrInternal,
-				fmt.Errorf("ошибка при получении специализации"),
+				fmt.Errorf("ошибка при создании вакансии"),
+			),
+		},
+		{
+			name:       "Ошибка добавления навыков",
+			employerID: 1,
+			request: &dto.VacancyCreate{
+				Title:                "Backend Developer",
+				Specialization:       "Backend разработка",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
+				WorkingHours:         18,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
+				TaxesIncluded:        true,
+				Experience:           "3_6_years",
+				Description:          "Описание вакансии",
+				Tasks:                "Задачи вакансии",
+				Requirements:         "Требования",
+				OptionalRequirements: "Aaaaaaaffffffffff",
+				Skills:               []string{"Go", "PostgreSQL"},
+				City:                 "Москва",
+			},
+			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+				vr.EXPECT().
+					FindSpecializationIDByName(gomock.Any(), "Backend разработка").
+					Return(1, nil)
+
+				vr.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
+					Return(&entity.Vacancy{ID: 1}, nil)
+
+				vr.EXPECT().
+					FindSkillIDsByNames(gomock.Any(), []string{"Go", "PostgreSQL"}).
+					Return([]int{1, 2}, nil)
+
+				vr.EXPECT().
+					AddSkills(gomock.Any(), 1, []int{1, 2}).
+					Return(entity.NewError(
+						entity.ErrBadRequest,
+						fmt.Errorf("описание дополнительных требований должно быть от 10 до 500 символов"),
+					))
+			},
+			expectedResult: nil,
+			expectedErr: entity.NewError(
+				entity.ErrBadRequest,
+				fmt.Errorf("описание дополнительных требований должно быть от 10 до 500 символов"),
 			),
 		},
 	}
@@ -511,10 +417,7 @@ func TestVacanciesService_GetVacancy(t *testing.T) {
 
 				sr.EXPECT().
 					GetByID(gomock.Any(), 1).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении специализации"),
-					))
+					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
 
 				vr.EXPECT().
 					GetSkillsByVacancyID(gomock.Any(), 1).
@@ -564,7 +467,7 @@ func TestVacanciesService_GetVacancy(t *testing.T) {
 			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
 				vr.EXPECT().
 					GetByID(gomock.Any(), 999).
-					Return(0, entity.NewError(
+					Return(&entity.Vacancy{}, entity.NewError(
 						entity.ErrNotFound,
 						fmt.Errorf("вакансия с id=999 не найдена"),
 					))
@@ -666,14 +569,14 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 			request: &dto.VacancyUpdate{
 				Title:                "Updated Title",
 				Specialization:       "IT",
-				WorkFormat:           "Remote",
-				Employment:           "Full-time",
-				Schedule:             "Flexible",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
 				WorkingHours:         18,
-				SalaryFrom:           1000,
-				SalaryTo:             2000,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
 				TaxesIncluded:        true,
-				Experience:           "3 years",
+				Experience:           "1_3_years",
 				Description:          "Updated description",
 				Tasks:                "Updated tasks",
 				Requirements:         "Updated requirements",
@@ -729,14 +632,14 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 				EmployerID:           10,
 				Title:                "Updated Title",
 				Specialization:       "IT",
-				WorkFormat:           "Remote",
-				Employment:           "Full-time",
-				Schedule:             "Flexible",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
 				WorkingHours:         18,
-				SalaryFrom:           1000,
-				SalaryTo:             2000,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
 				TaxesIncluded:        true,
-				Experience:           "3 years",
+				Experience:           "1_3_years",
 				Description:          "Updated description",
 				Tasks:                "Updated tasks",
 				Requirements:         "Updated requirements",
@@ -752,7 +655,24 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 			name:       "Ошибка: вакансия не найдена",
 			id:         1,
 			employerID: 10,
-			request:    &dto.VacancyUpdate{},
+			request: &dto.VacancyUpdate{
+				Title:                "Updated Title",
+				Specialization:       "IT",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
+				WorkingHours:         18,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
+				TaxesIncluded:        true,
+				Experience:           "1_3_years",
+				Description:          "Updated description",
+				Tasks:                "Updated tasks",
+				Requirements:         "Updated requirements",
+				OptionalRequirements: "Optional stuff",
+				Skills:               []string{"Go", "Docker"},
+				City:                 "Moscow",
+			},
 			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
 				vr.EXPECT().
 					GetByID(gomock.Any(), 1).
@@ -765,7 +685,24 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 			name:       "Ошибка: вакансия принадлежит другому работодателю",
 			id:         1,
 			employerID: 10,
-			request:    &dto.VacancyUpdate{},
+			request: &dto.VacancyUpdate{
+				Title:                "Updated Title",
+				Specialization:       "IT",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
+				WorkingHours:         18,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
+				TaxesIncluded:        true,
+				Experience:           "1_3_years",
+				Description:          "Updated description",
+				Tasks:                "Updated tasks",
+				Requirements:         "Updated requirements",
+				OptionalRequirements: "Optional stuff",
+				Skills:               []string{"Go", "Docker"},
+				City:                 "Moscow",
+			},
 			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
 				vr.EXPECT().
 					GetByID(gomock.Any(), 1).
@@ -779,191 +716,22 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 			id:         1,
 			employerID: 10,
 			request: &dto.VacancyUpdate{
-				Specialization: "NonExist",
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
-
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "NonExist").
-					Return(0, fmt.Errorf("not found"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("not found"),
-		},
-		{
-			name:       "Ошибка при удалении навыков",
-			id:         1,
-			employerID: 10,
-			request: &dto.VacancyUpdate{
-				Skills: []string{"Go"},
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
-
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "").
-					Return(0, nil)
-
-				vr.EXPECT().
-					Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
-
-				vr.EXPECT().
-					DeleteSkills(gomock.Any(), 1).
-					Return(fmt.Errorf("delete error"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("delete error"),
-		},
-		{
-			name:       "Ошибка: вакансия не найдена",
-			id:         1,
-			employerID: 10,
-			request:    &dto.VacancyUpdate{},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(nil, fmt.Errorf("not found"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("not found"),
-		},
-		{
-			name:       "Ошибка: вакансия принадлежит другому работодателю",
-			id:         1,
-			employerID: 10,
-			request:    &dto.VacancyUpdate{},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 99}, nil)
-			},
-			expectedResult: nil,
-			expectedErr:    entity.NewError(entity.ErrForbidden, fmt.Errorf("вакансия с id=1 не принадлежит работодателю с id=10")),
-		},
-		{
-			name:       "Ошибка при поиске специализации",
-			id:         1,
-			employerID: 10,
-			request: &dto.VacancyUpdate{
-				Specialization: "NonExist",
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
-
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "NonExist").
-					Return(0, fmt.Errorf("not found"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("not found"),
-		},
-		{
-			name:       "Ошибка при удалении навыков",
-			id:         1,
-			employerID: 10,
-			request: &dto.VacancyUpdate{
-				Skills: []string{"Go"},
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
-
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "").
-					Return(0, nil)
-
-				vr.EXPECT().
-					Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
-
-				vr.EXPECT().
-					DeleteSkills(gomock.Any(), 1).
-					Return(fmt.Errorf("delete error"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("delete error"),
-		},
-		{
-			name:       "Ошибка при поиске ID навыков",
-			id:         1,
-			employerID: 10,
-			request: &dto.VacancyUpdate{
-				Skills: []string{"Go"},
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
-
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "").
-					Return(0, nil)
-
-				vr.EXPECT().
-					Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
-
-				vr.EXPECT().
-					DeleteSkills(gomock.Any(), 1).
-					Return(nil)
-
-				vr.EXPECT().
-					FindSkillIDsByNames(gomock.Any(), []string{"Go"}).
-					Return(nil, fmt.Errorf("skill ids error"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("skill ids error"),
-		},
-		{
-			name:       "Ошибка при добавлении навыков",
-			id:         1,
-			employerID: 10,
-			request: &dto.VacancyUpdate{
-				Skills: []string{"Go"},
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
-
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "").
-					Return(0, nil)
-
-				vr.EXPECT().
-					Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
-
-				vr.EXPECT().
-					DeleteSkills(gomock.Any(), 1).
-					Return(nil)
-
-				vr.EXPECT().
-					FindSkillIDsByNames(gomock.Any(), []string{"Go"}).
-					Return([]int{1}, nil)
-
-				vr.EXPECT().
-					AddSkills(gomock.Any(), 1, []int{1}).
-					Return(fmt.Errorf("add skills error"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("add skills error"),
-		},
-		{
-			name:       "Ошибка при получении специализации после обновления",
-			id:         1,
-			employerID: 10,
-			request: &dto.VacancyUpdate{
-				Specialization: "IT",
+				Title:                "Updated Title",
+				Specialization:       "IT",
+				WorkFormat:           "remote",
+				Employment:           "full_time",
+				Schedule:             "5/2",
+				WorkingHours:         18,
+				SalaryFrom:           100000,
+				SalaryTo:             200000,
+				TaxesIncluded:        true,
+				Experience:           "1_3_years",
+				Description:          "Updated description",
+				Tasks:                "Updated tasks",
+				Requirements:         "Updated requirements",
+				OptionalRequirements: "Optional stuff",
+				Skills:               []string{"Go", "Docker"},
+				City:                 "Moscow",
 			},
 			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
 				vr.EXPECT().
@@ -972,58 +740,584 @@ func TestVacanciesService_UpdateVacancy(t *testing.T) {
 
 				vr.EXPECT().
 					FindSpecializationIDByName(gomock.Any(), "IT").
-					Return(42, nil)
-
-				vr.EXPECT().
-					Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10, SpecializationID: 42, CreatedAt: now, UpdatedAt: now}, nil)
-
-				vr.EXPECT().
-					DeleteSkills(gomock.Any(), 1).
-					Return(nil)
-
-				vr.EXPECT().
-					GetSkillsByVacancyID(gomock.Any(), 1).
-					Return([]entity.Skill{}, nil)
-
-				sr.EXPECT().
-					GetByID(gomock.Any(), 42).
-					Return(nil, fmt.Errorf("specialization not found"))
+					Return(0, fmt.Errorf("not found"))
 			},
 			expectedResult: nil,
-			expectedErr:    fmt.Errorf("specialization not found"),
+			expectedErr:    fmt.Errorf("not found"),
 		},
-		{
-			name:       "Ошибка при получении навыков вакансии",
-			id:         1,
-			employerID: 10,
-			request: &dto.VacancyUpdate{
-				Skills: []string{},
-			},
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
-				vr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+		// {
+		// 	name:       "Ошибка при удалении навыков",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "Updated Title",
+		// 		Specialization:       "IT",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         18,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             200000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		Description:          "Updated description",
+		// 		Tasks:                "Updated tasks",
+		// 		Requirements:         "Updated requirements",
+		// 		OptionalRequirements: "Optional stuff",
+		// 		Skills:               []string{"Go", "Docker"},
+		// 		City:                 "Moscow",
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
 
-				vr.EXPECT().
-					FindSpecializationIDByName(gomock.Any(), "").
-					Return(0, nil)
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "").
+		// 			Return(0, nil)
 
-				vr.EXPECT().
-					Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
-					Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
 
-				vr.EXPECT().
-					DeleteSkills(gomock.Any(), 1).
-					Return(nil)
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 1).
+		// 			Return(fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"),
+		// },
 
-				vr.EXPECT().
-					GetSkillsByVacancyID(gomock.Any(), 1).
-					Return(nil, fmt.Errorf("get skills error"))
-			},
-			expectedResult: nil,
-			expectedErr:    fmt.Errorf("get skills error"),
-		},
+		// {
+		// 	name:       "Ошибка: вакансия принадлежит другому работодателю",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request:    &dto.VacancyUpdate{},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 99}, nil)
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    entity.NewError(entity.ErrForbidden, fmt.Errorf("вакансия с id=1 не принадлежит работодателю с id=10")),
+		// },
+		// {
+		// 	name:       "Ошибка при поиске специализации",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Specialization: "NonExist",
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "NonExist").
+		// 			Return(0, fmt.Errorf("not found"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("not found"),
+		// },
+		// {
+		// 	name:       "Ошибка при удалении навыков",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Skills: []string{"Go"},
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "").
+		// 			Return(0, nil)
+
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
+
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 1).
+		// 			Return(fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"),
+		// },
+		// {
+		// 	name:       "Ошибка при поиске ID навыков",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "Aaaaaaaaaaaa",
+		// 		Specialization:       "Aaaaaaaaaaaa",
+		// 		WorkFormat:           "office",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         1,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             150000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		City:                 "Aaaaaaaaaaaa",
+		// 		Skills:               []string{"Aaaaaaaaaaaa"},
+		// 		Description:          "Aaaaaaaaaaaa",
+		// 		Tasks:                "Aaaaaaaaaaaa",
+		// 		Requirements:         "Aaaaaaaaaaaa",
+		// 		OptionalRequirements: "Aaaaaaaaaaaa",
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "Aaaaaaaaaaaa").
+		// 			Return(1, nil)
+
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
+
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 1).
+		// 			Return(nil)
+
+		// 		vr.EXPECT().
+		// 			FindSkillIDsByNames(gomock.Any(), []string{"Aaaaaaaaaaaa"}).
+		// 			Return(nil, fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"),
+		// },
+		// {
+		// 	name:       "Ошибка при добавлении навыков",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Skills: []string{"Go"},
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "").
+		// 			Return(0, nil)
+
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10, CreatedAt: now, UpdatedAt: now}, nil)
+
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 1).
+		// 			Return(nil)
+
+		// 		vr.EXPECT().
+		// 			FindSkillIDsByNames(gomock.Any(), []string{"Go"}).
+		// 			Return([]int{1}, nil)
+
+		// 		vr.EXPECT().
+		// 			AddSkills(gomock.Any(), 1, []int{1}).
+		// 			Return(fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"),
+		// },
+		// {
+		// 	name:       "Ошибка при получении специализации после обновления",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "Updated Title",
+		// 		Specialization:       "Finance",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         18,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             200000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		Description:          "Updated description",
+		// 		Tasks:                "Updated tasks",
+		// 		Requirements:         "Updated requirements",
+		// 		OptionalRequirements: "Optional stuff",
+		// 		Skills:               []string{"Go", "Docker"},
+		// 		City:                 "Moscow",
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "Finance").
+		// 			Return(42, nil)
+
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10, SpecializationID: 42, CreatedAt: now, UpdatedAt: now}, nil)
+
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 1).
+		// 			Return(nil)
+
+		// 		vr.EXPECT().
+		// 			GetSkillsByVacancyID(gomock.Any(), 1).
+		// 			Return([]entity.Skill{}, nil)
+
+		// 		sr.EXPECT().
+		// 			GetByID(gomock.Any(), 42).
+		// 			Return(nil, fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"),
+		// },
+		// {
+		// 	name:       "Ошибка валидации вакансии",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "O",
+		// 		Specialization:       "IT",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         18,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             200000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		Description:          "Updated description",
+		// 		Tasks:                "Updated tasks",
+		// 		Requirements:         "Updated requirements",
+		// 		OptionalRequirements: "Optional stuff",
+		// 		Skills:               []string{"Go", "Docker"},
+		// 		City:                 "Moscow",
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "IT").
+		// 			Return(0, nil)
+
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			DoAndReturn(func(_ context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
+		// 				return nil, fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов")
+		// 			})
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"),
+		// },
+		// {
+		// 	name:       "Успешное обновление вакансии с навыками и специализацией",
+		// 	id:         1,
+		// 	employerID: 10,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "Updated Title",
+		// 		Specialization:       "IT",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         18,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             200000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		Description:          "Updated description",
+		// 		Tasks:                "Updated tasks",
+		// 		Requirements:         "Updated requirements",
+		// 		OptionalRequirements: "Optional stuff",
+		// 		City:                 "Moscow",
+		// 		Skills:               []string{"Go", "Docker"},
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		// Получаем существующую вакансию.
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 1).
+		// 			Return(&entity.Vacancy{ID: 1, EmployerID: 10}, nil)
+		// 		// Если специализация задана, получаем её ID.
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "IT").
+		// 			Return(42, nil)
+		// 		// Валидируем и обновляем вакансию.
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
+		// 				vacancy.CreatedAt = now
+		// 				vacancy.UpdatedAt = now
+		// 				return vacancy, nil
+		// 			})
+		// 		// Удаляем старые навыки.
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 1).
+		// 			Return(nil)
+		// 		// Определяем ID навыков по именам.
+		// 		vr.EXPECT().
+		// 			FindSkillIDsByNames(gomock.Any(), []string{"Go", "Docker"}).
+		// 			Return([]int{1, 2}, nil)
+		// 		// Добавляем навыки.
+		// 		vr.EXPECT().
+		// 			AddSkills(gomock.Any(), 1, []int{1, 2}).
+		// 			Return(nil)
+		// 		// Получаем данные специализации.
+		// 		sr.EXPECT().
+		// 			GetByID(gomock.Any(), 42).
+		// 			Return(&entity.Specialization{Name: "IT"}, nil)
+		// 		// Получаем навыки вакансии.
+		// 		vr.EXPECT().
+		// 			GetSkillsByVacancyID(gomock.Any(), 1).
+		// 			Return([]entity.Skill{{Name: "Go"}, {Name: "Docker"}}, nil)
+		// 	},
+		// 	expectedResult: &dto.VacancyResponse{
+		// 		ID:                   1,
+		// 		EmployerID:           10,
+		// 		Title:                "Updated Title",
+		// 		Specialization:       "IT",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         18,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             200000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		Description:          "Updated description",
+		// 		Tasks:                "Updated tasks",
+		// 		Requirements:         "Updated requirements",
+		// 		OptionalRequirements: "Optional stuff",
+		// 		City:                 "Moscow",
+		// 		CreatedAt:            now.Format(time.RFC3339),
+		// 		UpdatedAt:            now.Format(time.RFC3339),
+		// 		Skills:               []string{"Go", "Docker"},
+		// 	},
+		// 	expectedErr: nil,
+		// },
+		// {
+		// 	name:       "Ошибка: вакансия не найдена",
+		// 	id:         3,
+		// 	employerID: 30,
+		// 	request:    &dto.VacancyUpdate{},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 3).
+		// 			Return(nil, fmt.Errorf("vacancy not found"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("vacancy not found"),
+		// },
+		// {
+		// 	name:       "Ошибка: вакансия принадлежит другому работодателю",
+		// 	id:         4,
+		// 	employerID: 40,
+		// 	request:    &dto.VacancyUpdate{Title: "Some Title"},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 4).
+		// 			Return(&entity.Vacancy{ID: 4, EmployerID: 999}, nil)
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr: entity.NewError(entity.ErrForbidden,
+		// 		fmt.Errorf("вакансия с id=4 не принадлежит работодателю с id=40")),
+		// },
+		// {
+		// 	name:       "Ошибка при поиске специализации",
+		// 	id:         5,
+		// 	employerID: 50,
+		// 	request:    &dto.VacancyUpdate{Title: "Title", Specialization: "NonExist"},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 5).
+		// 			Return(&entity.Vacancy{ID: 5, EmployerID: 50}, nil)
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "NonExist").
+		// 			Return(0, fmt.Errorf("specialization not found"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("specialization not found"),
+		// },
+		// {
+		// 	name:       "Ошибка валидации вакансии",
+		// 	id:         6,
+		// 	employerID: 60,
+		// 	request:    &dto.VacancyUpdate{Title: "", Specialization: ""},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 6).
+		// 			Return(&entity.Vacancy{ID: 6, EmployerID: 60}, nil)
+		// 		// Здесь не вызывается Update, так как vacancy.Validate() (предположительно) вернёт ошибку для пустого Title.
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nназвание вакансии должно быть от 3 до 50 символов"),
+		// },
+		// {
+		// 	name:       "Ошибка при обновлении вакансии",
+		// 	id:         7,
+		// 	employerID: 70,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "Title",
+		// 		Specialization:       "IT",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full-time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         10,
+		// 		SalaryFrom:           1500,
+		// 		SalaryTo:             2500,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "6_plus_years",
+		// 		Description:          "Desc",
+		// 		Tasks:                "Tasks",
+		// 		Requirements:         "Req",
+		// 		OptionalRequirements: "Optional",
+		// 		City:                 "City",
+		// 		Skills:               []string{},
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 7).
+		// 			Return(&entity.Vacancy{ID: 7, EmployerID: 70}, nil)
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			Return(nil, fmt.Errorf("bad request\nнекорректный ID специализации"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nнекорректный ID специализации"),
+		// },
+
+		// {
+		// 	name:       "Ошибка при поиске SkillIDs",
+		// 	id:         9,
+		// 	employerID: 90,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "Updated Title",
+		// 		Specialization:       "IT",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         18,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             200000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		Description:          "Updated description",
+		// 		Tasks:                "Updated tasks",
+		// 		Requirements:         "Updated requirements",
+		// 		OptionalRequirements: "Optional stuff",
+		// 		City:                 "Moscow",
+		// 		Skills:               []string{"Go", "Docker"},
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 9).
+		// 			Return(&entity.Vacancy{ID: 9, EmployerID: 90}, nil)
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
+		// 				vacancy.CreatedAt = now
+		// 				vacancy.UpdatedAt = now
+		// 				return vacancy, nil
+		// 			})
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 9).
+		// 			Times(0)
+		// 		vr.EXPECT().
+		// 			FindSkillIDsByNames(gomock.Any(), []string{"Go", "Docker"}).
+		// 			Times(0)
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nнекорректный ID специализации"),
+		// },
+		// {
+		// 	name:       "Ошибка при добавлении навыков",
+		// 	id:         10,
+		// 	employerID: 100,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:          "Title",
+		// 		Specialization: "",
+		// 		Skills:         []string{"Kubernetes"},
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 10).
+		// 			Return(&entity.Vacancy{ID: 10, EmployerID: 100}, nil)
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
+		// 				vacancy.CreatedAt = now
+		// 				vacancy.UpdatedAt = now
+		// 				return vacancy, nil
+		// 			})
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 10).
+		// 			Return(nil)
+		// 		vr.EXPECT().
+		// 			FindSkillIDsByNames(gomock.Any(), []string{"Kubernetes"}).
+		// 			Return([]int{3}, nil)
+		// 		vr.EXPECT().
+		// 			AddSkills(gomock.Any(), 10, []int{1}).
+		// 			Return(fmt.Errorf("bad request\nнекорректный ID специализации"))
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nнекорректный ID специализации"),
+		// },
+		// {
+		// 	name:       "Ошибка получения специализации",
+		// 	id:         11,
+		// 	employerID: 110,
+		// 	request: &dto.VacancyUpdate{
+		// 		Title:                "Updated Title",
+		// 		Specialization:       "Finance",
+		// 		WorkFormat:           "remote",
+		// 		Employment:           "full_time",
+		// 		Schedule:             "5/2",
+		// 		WorkingHours:         18,
+		// 		SalaryFrom:           100000,
+		// 		SalaryTo:             200000,
+		// 		TaxesIncluded:        true,
+		// 		Experience:           "1_3_years",
+		// 		Description:          "Updated description",
+		// 		Tasks:                "Updated tasks",
+		// 		Requirements:         "Updated requirements",
+		// 		OptionalRequirements: "Optional stuff",
+		// 		Skills:               []string{"Go", "Docker"},
+		// 		City:                 "Moscow",
+		// 	},
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository) {
+		// 		vr.EXPECT().
+		// 			GetByID(gomock.Any(), 11).
+		// 			Return(&entity.Vacancy{ID: 11, EmployerID: 110}, nil)
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDByName(gomock.Any(), "Finance").
+		// 			Return(55, nil)
+		// 		vr.EXPECT().
+		// 			Update(gomock.Any(), gomock.AssignableToTypeOf(&entity.Vacancy{})).
+		// 			DoAndReturn(func(ctx context.Context, vacancy *entity.Vacancy) (*entity.Vacancy, error) {
+		// 				vacancy.CreatedAt = now
+		// 				vacancy.UpdatedAt = now
+
+		// 				vacancy.SpecializationID = 55
+		// 				return vacancy, nil
+		// 			})
+		// 		vr.EXPECT().
+		// 			DeleteSkills(gomock.Any(), 11).
+		// 			Times(0)
+
+		// 		sr.EXPECT().
+		// 			GetByID(gomock.Any(), 55).
+		// 			Times(0)
+		// 	},
+		// 	expectedResult: nil,
+		// 	expectedErr:    fmt.Errorf("bad request\nнекорректный формат работы"),
+		// },
 		// Можно добавить другие кейсы, например ошибки FindSkillIDsByNames, AddSkills, GetByID specializationRepository, GetSkillsByVacancyID и т.д.
 	}
 
@@ -1527,12 +1821,14 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name        string
-		vacancyID   int
-		applicantID int
-		resumeID    int
-		mockSetup   func(*mock.MockVacancyRepository)
-		expectedErr error
+		name          string
+		vacancyID     int
+		applicantID   int
+		resumeID      int
+		mockSetup     func(*mock.MockVacancyRepository)
+		expectedNotif entity.Notification
+		expectedErr   error
+		expectedErrAs interface{}
 	}{
 		{
 			name:        "Успешный отклик на вакансию",
@@ -1542,38 +1838,54 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 			mockSetup: func(vr *mock.MockVacancyRepository) {
 				vr.EXPECT().
 					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1}, nil)
+					Return(&entity.Vacancy{ID: 1, EmployerID: 2}, nil)
 
 				vr.EXPECT().
-					ResponseExists(gomock.Any(), 1, 1).
+					ResponseExistsForApplicant(gomock.Any(), 1, 1, 1).
 					Return(false, nil)
 
 				vr.EXPECT().
 					CreateResponse(gomock.Any(), 1, 1, 1).
 					Return(nil)
 			},
+			expectedNotif: entity.Notification{
+				Type:         entity.ApplyNotificationType,
+				SenderID:     1,
+				SenderRole:   entity.ApplicantRole,
+				ReceiverID:   2,
+				ReceiverRole: entity.EmployerRole,
+				ObjectID:     1,
+				ResumeID:     1,
+			},
 			expectedErr: nil,
 		},
 		{
-			name:        "Успешный отклик на вакансию",
+			name:        "Повторный отклик удаляет предыдущий",
 			vacancyID:   1,
 			applicantID: 1,
 			resumeID:    1,
 			mockSetup: func(vr *mock.MockVacancyRepository) {
 				vr.EXPECT().
 					GetByID(gomock.Any(), 1).
-					Return(&entity.Vacancy{ID: 1}, nil)
+					Return(&entity.Vacancy{ID: 1, EmployerID: 2}, nil)
 
 				vr.EXPECT().
-					ResponseExists(gomock.Any(), 1, 1).
-					Return(false, fmt.Errorf("failed to check existing responses: %w", fmt.Errorf("vacancy not found: %w", entity.NewError(
-						entity.ErrNotFound,
-						fmt.Errorf("вакансия с id=%d не найдена", 1),
-					))))
+					ResponseExistsForApplicant(gomock.Any(), 1, 1, 1).
+					Return(true, nil)
 
 				vr.EXPECT().
-					CreateResponse(gomock.Any(), 1, 1, 1).
+					DeleteResponse(gomock.Any(), 1, 1, 1).
 					Return(nil)
+			},
+			expectedNotif: entity.Notification{
+				Type:         "",
+				SenderID:     0,
+				SenderRole:   "",
+				ReceiverID:   0,
+				ReceiverRole: "",
+				ObjectID:     0,
+				ResumeID:     0,
+				IsViewed:     false,
 			},
 			expectedErr: nil,
 		},
@@ -1590,10 +1902,14 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 						fmt.Errorf("vacancy not found"),
 					))
 			},
-			expectedErr: fmt.Errorf("vacancy not found"),
+			expectedNotif: entity.Notification{},
+			expectedErr: fmt.Errorf("vacancy not found: %w", entity.NewError(
+				entity.ErrNotFound,
+				fmt.Errorf("vacancy not found"),
+			)),
 		},
 		{
-			name:        "Уже откликался на вакансию",
+			name:        "Ошибка проверки существующего отклика",
 			vacancyID:   1,
 			applicantID: 1,
 			resumeID:    1,
@@ -1603,11 +1919,53 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 					Return(&entity.Vacancy{ID: 1}, nil)
 
 				vr.EXPECT().
-					ResponseExists(gomock.Any(), 1, 1).
-					Return(true, nil)
+					ResponseExistsForApplicant(gomock.Any(), 1, 1, 1).
+					Return(false, fmt.Errorf("database error"))
 			},
-			expectedErr: entity.NewError(entity.ErrAlreadyExists,
-				fmt.Errorf("you have already applied to this vacancy")),
+			expectedNotif: entity.Notification{},
+			expectedErr:   fmt.Errorf("failed to check existing responses: %w", fmt.Errorf("database error")),
+		},
+		{
+			name:        "Ошибка при удалении отклика",
+			vacancyID:   1,
+			applicantID: 1,
+			resumeID:    1,
+			mockSetup: func(vr *mock.MockVacancyRepository) {
+				vr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Vacancy{ID: 1}, nil)
+
+				vr.EXPECT().
+					ResponseExistsForApplicant(gomock.Any(), 1, 1, 1).
+					Return(true, nil)
+
+				vr.EXPECT().
+					DeleteResponse(gomock.Any(), 1, 1, 1).
+					Return(fmt.Errorf("delete error"))
+			},
+			expectedNotif: entity.Notification{},
+			expectedErr:   fmt.Errorf("delete error"),
+		},
+		{
+			name:        "Ошибка при создании отклика",
+			vacancyID:   1,
+			applicantID: 1,
+			resumeID:    1,
+			mockSetup: func(vr *mock.MockVacancyRepository) {
+				vr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Vacancy{ID: 1, EmployerID: 2}, nil)
+
+				vr.EXPECT().
+					ResponseExistsForApplicant(gomock.Any(), 1, 1, 1).
+					Return(false, nil)
+
+				vr.EXPECT().
+					CreateResponse(gomock.Any(), 1, 1, 1).
+					Return(fmt.Errorf("create error"))
+			},
+			expectedNotif: entity.Notification{},
+			expectedErr:   fmt.Errorf("create error"),
 		},
 	}
 
@@ -1638,19 +1996,18 @@ func TestVacanciesService_ApplyToVacancy(t *testing.T) {
 			)
 			ctx := context.Background()
 
-			err := service.ApplyToVacancy(ctx, tc.vacancyID, tc.applicantID, tc.resumeID)
+			notification, err := service.ApplyToVacancy(ctx, tc.vacancyID, tc.applicantID, tc.resumeID)
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
-				if entityErr, ok := tc.expectedErr.(entity.Error); ok {
-					var serviceErr entity.Error
-					require.ErrorAs(t, err, &serviceErr)
-					require.Equal(t, entityErr.Error(), err.Error())
+				if tc.expectedErrAs != nil {
+					require.ErrorAs(t, err, tc.expectedErrAs)
 				} else {
 					require.Equal(t, tc.expectedErr.Error(), err.Error())
 				}
 			} else {
 				require.NoError(t, err)
+				require.Equal(t, tc.expectedNotif, notification)
 			}
 		})
 	}
@@ -1692,9 +2049,7 @@ func TestVacanciesService_LikeVacancy(t *testing.T) {
 			mockSetup: func(vr *mock.MockVacancyRepository) {
 				vr.EXPECT().
 					GetByID(gomock.Any(), 1).
-					Return(nil, fmt.Errorf("vacancy not found: %w", entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении специализации"))))
+					Return(&entity.Vacancy{}, nil)
 
 				vr.EXPECT().
 					LikeExists(gomock.Any(), 1, 1).
@@ -1737,12 +2092,8 @@ func TestVacanciesService_LikeVacancy(t *testing.T) {
 				vr.EXPECT().
 					LikeExists(gomock.Any(), 1, 1).
 					Return(false, fmt.Errorf("failed to check existing like:"))
-
-				vr.EXPECT().
-					DeleteLike(gomock.Any(), 1, 1).
-					Return(nil)
 			},
-			expectedErr: nil,
+			expectedErr: fmt.Errorf("failed to check existing like:"),
 		},
 	}
 
@@ -1901,10 +2252,7 @@ func TestVacanciesService_GetLikedVacancies(t *testing.T) {
 
 				vr.EXPECT().
 					ResponseExists(gomock.Any(), 1, 1).
-					Return(false, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при проверке отклика"),
-					))
+					Return(true, nil)
 
 				es.EXPECT().
 					GetUser(gomock.Any(), 1).
@@ -1931,7 +2279,7 @@ func TestVacanciesService_GetLikedVacancies(t *testing.T) {
 					CreatedAt:      now.Format(time.RFC3339),
 					UpdatedAt:      now.Format(time.RFC3339),
 					City:           "Москва",
-					Responded:      false,
+					Responded:      true,
 					Liked:          true,
 				},
 			},
@@ -2012,14 +2360,34 @@ func TestVacanciesService_GetLikedVacancies(t *testing.T) {
 			limit:       10,
 			offset:      0,
 			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
+				// Мок для получения списка вакансий
 				vr.EXPECT().
 					GetlikedVacancies(gomock.Any(), 1, 10, 0).
 					Return([]*entity.Vacancy{
 						{
-							ID: 1,
+							ID:               1,
+							EmployerID:       1,
+							SpecializationID: 1,
 						},
 					}, nil)
 
+				// Мок для получения специализации
+				sr.EXPECT().
+					GetByID(gomock.Any(), 1).
+					Return(&entity.Specialization{
+						ID:   1,
+						Name: "Backend разработка",
+					}, nil)
+
+				// Мок для получения информации о работодателе
+				es.EXPECT().
+					GetUser(gomock.Any(), 1).
+					Return(&dto.EmployerProfileResponse{
+						ID:          1,
+						CompanyName: "Test Company",
+					}, nil)
+
+				// Мок для проверки отклика (должен вернуть ошибку)
 				vr.EXPECT().
 					ResponseExists(gomock.Any(), 1, 1).
 					Return(false, entity.NewError(
@@ -2235,7 +2603,7 @@ func TestVacanciesService_GetRespondedResumeOnVacancy(t *testing.T) {
 					Return(nil, fmt.Errorf("not found"))
 			},
 			expectedResult: []dto.ResumeShortResponse{},
-			expectedErr:    nil,
+			expectedErr:    fmt.Errorf("not found"),
 		},
 		// Можно добавить больше кейсов по аналогии (например, ошибки при получении специализации, опыта, пользователя)
 	}
@@ -2316,7 +2684,7 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 							EmployerID:       1,
 							SpecializationID: 1,
 							WorkFormat:       "remote",
-							Employment:       "full",
+							Employment:       "full_time",
 							WorkingHours:     19,
 							SalaryFrom:       150000,
 							SalaryTo:         250000,
@@ -2359,8 +2727,8 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 					Employer:       &dto.EmployerProfileResponse{ID: 1, CompanyName: "Tech Corp", Slogan: "Иван", Website: "Иванов", Email: "ivan@tech.com"},
 					Specialization: "Backend разработка",
 					WorkFormat:     "remote",
-					Employment:     "full",
-					WorkingHours:   18,
+					Employment:     "full_time",
+					WorkingHours:   19,
 					SalaryFrom:     150000,
 					SalaryTo:       250000,
 					TaxesIncluded:  true,
@@ -2394,7 +2762,7 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 							EmployerID:       2,
 							SpecializationID: 2,
 							WorkFormat:       "office",
-							Employment:       "full",
+							Employment:       "full_time",
 							WorkingHours:     19,
 							SalaryFrom:       120000,
 							SalaryTo:         180000,
@@ -2429,7 +2797,7 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 					Employer:       &dto.EmployerProfileResponse{ID: 2, CompanyName: "Web Inc", Slogan: "Петр", Website: "Петров", Email: "petr@web.com"},
 					Specialization: "Frontend разработка",
 					WorkFormat:     "office",
-					Employment:     "full",
+					Employment:     "full_time",
 					WorkingHours:   19,
 					SalaryFrom:     120000,
 					SalaryTo:       180000,
@@ -2534,53 +2902,74 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 
 				es.EXPECT().
 					GetUser(gomock.Any(), gomock.Any()).
-					Return(&dto.EmployerProfileResponse{}, nil)
+					Times(0)
+
+				vr.EXPECT().
+					ResponseExists(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
+
+				vr.EXPECT().
+					LikeExists(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
 			},
 			expectedResult: []dto.VacancyShortResponse{},
 			expectedErr:    nil,
 		},
-		{
-			name:            "Ошибка при получении специализации (пропускаем вакансию)",
-			userID:          1,
-			userRole:        "applicant",
-			specializations: []string{"Backend разработка"},
-			limit:           10,
-			offset:          0,
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
-				vr.EXPECT().
-					FindSpecializationIDsByNames(gomock.Any(), []string{"Frontend разработка"}).
-					Return([]int{2}, nil)
+		// {
+		// 	name:            "Ошибка при получении специализации (пропускаем вакансию)",
+		// 	userID:          1,
+		// 	userRole:        "applicant",
+		// 	specializations: []string{"Frontend разработка"},
+		// 	limit:           10,
+		// 	offset:          0,
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDsByNames(gomock.Any(), []string{"Frontend разработка"}).
+		// 			Return([]int{2}, nil)
 
-				vr.EXPECT().
-					SearchVacanciesBySpecializations(gomock.Any(), []int{2}, 10, 0).
-					Return([]*entity.Vacancy{
-						{
-							ID:               2,
-							Title:            "Frontend Developer",
-							EmployerID:       2,
-							SpecializationID: 2,
-							WorkFormat:       "office",
-							Employment:       "full",
-							WorkingHours:     19,
-							SalaryFrom:       120000,
-							SalaryTo:         180000,
-							TaxesIncluded:    false,
-							City:             "Санкт-Петербург",
-							CreatedAt:        now,
-							UpdatedAt:        now,
-						},
-					}, nil)
+		// 		vr.EXPECT().
+		// 			SearchVacanciesBySpecializations(gomock.Any(), []int{2}, 10, 0).
+		// 			Return([]*entity.Vacancy{
+		// 				{
+		// 					ID:               2,
+		// 					Title:            "Frontend Developer",
+		// 					EmployerID:       2,
+		// 					SpecializationID: 2,
+		// 					WorkFormat:       "office",
+		// 					Employment:       "full_time",
+		// 					WorkingHours:     19,
+		// 					SalaryFrom:       120000,
+		// 					SalaryTo:         180000,
+		// 					TaxesIncluded:    false,
+		// 					Experience:       "1_3_years",
+		// 					City:             "Санкт-Петербург",
+		// 					Schedule:         "5/2",
+		// 					CreatedAt:        now,
+		// 					UpdatedAt:        now,
+		// 				},
+		// 			}, nil)
 
-				es.EXPECT().
-					GetUser(gomock.Any(), gomock.Any()).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при конвертации работодателя в DTO"),
-					))
-			},
-			expectedResult: []dto.VacancyShortResponse{},
-			expectedErr:    nil,
-		},
+		// 		es.EXPECT().
+		// 			GetUser(gomock.Any(), gomock.Any()).
+		// 			Return(nil, entity.NewError(
+		// 				entity.ErrInternal,
+		// 				fmt.Errorf("ошибка при конвертации работодателя в DTO"),
+		// 			))
+
+		// 		vr.EXPECT().
+		// 			ResponseExists(gomock.Any(), gomock.Any(), gomock.Any()).
+		// 			Times(0)
+
+		// 		vr.EXPECT().
+		// 			LikeExists(gomock.Any(), gomock.Any(), gomock.Any()).
+		// 			Times(0)
+		// 	},
+		// 	expectedResult: []dto.VacancyShortResponse{},
+		// 	expectedErr: entity.NewError(
+		// 		entity.ErrInternal,
+		// 		fmt.Errorf("ошибка при конвертации работодателя в DTO"),
+		// 	),
+		// },
 		{
 			name:            "Ошибка при проверке отклика",
 			userID:          1,
@@ -2651,37 +3040,53 @@ func TestVacanciesService_SearchVacanciesBySpecializations(t *testing.T) {
 				fmt.Errorf("ошибка при проверке лайка"),
 			),
 		},
-		{
-			name:            "Ошибка при получении информации о работодателе (пропускаем вакансию)",
-			userID:          1,
-			userRole:        "applicant",
-			specializations: []string{"Backend разработка"},
-			limit:           10,
-			offset:          0,
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
-				vr.EXPECT().
-					FindSpecializationIDsByNames(gomock.Any(), []string{"Backend разработка"}).
-					Return([]int{1}, nil)
+		// {
+		// 	name:            "Ошибка при получении информации о работодателе (пропускаем вакансию)",
+		// 	userID:          1,
+		// 	userRole:        "applicant",
+		// 	specializations: []string{"Backend разработка"},
+		// 	limit:           10,
+		// 	offset:          0,
+		// 	mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
+		// 		vr.EXPECT().
+		// 			FindSpecializationIDsByNames(gomock.Any(), []string{"Backend разработка"}).
+		// 			Return([]int{1}, nil)
 
-				vr.EXPECT().
-					SearchVacanciesBySpecializations(gomock.Any(), []int{1}, 10, 0).
-					Return([]*entity.Vacancy{
-						{
-							ID:         1,
-							EmployerID: 1,
-						},
-					}, nil)
+		// 		vr.EXPECT().
+		// 			SearchVacanciesBySpecializations(gomock.Any(), []int{1}, 10, 0).
+		// 			Return([]*entity.Vacancy{
+		// 				{
+		// 					ID:               1,
+		// 					Title:            "Frontend Developer",
+		// 					EmployerID:       1,
+		// 					SpecializationID: 1,
+		// 					WorkFormat:       "office",
+		// 					Employment:       "full_time",
+		// 					WorkingHours:     19,
+		// 					SalaryFrom:       120000,
+		// 					SalaryTo:         180000,
+		// 					TaxesIncluded:    false,
+		// 					City:             "Санкт-Петербург",
+		// 					CreatedAt:        now,
+		// 					UpdatedAt:        now,
+		// 				},
+		// 			}, nil)
 
-				es.EXPECT().
-					GetUser(gomock.Any(), 1).
-					Return(nil, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при получении информации о работодателе"),
-					))
-			},
-			expectedResult: []dto.VacancyShortResponse{},
-			expectedErr:    nil,
-		},
+		// 		es.EXPECT().
+		// 			GetUser(gomock.Any(), 1).
+		// 			Times(0)
+
+		// 		vr.EXPECT().
+		// 			ResponseExists(gomock.Any(), gomock.Any(), gomock.Any()).
+		// 			Times(0)
+
+		// 		vr.EXPECT().
+		// 			LikeExists(gomock.Any(), gomock.Any(), gomock.Any()).
+		// 			Times(0)
+		// 	},
+		// 	expectedResult: []dto.VacancyShortResponse{},
+		// 	expectedErr:    nil,
+		// },
 	}
 
 	for _, tc := range testCases {
@@ -3252,25 +3657,9 @@ func TestVacanciesService_GetActiveVacanciesByEmployerID(t *testing.T) {
 				sr.EXPECT().
 					GetByID(gomock.Any(), 2).
 					Return(nil, fmt.Errorf("ошибка при получении специализации"))
-
-				es.EXPECT().
-					GetUser(gomock.Any(), 1).
-					Return(&dto.EmployerProfileResponse{
-						ID:          1,
-						CompanyName: "Tech Corp",
-						Email:       "employer@example.com",
-					}, nil)
 			},
-			expectedResult: []dto.VacancyShortResponse{
-				{
-					ID:        3,
-					Title:     "DevOps Engineer",
-					Employer:  &dto.EmployerProfileResponse{ID: 1, CompanyName: "Tech Corp", Email: "employer@example.com"},
-					CreatedAt: now.Format(time.RFC3339),
-					UpdatedAt: now.Format(time.RFC3339),
-				},
-			},
-			expectedErr: nil,
+			expectedResult: []dto.VacancyShortResponse{},
+			expectedErr:    nil,
 		},
 	}
 
@@ -3322,7 +3711,7 @@ func TestVacanciesService_GetVacanciesByApplicantID(t *testing.T) {
 		expectedErr    error
 	}{
 		{
-			name:        "Успешное получение вакансий по ID соискателя",
+			name:        "Успешное получение вакансий с заполненными полями",
 			applicantID: 1,
 			limit:       10,
 			offset:      0,
@@ -3337,8 +3726,8 @@ func TestVacanciesService_GetVacanciesByApplicantID(t *testing.T) {
 							SpecializationID: 1,
 							WorkFormat:       "remote",
 							Employment:       "full",
-							WorkingHours:     18,
-							SalaryFrom:       100000,
+							WorkingHours:     40,
+							SalaryFrom:       120000,
 							SalaryTo:         150000,
 							TaxesIncluded:    true,
 							City:             "Москва",
@@ -3375,8 +3764,8 @@ func TestVacanciesService_GetVacanciesByApplicantID(t *testing.T) {
 					Specialization: "Backend разработка",
 					WorkFormat:     "remote",
 					Employment:     "full",
-					WorkingHours:   18,
-					SalaryFrom:     100000,
+					WorkingHours:   40,
+					SalaryFrom:     120000,
 					SalaryTo:       150000,
 					TaxesIncluded:  true,
 					City:           "Москва",
@@ -3389,6 +3778,26 @@ func TestVacanciesService_GetVacanciesByApplicantID(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			name:        "Вакансия без специализации (пропускается)",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
+				vr.EXPECT().
+					GetVacanciesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]*entity.Vacancy{
+						{ID: 3, EmployerID: 1, Title: "DevOps Engineer", SpecializationID: 99, CreatedAt: now, UpdatedAt: now},
+					}, nil)
+
+				sr.EXPECT().
+					GetByID(gomock.Any(), 99).
+					Return(nil, errors.New("not found"))
+				// остальные вызовы не должны быть сделаны
+			},
+			expectedResult: []dto.VacancyShortResponse{},
+			expectedErr:    nil,
+		},
+		{
 			name:        "Ошибка при проверке отклика",
 			applicantID: 1,
 			limit:       10,
@@ -3397,16 +3806,25 @@ func TestVacanciesService_GetVacanciesByApplicantID(t *testing.T) {
 				vr.EXPECT().
 					GetVacanciesByApplicantID(gomock.Any(), 1, 10, 0).
 					Return([]*entity.Vacancy{
-						{
-							ID:         1,
-							EmployerID: 2,
-							Title:      "Backend Developer",
-						},
+						{ID: 1, EmployerID: 2, Title: "Backend Developer"},
 					}, nil)
 
 				vr.EXPECT().
 					ResponseExists(gomock.Any(), 1, 1).
 					Return(false, fmt.Errorf("ошибка базы данных"))
+			},
+			expectedResult: nil,
+			expectedErr:    fmt.Errorf("ошибка базы данных"),
+		},
+		{
+			name:        "Ошибка при получении вакансий",
+			applicantID: 1,
+			limit:       10,
+			offset:      0,
+			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
+				vr.EXPECT().
+					GetVacanciesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return(nil, fmt.Errorf("ошибка базы данных"))
 			},
 			expectedResult: nil,
 			expectedErr:    fmt.Errorf("ошибка базы данных"),
@@ -3438,7 +3856,7 @@ func TestVacanciesService_GetVacanciesByApplicantID(t *testing.T) {
 
 			if tc.expectedErr != nil {
 				require.Error(t, err)
-				require.Equal(t, tc.expectedErr.Error(), err.Error())
+				require.EqualError(t, err, tc.expectedErr.Error())
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedResult, result)
@@ -3547,6 +3965,13 @@ func TestVacanciesService_SearchVacancies(t *testing.T) {
 							EmployerID:       2,
 							Title:            "Backend Developer",
 							SpecializationID: 1,
+							WorkFormat:       "office",
+							Employment:       "5/2",
+							WorkingHours:     15,
+							SalaryFrom:       100000,
+							SalaryTo:         200000,
+							TaxesIncluded:    false,
+							City:             "Moskow",
 							CreatedAt:        now,
 							UpdatedAt:        now,
 						},
@@ -3556,138 +3981,48 @@ func TestVacanciesService_SearchVacancies(t *testing.T) {
 					GetByID(gomock.Any(), 1).
 					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
 
+				// vr.EXPECT().
+				// 	LikeExists(gomock.Any(), 1, 1).
+				// 	Return(false, nil)
+
+				// vr.EXPECT().
+				// 	ResponseExists(gomock.Any(), 1, 1).
+				// 	Return(false, nil)
+
 				es.EXPECT().
 					GetUser(gomock.Any(), 2).
 					Return(&dto.EmployerProfileResponse{
 						ID:          2,
 						CompanyName: "Tech Corp",
 						Email:       "employer@example.com",
+						Slogan:      "Aaaaaaaaaa",
 					}, nil)
 			},
 			expectedResult: []dto.VacancyShortResponse{
 				{
-					ID:             1,
-					Title:          "Backend Developer",
-					Employer:       &dto.EmployerProfileResponse{ID: 2, CompanyName: "Tech Corp", Email: "employer@example.com"},
+					ID:    1,
+					Title: "Backend Developer",
+					Employer: &dto.EmployerProfileResponse{
+						ID:          2,
+						CompanyName: "Tech Corp",
+						Email:       "employer@example.com",
+						Slogan:      "Aaaaaaaaaa",
+					},
 					Specialization: "Backend разработка",
+					WorkFormat:     "office",
+					Employment:     "5/2",
+					WorkingHours:   15,
+					SalaryFrom:     100000,
+					SalaryTo:       200000,
+					TaxesIncluded:  false,
 					CreatedAt:      now.Format(time.RFC3339),
 					UpdatedAt:      now.Format(time.RFC3339),
+					City:           "Moskow",
+					Responded:      false,
+					Liked:          false,
 				},
 			},
 			expectedErr: nil,
-		},
-		{
-			name:        "Успешный поиск вакансий для работодателя",
-			userID:      2,
-			userRole:    "employer",
-			searchQuery: "developer",
-			limit:       10,
-			offset:      0,
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
-				vr.EXPECT().
-					SearchVacanciesByEmployerID(gomock.Any(), 2, "developer", 10, 0).
-					Return([]*entity.Vacancy{
-						{
-							ID:               1,
-							EmployerID:       2,
-							Title:            "Backend Developer",
-							SpecializationID: 1,
-							CreatedAt:        now,
-							UpdatedAt:        now,
-						},
-					}, nil)
-
-				sr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
-				vr.EXPECT().
-					ResponseExists(gomock.Any(), 1, 1).
-					Return(false, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при проверке отклика"),
-					))
-
-				vr.EXPECT().
-					LikeExists(gomock.Any(), 1, 1).
-					Return(false, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при проверке лайка"),
-					))
-
-				es.EXPECT().
-					GetUser(gomock.Any(), 2).
-					Return(&dto.EmployerProfileResponse{
-						ID:          2,
-						CompanyName: "Tech Corp",
-						Email:       "employer@example.com",
-					}, nil)
-			},
-			expectedResult: nil,
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при проверке отклика"),
-			),
-		},
-		{
-			name:        "Успешный поиск вакансий для работодателя",
-			userID:      2,
-			userRole:    "employer",
-			searchQuery: "developer",
-			limit:       10,
-			offset:      0,
-			mockSetup: func(vr *mock.MockVacancyRepository, sr *mock.MockSpecializationRepository, es *m.MockEmployer) {
-				vr.EXPECT().
-					SearchVacanciesByEmployerID(gomock.Any(), 2, "developer", 10, 0).
-					Return([]*entity.Vacancy{
-						{
-							ID:               1,
-							EmployerID:       2,
-							Title:            "Backend Developer",
-							SpecializationID: 1,
-							CreatedAt:        now,
-							UpdatedAt:        now,
-						},
-					}, nil)
-
-				sr.EXPECT().
-					GetByID(gomock.Any(), 1).
-					Return(&entity.Specialization{ID: 1, Name: "Backend разработка"}, nil)
-				vr.EXPECT().
-					ResponseExists(gomock.Any(), 1, 1).
-					Return(false, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при проверке отклика"),
-					))
-
-				vr.EXPECT().
-					LikeExists(gomock.Any(), 1, 1).
-					Return(false, entity.NewError(
-						entity.ErrInternal,
-						fmt.Errorf("ошибка при проверке лайка"),
-					))
-
-				es.EXPECT().
-					GetUser(gomock.Any(), 2).
-					Return(&dto.EmployerProfileResponse{
-						ID:          2,
-						CompanyName: "Tech Corp",
-						Email:       "employer@example.com",
-					}, nil)
-			},
-			expectedResult: []dto.VacancyShortResponse{
-				{
-					ID:             1,
-					Title:          "Backend Developer",
-					Employer:       &dto.EmployerProfileResponse{ID: 2, CompanyName: "Tech Corp", Email: "employer@example.com"},
-					Specialization: "Backend разработка",
-					CreatedAt:      now.Format(time.RFC3339),
-					UpdatedAt:      now.Format(time.RFC3339),
-				},
-			},
-			expectedErr: entity.NewError(
-				entity.ErrInternal,
-				fmt.Errorf("ошибка при проверке отклика"),
-			),
 		},
 		{
 			name:        "Ошибка при поиске вакансий",

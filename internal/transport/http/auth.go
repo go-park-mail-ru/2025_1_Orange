@@ -4,7 +4,6 @@ import (
 	"ResuMatch/internal/config"
 	"ResuMatch/internal/entity"
 	"ResuMatch/internal/entity/dto"
-	"ResuMatch/internal/metrics"
 	"ResuMatch/internal/middleware"
 	"ResuMatch/internal/transport/http/utils"
 	"ResuMatch/internal/usecase"
@@ -44,7 +43,7 @@ func (h *AuthHandler) IsAuth(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Auth Handler", "IsAuth").Inc()
+		//		metrics.LayerErrorCounter.WithLabelValues("Auth Handler", "IsAuth").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -76,7 +75,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Auth Handler", "Logout").Inc()
+		//		metrics.LayerErrorCounter.WithLabelValues("Auth Handler", "Logout").Inc()
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -109,7 +108,7 @@ func (h *AuthHandler) LogoutAll(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Auth Handler", "LogoutAll").Inc()
+		//		metrics.LayerErrorCounter.WithLabelValues("Auth Handler", "LogoutAll").Inc()
 		w.WriteHeader(http.StatusOK)
 		return
 	}

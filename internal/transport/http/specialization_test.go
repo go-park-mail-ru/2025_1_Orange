@@ -95,3 +95,89 @@ func TestSpecializationHandler_GetAllSpecializationNames(t *testing.T) {
 		})
 	}
 }
+
+func TestSpecializationHandler_GetSpecializationSalaries(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name             string
+		mockSetup        func(specialization *mock.MockSpecializationUsecase)
+		expectedStatus   int
+		expectedResponse dto.SpecializationSalaryRangesResponse
+		expectError      bool
+		errorMessage     string
+	}{
+		{
+			name: "успешное получение зарплат",
+			mockSetup: func(specialization *mock.MockSpecializationUsecase) {
+				resp := dto.SpecializationSalaryRangesResponse{
+					Specializations: []dto.SpecializationSalaryRange{
+						{ID: 1, Name: "Software Developer", MinSalary: 1000, MaxSalary: 5000, AvgSalary: 3000},
+						{ID: 2, Name: "Data Scientist", MinSalary: 1500, MaxSalary: 6000, AvgSalary: 4000},
+					},
+				}
+				specialization.EXPECT().
+					GetSpecializationSalaries(gomock.Any()).
+					Return(&resp, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedResponse: dto.SpecializationSalaryRangesResponse{
+				Specializations: []dto.SpecializationSalaryRange{
+					{ID: 1, Name: "Software Developer", MinSalary: 1000, MaxSalary: 5000, AvgSalary: 3000},
+					{ID: 2, Name: "Data Scientist", MinSalary: 1500, MaxSalary: 6000, AvgSalary: 4000},
+				},
+			},
+		},
+		{
+			name: "ошибка при получении данных о зарплатах",
+			mockSetup: func(specialization *mock.MockSpecializationUsecase) {
+				specialization.EXPECT().
+					GetSpecializationSalaries(gomock.Any()).
+					Return(nil, fmt.Errorf("internal server error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
+			errorMessage:   "internal server error",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockSpecialization := mock.NewMockSpecializationUsecase(ctrl)
+
+			// Настройка мока
+			tc.mockSetup(mockSpecialization)
+
+			handler := NewSpecializationHandler(mockSpecialization)
+
+			req := httptest.NewRequest(http.MethodGet, "/specializations/salaries", nil)
+			w := httptest.NewRecorder()
+
+			handler.GetSpecializationSalaries(w, req)
+
+			res := w.Result()
+			defer res.Body.Close()
+
+			require.Equal(t, tc.expectedStatus, res.StatusCode)
+
+			if !tc.expectError {
+				var actual dto.SpecializationSalaryRangesResponse
+				err := json.NewDecoder(res.Body).Decode(&actual)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedResponse, actual)
+			} else {
+				var apiErr utils.APIError
+				err := json.NewDecoder(res.Body).Decode(&apiErr)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusInternalServerError, apiErr.Status)
+				require.Equal(t, tc.errorMessage, apiErr.Message)
+			}
+		})
+	}
+}

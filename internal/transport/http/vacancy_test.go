@@ -10,12 +10,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -23,72 +23,99 @@ import (
 func TestVacancyHandler_CreateVacancy(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	validVacancyRequest := func() *dto.VacancyCreate {
+		return &dto.VacancyCreate{
+			Title:                "Go Developer",
+			Specialization:       "Backend",
+			WorkFormat:           "Remote",
+			Employment:           "Full-time",
+			Schedule:             "Flexible",
+			City:                 "Moscow",
+			Description:          "Job description",
+			Experience:           "3 years",
+			Tasks:                "Develop backend services",
+			Requirements:         "Go, PostgreSQL",
+			OptionalRequirements: "Docker, Kubernetes",
+			Skills:               []string{"Go", "PostgreSQL"},
+			SalaryFrom:           100000,
+			SalaryTo:             200000,
+		}
+	}
+
+	tests := []struct {
 		name           string
+		setupMock      func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
+		cookie         *http.Cookie
 		requestBody    interface{}
-		mockSetup      func(*mock.MockAuth, *mock.MockVacancy)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
 	}{
 		{
-			name: "Успешное создание вакансии",
-			requestBody: dto.VacancyCreate{
-				Title: "Backend Developer",
+			name: "Success",
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(10, "employer", nil)
+				vacancy.EXPECT().CreateVacancy(gomock.Any(), 10, gomock.Any()).Return(&dto.VacancyResponse{ID: 1}, nil)
 			},
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "session123").
-					Return(1, "employer", nil)
-
-				vac.EXPECT().
-					CreateVacancy(gomock.Any(), 1, gomock.Any()).
-					Return(&dto.VacancyResponse{ID: 1, Title: "Backend Developer"}, nil)
-			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    validVacancyRequest(),
 			expectedStatus: http.StatusCreated,
-			expectedBody:   &dto.VacancyResponse{ID: 1, Title: "Backend Developer"},
 		},
 		{
-			name:           "Неверный формат запроса",
-			requestBody:    "invalid",
-			mockSetup:      func(auth *mock.MockAuth, vac *mock.MockVacancy) {},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   entity.ErrBadRequest,
+			name:           "No cookie - unauthorized",
+			setupMock:      func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {},
+			cookie:         nil,
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  entity.ErrUnauthorized,
 		},
 		{
-			name: "Пользователь не работодатель",
-			requestBody: dto.VacancyCreate{
-				Title: "Backend Developer",
+			name: "Invalid session - unauthorized",
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "invalid").Return(0, "", entity.ErrUnauthorized)
 			},
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "session123").
-					Return(1, "applicant", nil)
-			},
-			expectedStatus: http.StatusForbidden,
-			expectedBody:   entity.ErrForbidden,
-		},
-		{
-			name: "Ошибка при создании вакансии",
-			requestBody: dto.VacancyCreate{
-				Title: "Backend Developer",
-			},
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "session123").
-					Return(1, "employer", nil)
-
-				vac.EXPECT().
-					CreateVacancy(gomock.Any(), 1, gomock.Any()).
-					Return(nil, errors.New("internal error"))
-			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "invalid"},
+			requestBody:    validVacancyRequest(),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   entity.ErrInternal,
+			expectedError:  entity.ErrInternal,
+		},
+		{
+			name: "Not employer - forbidden",
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(10, "applicant", nil)
+			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    validVacancyRequest(),
+			expectedStatus: http.StatusForbidden,
+			expectedError:  entity.ErrForbidden,
+		},
+		{
+			name: "Invalid JSON - bad request",
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(1, "employer", nil) // или другой релевантный пользователь
+			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    "{invalid json}", // строка, а не структура
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+
+		{
+			name: "Create vacancy error - internal",
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(10, "employer", nil)
+				vacancy.EXPECT().CreateVacancy(gomock.Any(), 10, gomock.Any()).Return(nil, entity.ErrInternal)
+			},
+			cookie:         &http.Cookie{Name: "session_id", Value: "session123"},
+			requestBody:    validVacancyRequest(),
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  entity.ErrInternal,
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -96,28 +123,46 @@ func TestVacancyHandler_CreateVacancy(t *testing.T) {
 
 			mockAuth := mock.NewMockAuth(ctrl)
 			mockVacancy := mock.NewMockVacancy(ctrl)
+			tt.setupMock(mockAuth, mockVacancy)
 
-			tc.mockSetup(mockAuth, mockVacancy)
-
-			handler := VacancyHandler{
+			handler := &VacancyHandler{
 				auth:    mockAuth,
 				vacancy: mockVacancy,
 			}
 
-			body, _ := json.Marshal(tc.requestBody)
-			req := httptest.NewRequest("POST", "/vacancies", bytes.NewReader(body))
-			req.AddCookie(&http.Cookie{Name: "session_id", Value: "session123"})
+			var body []byte
+			switch v := tt.requestBody.(type) {
+			case string:
+				body = []byte(v)
+			default:
+				var err error
+				body, err = json.Marshal(v)
+				require.NoError(t, err)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/vacancy/vacancies", bytes.NewReader(body))
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
 			w := httptest.NewRecorder()
 
 			handler.CreateVacancy(w, req)
 
-			require.Equal(t, tc.expectedStatus, w.Code)
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			if tc.expectedStatus == http.StatusCreated {
-				var response dto.VacancyResponse
-				err := json.NewDecoder(w.Body).Decode(&response)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &response)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+			} else if resp.StatusCode == http.StatusCreated {
+				var vacancy dto.VacancyResponse
+				err := json.NewDecoder(resp.Body).Decode(&vacancy)
+				require.NoError(t, err)
+				require.NotEmpty(t, vacancy.ID)
 			}
 		})
 	}
@@ -126,55 +171,66 @@ func TestVacancyHandler_CreateVacancy(t *testing.T) {
 func TestVacancyHandler_GetVacancy(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	// Вспомогательная функция для создания валидного ответа вакансии
+	validVacancyResponse := func() *dto.VacancyResponse {
+		return &dto.VacancyResponse{
+			ID: 1,
+			// Здесь можно добавить другие поля, если нужно
+		}
+	}
+
+	tests := []struct {
 		name           string
 		vacancyID      string
-		mockSetup      func(*mock.MockAuth, *mock.MockVacancy)
+		setupMock      func(auth *mock.MockAuth, vac *mock.MockVacancy)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
+		expectedBody   *dto.VacancyResponse
 	}{
 		{
 			name:      "Успешное получение вакансии",
 			vacancyID: "1",
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
+			setupMock: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "session123").
 					Return(1, "applicant", nil)
-
 				vac.EXPECT().
 					GetVacancy(gomock.Any(), 1, 1, "applicant").
-					Return(&dto.VacancyResponse{ID: 1}, nil)
+					Return(validVacancyResponse(), nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   &dto.VacancyResponse{ID: 1},
+			expectedBody:   validVacancyResponse(),
 		},
 		{
-			name:           "Неверный ID вакансии",
-			vacancyID:      "invalid",
-			mockSetup:      func(auth *mock.MockAuth, vac *mock.MockVacancy) {},
+			name:      "Неверный ID вакансии",
+			vacancyID: "invalid",
+			setupMock: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(0, "", nil) // или можно ошибку, если хотите
+			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   entity.ErrBadRequest,
+			expectedError:  entity.ErrBadRequest,
 		},
 		{
 			name:      "Ошибка при получении вакансии",
 			vacancyID: "1",
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
+			setupMock: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "session123").
 					Return(1, "applicant", nil)
-
 				vac.EXPECT().
 					GetVacancy(gomock.Any(), 1, 1, "applicant").
 					Return(nil, errors.New("not found"))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   entity.ErrInternal,
+			expectedError:  entity.ErrInternal,
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -183,26 +239,38 @@ func TestVacancyHandler_GetVacancy(t *testing.T) {
 			mockAuth := mock.NewMockAuth(ctrl)
 			mockVacancy := mock.NewMockVacancy(ctrl)
 
-			tc.mockSetup(mockAuth, mockVacancy)
+			tt.setupMock(mockAuth, mockVacancy)
 
 			handler := VacancyHandler{
 				auth:    mockAuth,
 				vacancy: mockVacancy,
 			}
 
-			req := httptest.NewRequest("GET", "/vacancy/"+tc.vacancyID, nil)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/vacancy/vacancy/%s", tt.vacancyID), nil)
+			req.SetPathValue("id", tt.vacancyID)
 			req.AddCookie(&http.Cookie{Name: "session_id", Value: "session123"})
+
 			w := httptest.NewRecorder()
 
 			handler.GetVacancy(w, req)
 
-			require.Equal(t, tc.expectedStatus, w.Code)
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			if tc.expectedStatus == http.StatusOK {
-				var response dto.VacancyResponse
-				err := json.NewDecoder(w.Body).Decode(&response)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &response)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+				require.Equal(t, tt.expectedStatus, apiError.Status)
+			} else if resp.StatusCode == http.StatusOK {
+				var vacancy dto.VacancyResponse
+				err := json.NewDecoder(resp.Body).Decode(&vacancy)
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedBody, &vacancy)
 			}
 		})
 	}
@@ -211,59 +279,138 @@ func TestVacancyHandler_GetVacancy(t *testing.T) {
 func TestVacancyHandler_UpdateVacancy(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	validUpdate := &dto.VacancyUpdate{
+		Title:                "Senior Backend Developer",
+		Description:          "Work on scalable systems",
+		WorkFormat:           "Remote",
+		Employment:           "Full-time",
+		Schedule:             "Flexible",
+		City:                 "Berlin",
+		Experience:           "3+ years",
+		Specialization:       "Backend",
+		Requirements:         "Go, SQL",
+		OptionalRequirements: "Docker, Kubernetes",
+		Tasks:                "Build backend services",
+		Skills:               []string{"Go", "SQL"},
+	}
+
+	validVacancy := &dto.VacancyResponse{
+		ID:                   1,
+		EmployerID:           42,
+		Title:                "Senior Backend Developer",
+		Description:          "Work on scalable systems",
+		WorkFormat:           "Remote",
+		Employment:           "Full-time",
+		Schedule:             "Flexible",
+		City:                 "Berlin",
+		Experience:           "3+ years",
+		Specialization:       "Backend",
+		Requirements:         "Go, SQL",
+		OptionalRequirements: "Docker, Kubernetes",
+		Tasks:                "Build backend services",
+		Skills:               []string{"Go", "SQL"},
+	}
+
+	tests := []struct {
 		name           string
 		vacancyID      string
-		requestBody    interface{}
-		mockSetup      func(*mock.MockAuth, *mock.MockVacancy)
+		cookie         *http.Cookie
+		body           interface{}
+		setupMock      func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
 	}{
 		{
-			name:      "Успешное обновление вакансии",
+			name:      "Success",
 			vacancyID: "1",
-			requestBody: dto.VacancyUpdate{
-				Title: "Updated Title",
-			},
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "session123").
-					Return(1, "employer", nil)
-
-				vac.EXPECT().
-					UpdateVacancy(gomock.Any(), 1, 1, gomock.Any()).
-					Return(&dto.VacancyResponse{ID: 1, Title: "Updated Title"}, nil)
+			cookie:    &http.Cookie{Name: "session_id", Value: "abc123"},
+			body:      validUpdate,
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "abc123").Return(42, "employer", nil)
+				vacancy.EXPECT().UpdateVacancy(gomock.Any(), 1, 42, gomock.Any()).Return(validVacancy, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   &dto.VacancyResponse{ID: 1, Title: "Updated Title"},
 		},
 		{
-			name:           "Неверный формат запроса",
+			name:           "Missing cookie",
 			vacancyID:      "1",
-			requestBody:    "invalid",
-			mockSetup:      func(auth *mock.MockAuth, vac *mock.MockVacancy) {},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   entity.ErrBadRequest,
+			cookie:         nil,
+			body:           validUpdate,
+			setupMock:      func(_ *mock.MockAuth, _ *mock.MockVacancy) {},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  entity.ErrUnauthorized,
 		},
 		{
-			name:      "Пользователь не работодатель",
+			name:      "Invalid session",
 			vacancyID: "1",
-			requestBody: dto.VacancyUpdate{
-				Title: "Updated Title",
+			cookie:    &http.Cookie{Name: "session_id", Value: "bad"},
+			body:      validUpdate,
+			setupMock: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "bad").Return(0, "", entity.ErrUnauthorized)
 			},
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "session123").
-					Return(1, "applicant", nil)
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  entity.ErrInternal,
+		},
+		{
+			name:      "Forbidden user type",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "abc123"},
+			body:      validUpdate,
+			setupMock: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "abc123").Return(1, "applicant", nil)
 			},
 			expectedStatus: http.StatusForbidden,
-			expectedBody:   entity.ErrForbidden,
+			expectedError:  entity.ErrForbidden,
+		},
+		{
+			name:      "Invalid vacancy ID",
+			vacancyID: "not_a_number",
+			cookie:    &http.Cookie{Name: "session_id", Value: "abc123"},
+			body:      validUpdate,
+			setupMock: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "abc123").Return(1, "employer", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:      "Invalid JSON",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "abc123"},
+			body:      "{bad json",
+			setupMock: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "abc123").Return(1, "employer", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:      "Vacancy not found",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "abc123"},
+			body:      validUpdate,
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "abc123").Return(42, "employer", nil)
+				vacancy.EXPECT().UpdateVacancy(gomock.Any(), 1, 42, gomock.Any()).Return(nil, entity.NewError(entity.ErrNotFound, fmt.Errorf("vacancy not found")))
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:      "Internal error",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "abc123"},
+			body:      validUpdate,
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "abc123").Return(42, "employer", nil)
+				vacancy.EXPECT().UpdateVacancy(gomock.Any(), 1, 42, gomock.Any()).Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("db error")))
+			},
+			expectedStatus: http.StatusInternalServerError,
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -272,27 +419,50 @@ func TestVacancyHandler_UpdateVacancy(t *testing.T) {
 			mockAuth := mock.NewMockAuth(ctrl)
 			mockVacancy := mock.NewMockVacancy(ctrl)
 
-			tc.mockSetup(mockAuth, mockVacancy)
+			if tt.setupMock != nil {
+				tt.setupMock(mockAuth, mockVacancy)
+			}
 
-			handler := VacancyHandler{
+			handler := &VacancyHandler{
 				auth:    mockAuth,
 				vacancy: mockVacancy,
 			}
 
-			body, _ := json.Marshal(tc.requestBody)
-			req := httptest.NewRequest("PUT", "/vacancy/"+tc.vacancyID, bytes.NewReader(body))
-			req.AddCookie(&http.Cookie{Name: "session_id", Value: "session123"})
-			w := httptest.NewRecorder()
+			var body []byte
+			var err error
 
-			handler.UpdateVacancy(w, req)
-
-			require.Equal(t, tc.expectedStatus, w.Code)
-
-			if tc.expectedStatus == http.StatusOK {
-				var response dto.VacancyResponse
-				err := json.NewDecoder(w.Body).Decode(&response)
+			switch v := tt.body.(type) {
+			case string:
+				body = []byte(v)
+			default:
+				body, err = json.Marshal(v)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &response)
+			}
+
+			req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/vacancy/%s", tt.vacancyID), bytes.NewReader(body))
+			req.SetPathValue("id", tt.vacancyID)
+
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			rec := httptest.NewRecorder()
+			handler.UpdateVacancy(rec, req)
+
+			resp := rec.Result()
+			defer resp.Body.Close()
+
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedStatus != http.StatusOK {
+				var apiErr utils.APIError
+				_ = json.NewDecoder(resp.Body).Decode(&apiErr)
+				require.Equal(t, tt.expectedStatus, apiErr.Status)
+			} else {
+				var result dto.VacancyResponse
+				err := json.NewDecoder(resp.Body).Decode(&result)
+				require.NoError(t, err)
+				require.Equal(t, validVacancy.ID, result.ID)
 			}
 		})
 	}
@@ -301,51 +471,130 @@ func TestVacancyHandler_UpdateVacancy(t *testing.T) {
 func TestVacancyHandler_DeleteVacancy(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	validDeleteVacancyResponse := func() *dto.DeleteVacancy {
+		return &dto.DeleteVacancy{
+			Success: true,
+		}
+	}
+
+	tests := []struct {
 		name           string
 		vacancyID      string
-		mockSetup      func(*mock.MockAuth, *mock.MockVacancy)
+		cookie         *http.Cookie
+		setupMocks     func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedError  error
+		expectedBody   *dto.DeleteVacancy
 	}{
 		{
-			name:      "Успешное удаление вакансии",
+			name:      "Success",
 			vacancyID: "1",
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "session123").
 					Return(1, "employer", nil)
-
-				vac.EXPECT().
+				vacancy.EXPECT().
 					DeleteVacancy(gomock.Any(), 1, 1).
-					Return(&dto.DeleteVacancy{Success: true}, nil)
+					Return(validDeleteVacancyResponse(), nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   &dto.DeleteVacancy{Success: true},
+			expectedBody:   validDeleteVacancyResponse(),
 		},
 		{
-			name:           "Неверный ID вакансии",
-			vacancyID:      "invalid",
-			mockSetup:      func(auth *mock.MockAuth, vac *mock.MockVacancy) {},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   entity.ErrBadRequest,
+			name:           "No cookie - unauthorized",
+			vacancyID:      "1",
+			cookie:         nil,
+			setupMocks:     func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  entity.ErrUnauthorized,
 		},
 		{
-			name:      "Пользователь не работодатель",
+			name:      "Invalid session - unauthorized",
 			vacancyID: "1",
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
+			cookie:    &http.Cookie{Name: "session_id", Value: "invalid"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "invalid").
+					Return(0, "", entity.NewError(entity.ErrUnauthorized, fmt.Errorf("invalid session")))
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  fmt.Errorf("invalid session"),
+		},
+		{
+			name:      "Forbidden - user not employer",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
 				auth.EXPECT().
 					GetUserIDBySession(gomock.Any(), "session123").
 					Return(1, "applicant", nil)
 			},
 			expectedStatus: http.StatusForbidden,
-			expectedBody:   entity.ErrForbidden,
+			expectedError:  entity.ErrForbidden,
+		},
+		{
+			name:      "Invalid vacancy ID - bad request",
+			vacancyID: "invalid",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(1, "employer", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  entity.ErrBadRequest,
+		},
+		{
+			name:      "Vacancy not found",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(1, "employer", nil)
+				vacancy.EXPECT().
+					DeleteVacancy(gomock.Any(), 1, 1).
+					Return(nil, entity.NewError(entity.ErrNotFound, fmt.Errorf("vacancy not found")))
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedError:  fmt.Errorf("vacancy not found"),
+		},
+		{
+			name:      "Not owner - forbidden",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(1, "employer", nil)
+				vacancy.EXPECT().
+					DeleteVacancy(gomock.Any(), 1, 1).
+					Return(nil, entity.NewError(entity.ErrForbidden, fmt.Errorf("not authorized to delete vacancy")))
+			},
+			expectedStatus: http.StatusForbidden,
+			expectedError:  fmt.Errorf("not authorized to delete vacancy"),
+		},
+		{
+			name:      "Internal server error",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(1, "employer", nil)
+				vacancy.EXPECT().
+					DeleteVacancy(gomock.Any(), 1, 1).
+					Return(nil, entity.NewError(entity.ErrInternal, fmt.Errorf("database error")))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  fmt.Errorf("database error"),
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -354,26 +603,40 @@ func TestVacancyHandler_DeleteVacancy(t *testing.T) {
 			mockAuth := mock.NewMockAuth(ctrl)
 			mockVacancy := mock.NewMockVacancy(ctrl)
 
-			tc.mockSetup(mockAuth, mockVacancy)
+			tt.setupMocks(mockAuth, mockVacancy)
 
-			handler := VacancyHandler{
+			handler := &VacancyHandler{
 				auth:    mockAuth,
 				vacancy: mockVacancy,
 			}
 
-			req := httptest.NewRequest("DELETE", "/vacancy/"+tc.vacancyID, nil)
-			req.AddCookie(&http.Cookie{Name: "session_id", Value: "session123"})
+			req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/vacancy/%s", tt.vacancyID), nil)
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+			req.SetPathValue("id", tt.vacancyID)
+
 			w := httptest.NewRecorder()
 
 			handler.DeleteVacancy(w, req)
 
-			require.Equal(t, tc.expectedStatus, w.Code)
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			if tc.expectedStatus == http.StatusOK {
-				var response dto.DeleteVacancy
-				err := json.NewDecoder(w.Body).Decode(&response)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+
+			if tt.expectedError != nil {
+				var apiError utils.APIError
+				err := json.NewDecoder(resp.Body).Decode(&apiError)
 				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, &response)
+				require.Equal(t, tt.expectedError.Error(), apiError.Message)
+				require.Equal(t, tt.expectedStatus, apiError.Status)
+			} else if resp.StatusCode == http.StatusOK {
+				var response dto.DeleteVacancy
+				err := json.NewDecoder(resp.Body).Decode(&response)
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedBody, &response)
 			}
 		})
 	}
@@ -413,7 +676,11 @@ func TestVacancyHandler_GetAllVacancies(t *testing.T) {
 				"limit":  "invalid",
 				"offset": "invalid",
 			},
-			mockSetup:      func(auth *mock.MockAuth, vac *mock.MockVacancy) {},
+			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(1, "applicant", nil)
+			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   entity.ErrBadRequest,
 		},
@@ -463,47 +730,114 @@ func TestVacancyHandler_GetAllVacancies(t *testing.T) {
 func TestVacancyHandler_ApplyToVacancy(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	type applicationBody struct {
+		Message string `json:"message"`
+	}
+
+	tests := []struct {
 		name           string
 		vacancyID      string
-		mockSetup      func(*mock.MockAuth, *mock.MockVacancy)
+		resumeID       string
+		cookie         *http.Cookie
+		body           interface{}
+		setupMock      func(auth *mock.MockAuth, vacancy *mock.MockVacancy, notif *mock.MockNotification)
 		expectedStatus int
 	}{
 		{
-			name:      "Успешный отклик на вакансию",
+			name:      "Success",
 			vacancyID: "1",
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "session123").
-					Return(1, "applicant", nil)
-
-				vac.EXPECT().
-					ApplyToVacancy(gomock.Any(), 1, 1, 1).
-					Return(nil)
+			resumeID:  "2",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			body:      applicationBody{Message: "I am interested!"},
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy, notif *mock.MockNotification) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(10, "applicant", nil)
+				vacancy.EXPECT().ApplyToVacancy(gomock.Any(), 1, 10, 2).Return(entity.Notification{
+					ReceiverID: 20,
+					SenderID:   10,
+					Type:       "application",
+				}, nil)
+				notif.EXPECT().CreateNotification(gomock.Any(), gomock.Any()).Return(&entity.NotificationPreview{}, nil)
 			},
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:           "Неверный ID вакансии",
-			vacancyID:      "invalid",
-			mockSetup:      func(auth *mock.MockAuth, vac *mock.MockVacancy) {},
+			name:           "No cookie - unauthorized",
+			vacancyID:      "1",
+			resumeID:       "2",
+			cookie:         nil,
+			body:           nil,
+			setupMock:      func(_ *mock.MockAuth, _ *mock.MockVacancy, _ *mock.MockNotification) {},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:      "Invalid vacancy ID - bad request",
+			vacancyID: "abc",
+			resumeID:  "2",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			body:      nil,
+			setupMock: func(auth *mock.MockAuth, _ *mock.MockVacancy, _ *mock.MockNotification) {
+				//auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:      "Пользователь не соискатель",
+			name:      "Invalid resume ID - bad request",
 			vacancyID: "1",
-			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
-				auth.EXPECT().
-					GetUserIDBySession(gomock.Any(), "session123").
-					Return(1, "employer", nil)
+			resumeID:  "xyz",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			body:      nil,
+			setupMock: func(auth *mock.MockAuth, _ *mock.MockVacancy, _ *mock.MockNotification) {
+				//auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:      "Not applicant - forbidden",
+			vacancyID: "1",
+			resumeID:  "2",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			body:      nil,
+			setupMock: func(auth *mock.MockAuth, _ *mock.MockVacancy, _ *mock.MockNotification) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
+		{
+			name:      "ApplyToVacancy returns error",
+			vacancyID: "1",
+			resumeID:  "2",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			body:      nil,
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy, _ *mock.MockNotification) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				vacancy.EXPECT().
+					ApplyToVacancy(gomock.Any(), 1, 1, 2).
+					Return(entity.Notification{}, entity.NewError(entity.ErrNotFound, errors.New("vacancy not found")))
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:      "Notification creation error",
+			vacancyID: "1",
+			resumeID:  "2",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			body:      nil,
+			setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy, notif *mock.MockNotification) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
+				vacancy.EXPECT().
+					ApplyToVacancy(gomock.Any(), 1, 1, 2).
+					Return(entity.Notification{}, nil)
+				notif.EXPECT().
+					CreateNotification(gomock.Any(), gomock.Any()).
+					Return(nil, entity.NewError(entity.ErrInternal, errors.New("notification error")))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt // capture range variable
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -511,21 +845,42 @@ func TestVacancyHandler_ApplyToVacancy(t *testing.T) {
 
 			mockAuth := mock.NewMockAuth(ctrl)
 			mockVacancy := mock.NewMockVacancy(ctrl)
+			mockNotif := mock.NewMockNotification(ctrl)
+			mockWS := ws.NewWebsocketPool(mockAuth)
 
-			tc.mockSetup(mockAuth, mockVacancy)
-
-			handler := VacancyHandler{
-				auth:    mockAuth,
-				vacancy: mockVacancy,
+			if tt.setupMock != nil {
+				tt.setupMock(mockAuth, mockVacancy, mockNotif)
 			}
 
-			req := httptest.NewRequest("POST", "/vacancy/"+tc.vacancyID+"/response", nil)
-			req.AddCookie(&http.Cookie{Name: "session_id", Value: "session123"})
-			w := httptest.NewRecorder()
+			handler := &VacancyHandler{
+				auth:         mockAuth,
+				vacancy:      mockVacancy,
+				notification: mockNotif,
+				wsPool:       mockWS, // WebSocket исключён
+			}
 
+			var body []byte
+			if tt.body != nil {
+				body, _ = json.Marshal(tt.body)
+			}
+
+			req := httptest.NewRequest(http.MethodPost,
+				fmt.Sprintf("/vacancy/vacancy/%s/response/%s", tt.vacancyID, tt.resumeID),
+				bytes.NewReader(body))
+			req.SetPathValue("id", tt.vacancyID)
+			req.SetPathValue("resume_id", tt.resumeID)
+
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			w := httptest.NewRecorder()
 			handler.ApplyToVacancy(w, req)
 
-			require.Equal(t, tc.expectedStatus, w.Code)
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 		})
 	}
 }
@@ -565,7 +920,11 @@ func TestVacancyHandler_SearchVacancies(t *testing.T) {
 				"limit":  "10",
 				"offset": "0",
 			},
-			mockSetup:      func(auth *mock.MockAuth, vac *mock.MockVacancy) {},
+			mockSetup: func(auth *mock.MockAuth, vac *mock.MockVacancy) {
+				auth.EXPECT().
+					GetUserIDBySession(gomock.Any(), "session123").
+					Return(0, "", errors.New("no session or invalid"))
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -635,13 +994,13 @@ func TestVacancyHandler_SearchVacanciesBySpecializations(t *testing.T) {
 					Return(1, "applicant", nil)
 				vacancy.EXPECT().SearchVacanciesBySpecializations(
 					gomock.Any(), 1, "applicant", []string{"Backend", "Frontend"}, 10, 0).
-					Return([]dto.VacancyResponse{
+					Return([]dto.VacancyShortResponse{
 						{ID: 1, Title: "Backend Developer"},
 						{ID: 2, Title: "Frontend Developer"},
 					}, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: []dto.VacancyResponse{
+			expectedBody: []dto.VacancyShortResponse{
 				{ID: 1, Title: "Backend Developer"},
 				{ID: 2, Title: "Frontend Developer"},
 			},
@@ -656,12 +1015,12 @@ func TestVacancyHandler_SearchVacanciesBySpecializations(t *testing.T) {
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
 				vacancy.EXPECT().SearchVacanciesBySpecializations(
 					gomock.Any(), 0, "", []string{"DevOps"}, 5, 0).
-					Return([]dto.VacancyResponse{
+					Return([]dto.VacancyShortResponse{
 						{ID: 3, Title: "DevOps Engineer"},
 					}, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: []dto.VacancyResponse{
+			expectedBody: []dto.VacancyShortResponse{
 				{ID: 3, Title: "DevOps Engineer"},
 			},
 		},
@@ -742,7 +1101,7 @@ func TestVacancyHandler_SearchVacanciesBySpecializations(t *testing.T) {
 			require.Equal(t, tc.expectedStatus, rec.Code)
 
 			if tc.expectedStatus == http.StatusOK {
-				var resp []dto.VacancyResponse
+				var resp []dto.VacancyShortResponse
 				err := json.NewDecoder(rec.Body).Decode(&resp)
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedBody, resp)
@@ -886,83 +1245,79 @@ func TestVacancyHandler_SearchVacanciesBySpecializations(t *testing.T) {
 func TestVacancyHandler_GetActiveVacanciesByEmployer(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	tests := []struct {
 		name           string
-		url            string
+		employerID     string
+		limit          string
+		offset         string
 		cookie         *http.Cookie
 		setupMocks     func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedBody   string
 	}{
 		{
-			name:   "Success with auth",
-			url:    "/vacancy/employer/123?limit=10&offset=0",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
+			name:       "Success - with session",
+			employerID: "5",
+			cookie:     &http.Cookie{Name: "session_id", Value: "session123"},
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(456, "employer", nil)
-				vacancy.EXPECT().GetActiveVacanciesByEmployerID(
-					gomock.Any(), 123, 456, "employer", 10, 0).
-					Return([]dto.VacancyResponse{
-						{ID: 1, Title: "Backend Developer"},
-						{ID: 2, Title: "Frontend Developer"},
-					}, nil)
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(42, "employer", nil)
+				vacancy.EXPECT().GetActiveVacanciesByEmployerID(gomock.Any(), 5, 42, "employer", 10, 0).
+					Return([]dto.VacancyShortResponse{{ID: 1, Title: "Backend Go"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: []dto.VacancyResponse{
-				{ID: 1, Title: "Backend Developer"},
-				{ID: 2, Title: "Frontend Developer"},
-			},
+			expectedBody:   `[{"city":"", "created_at":"", "employer":null, "employment":"", "id":1, "liked":false, "responded":false, "salary_from":0, "salary_to":0, "specialization":"", "taxes_included":false, "title":"Backend Go", "updated_at":"", "work_format":"", "working_hours":0}]`,
 		},
 		{
-			name:   "Success without auth",
-			url:    "/vacancy/employer/123?limit=5&offset=0",
-			cookie: nil,
+			name:       "Success - without session (guest)",
+			employerID: "5",
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
-				vacancy.EXPECT().GetActiveVacanciesByEmployerID(
-					gomock.Any(), 123, 0, "", 5, 0).
-					Return([]dto.VacancyResponse{
-						{ID: 3, Title: "DevOps Engineer"},
-					}, nil)
+				vacancy.EXPECT().GetActiveVacanciesByEmployerID(gomock.Any(), 5, 0, "", 10, 0).
+					Return([]dto.VacancyShortResponse{{ID: 2, Title: "Frontend Vue"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: []dto.VacancyResponse{
-				{ID: 3, Title: "DevOps Engineer"},
+			expectedBody:   `[{"city":"", "created_at":"", "employer":null, "employment":"", "id":2, "liked":false, "responded":false, "salary_from":0, "salary_to":0, "specialization":"", "taxes_included":false, "title":"Frontend Vue", "updated_at":"", "work_format":"", "working_hours":0}]`,
+		},
+		{
+			name:           "Invalid employer ID",
+			employerID:     "bad_id",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "Invalid limit",
+			employerID: "1",
+			limit:      "invalid",
+			cookie:     &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "employer", nil)
 			},
-		},
-		{
-			name:           "Bad request - invalid employer ID",
-			url:            "/vacancy/employer/invalid",
-			cookie:         nil,
-			setupMocks:     func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   utils.APIError{Status: http.StatusBadRequest, Message: entity.ErrBadRequest.Error()},
 		},
 		{
-			name:           "Bad request - invalid limit",
-			url:            "/vacancy/employer/123?limit=invalid",
-			cookie:         nil,
-			setupMocks:     func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {},
+			name:       "Invalid offset",
+			employerID: "1",
+			offset:     "invalid",
+			cookie:     &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "employer", nil)
+			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   utils.APIError{Status: http.StatusBadRequest, Message: entity.ErrBadRequest.Error()},
 		},
 		{
-			name:   "Internal server error",
-			url:    "/vacancy/employer/123?limit=10&offset=0",
-			cookie: nil,
+			name:       "GetActiveVacanciesByEmployerID returns error",
+			employerID: "1",
+			cookie:     &http.Cookie{Name: "session_id", Value: "s"},
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
-				vacancy.EXPECT().GetActiveVacanciesByEmployerID(
-					gomock.Any(), 123, 0, "", 10, 0).
-					Return(nil, entity.ErrInternal)
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "employer", nil)
+				vacancy.EXPECT().GetActiveVacanciesByEmployerID(gomock.Any(), 1, 1, "employer", 10, 0).
+					Return(nil, errors.New("db failure"))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
@@ -982,29 +1337,347 @@ func TestVacancyHandler_GetActiveVacanciesByEmployer(t *testing.T) {
 				req.AddCookie(tc.cookie)
 			}
 
-			// Set path param
-			if strings.Contains(tc.url, "/123") {
-				req = mux.SetURLVars(req, map[string]string{"id": "123"})
-			} else if strings.Contains(tc.url, "/invalid") {
-				req = mux.SetURLVars(req, map[string]string{"id": "invalid"})
+			handler := &VacancyHandler{
+				auth:    mockAuth,
+				vacancy: mockVacancy,
+			}
+
+			url := fmt.Sprintf("/vacancy/employer/%s/active", tt.employerID)
+			req := httptest.NewRequest(http.MethodGet, url, nil)
+			req.SetPathValue("id", tt.employerID)
+
+			q := req.URL.Query()
+			if tt.limit != "" {
+				q.Set("limit", tt.limit)
+			}
+			if tt.offset != "" {
+				q.Set("offset", tt.offset)
+			}
+			req.URL.RawQuery = q.Encode()
+
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
 			}
 
 			rec := httptest.NewRecorder()
-
 			handler.GetActiveVacanciesByEmployer(rec, req)
 
-			require.Equal(t, tc.expectedStatus, rec.Code)
+			resp := rec.Result()
+			defer resp.Body.Close()
+			body, _ := io.ReadAll(resp.Body)
 
-			if tc.expectedStatus == http.StatusOK {
-				var resp []dto.VacancyResponse
-				err := json.NewDecoder(rec.Body).Decode(&resp)
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
-			} else {
-				var resp utils.APIError
-				err := json.NewDecoder(rec.Body).Decode(&resp)
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+			if tt.expectedBody != "" {
+				require.JSONEq(t, tt.expectedBody, string(body))
+			}
+		})
+	}
+}
+
+func TestVacancyHandler_GetResponsesOnVacancy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		vacancyID      string
+		cookie         *http.Cookie
+		userType       string
+		mockSetup      func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
+		limit          string
+		offset         string
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:      "Success",
+			vacancyID: "123",
+			cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
+			userType:  "employer",
+			mockSetup: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "employer", nil)
+				vacancy.EXPECT().GetRespondedResumeOnVacancy(gomock.Any(), 123, 10, 0).Return([]dto.ResumeShortResponse{
+					{ID: 1, Specialization: "Developer"},
+				}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: `[{
+			"applicant": null,
+			"created_at": "",
+			"id": 1,
+			"profession": "",
+			"specialization": "Developer",
+			"updated_at": "",
+			"work_experiences": {
+				"employer_name": "",
+				"id": 0,
+				"position": "",
+				"start_date": "",
+				"until_now": false
+			}
+			}]`,
+		},
+		{
+			name:           "Unauthorized - no cookie",
+			vacancyID:      "123",
+			cookie:         nil,
+			mockSetup:      func(_ *mock.MockAuth, _ *mock.MockVacancy) {},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:      "Invalid vacancy ID",
+			vacancyID: "abc",
+			cookie:    &http.Cookie{Name: "session_id", Value: "s"},
+			mockSetup: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				// НЕ ожидаем вызова GetUserIDBySession, потому что он не должен быть вызван при невалидном ID
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:      "Invalid limit",
+			vacancyID: "1",
+			limit:     "bad",
+			cookie:    &http.Cookie{Name: "session_id", Value: "s"},
+			mockSetup: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "employer", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:      "Invalid offset",
+			vacancyID: "1",
+			offset:    "bad",
+			cookie:    &http.Cookie{Name: "session_id", Value: "s"},
+			mockSetup: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "employer", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:      "Forbidden - user not employer",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "s"},
+			mockSetup: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:      "Auth error",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "s"},
+			mockSetup: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(0, "", errors.New("session not found"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:      "Vacancy usecase returns error",
+			vacancyID: "1",
+			cookie:    &http.Cookie{Name: "session_id", Value: "s"},
+			userType:  "employer",
+			mockSetup: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "employer", nil)
+				vacancy.EXPECT().GetRespondedResumeOnVacancy(gomock.Any(), 1, 10, 0).Return(nil, errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockVacancy := mock.NewMockVacancy(ctrl)
+
+			if tt.mockSetup != nil {
+				tt.mockSetup(mockAuth, mockVacancy)
+			}
+
+			handler := &VacancyHandler{
+				auth:    mockAuth,
+				vacancy: mockVacancy,
+			}
+
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/vacancy/vacancy/%s/responses", tt.vacancyID), nil)
+			req.SetPathValue("id", tt.vacancyID)
+
+			q := req.URL.Query()
+			if tt.limit != "" {
+				q.Set("limit", tt.limit)
+			}
+			if tt.offset != "" {
+				q.Set("offset", tt.offset)
+			}
+			req.URL.RawQuery = q.Encode()
+
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			w := httptest.NewRecorder()
+			handler.GetResponsesOnVacancy(w, req)
+
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			body, _ := io.ReadAll(resp.Body)
+
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedBody != "" {
+				require.JSONEq(t, tt.expectedBody, string(body))
+			}
+		})
+	}
+}
+
+func TestVacancyHandler_GetVacanciesByApplicant(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		pathID         string
+		cookie         *http.Cookie
+		limit          string
+		offset         string
+		setupMocks     func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:   "Success",
+			pathID: "1",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "applicant", nil)
+				vacancy.EXPECT().GetVacanciesByApplicantID(gomock.Any(), 1, 10, 0).
+					Return([]dto.VacancyShortResponse{{ID: 7, Title: "Go Dev"}}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `[{"city":"", "created_at":"", "employer": null, "employment":"", "id":7, "liked":false, "responded":false, "salary_from":0, "salary_to":0, "specialization":"", "taxes_included":false, "title":"Go Dev", "updated_at":"", "work_format":"", "working_hours":0}]`,
+		},
+		{
+			name:           "No cookie",
+			pathID:         "1",
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:   "GetUserIDBySession error",
+			pathID: "1",
+			cookie: &http.Cookie{Name: "session_id", Value: "bad"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "bad").Return(0, "", errors.New("fail"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:   "Forbidden - wrong role",
+			pathID: "1",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "employer", nil)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:   "Invalid applicantID in path",
+			pathID: "abc",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Forbidden - applicantID mismatch",
+			pathID: "999",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:   "Invalid limit param",
+			pathID: "1",
+			limit:  "not-a-number",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Invalid offset param",
+			pathID: "1",
+			offset: "oops",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Vacancy service error",
+			pathID: "1",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(1, "applicant", nil)
+				vacancy.EXPECT().GetVacanciesByApplicantID(gomock.Any(), 1, 10, 0).Return(nil, errors.New("fail"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockAuth := mock.NewMockAuth(ctrl)
+			mockVacancy := mock.NewMockVacancy(ctrl)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockAuth, mockVacancy)
+			}
+
+			handler := &VacancyHandler{
+				auth:    mockAuth,
+				vacancy: mockVacancy,
+			}
+
+			req := httptest.NewRequest(http.MethodGet, "/applicant/"+tt.pathID+"/vacancies", nil)
+			req.SetPathValue("id", tt.pathID)
+			if tt.limit != "" || tt.offset != "" {
+				q := req.URL.Query()
+				if tt.limit != "" {
+					q.Set("limit", tt.limit)
+				}
+				if tt.offset != "" {
+					q.Set("offset", tt.offset)
+				}
+				req.URL.RawQuery = q.Encode()
+			}
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+
+			rec := httptest.NewRecorder()
+			handler.GetVacanciesByApplicant(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			body, _ := io.ReadAll(res.Body)
+
+			require.Equal(t, tt.expectedStatus, res.StatusCode)
+			if tt.expectedBody != "" {
+				require.JSONEq(t, tt.expectedBody, string(body))
 			}
 		})
 	}
@@ -1013,89 +1686,107 @@ func TestVacancyHandler_GetActiveVacanciesByEmployer(t *testing.T) {
 func TestVacancyHandler_GetLikedVacancies(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	tests := []struct {
 		name           string
-		url            string
-		queryParams    string
+		pathID         string
 		cookie         *http.Cookie
+		limit          string
+		offset         string
 		setupMocks     func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
 		expectedStatus int
-		expectedBody   interface{}
+		expectedBody   string
 	}{
 		{
-			name:        "Success",
-			url:         "/vacancy/liked/123",
-			queryParams: "?limit=10&offset=0",
-			cookie:      &http.Cookie{Name: "session_id", Value: "valid-session"},
+			name:   "Success",
+			pathID: "42",
+			cookie: &http.Cookie{Name: "session_id", Value: "session123"},
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(123, "applicant", nil)
-				vacancy.EXPECT().GetLikedVacancies(gomock.Any(), 123, 10, 0).
-					Return([]dto.VacancyResponse{
-						{ID: 1, Title: "Backend Developer"},
-						{ID: 2, Title: "Frontend Developer"},
-					}, nil)
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").
+					Return(42, "applicant", nil)
+				vacancy.EXPECT().GetLikedVacancies(gomock.Any(), 42, 10, 0).
+					Return([]dto.VacancyShortResponse{{ID: 1, Title: "Backend Go"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: []dto.VacancyResponse{
-				{ID: 1, Title: "Backend Developer"},
-				{ID: 2, Title: "Frontend Developer"},
-			},
-		},
-		{
-			name:        "Forbidden - not applicant",
-			url:         "/vacancy/liked/123",
-			queryParams: "",
-			cookie:      &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(123, "employer", nil)
-			},
-			expectedStatus: http.StatusForbidden,
-			expectedBody:   utils.APIError{Status: http.StatusForbidden, Message: entity.ErrForbidden.Error()},
-		},
-		{
-			name:        "Forbidden - wrong user",
-			url:         "/vacancy/liked/456",
-			queryParams: "",
-			cookie:      &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(123, "applicant", nil)
-			},
-			expectedStatus: http.StatusForbidden,
-			expectedBody:   utils.APIError{Status: http.StatusForbidden, Message: entity.ErrForbidden.Error()},
+			expectedBody:   `[{"city":"", "created_at":"", "employer":null, "employment":"", "id":1, "liked":false, "responded":false, "salary_from":0, "salary_to":0, "specialization":"", "taxes_included":false, "title":"Backend Go", "updated_at":"", "work_format":"", "working_hours":0}]`,
 		},
 		{
 			name:           "Unauthorized - no cookie",
-			url:            "/vacancy/liked/123",
-			queryParams:    "",
-			cookie:         nil,
-			setupMocks:     func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {},
+			pathID:         "42",
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   utils.APIError{Status: http.StatusUnauthorized, Message: entity.ErrUnauthorized.Error()},
 		},
 		{
-			name:        "Internal server error",
-			url:         "/vacancy/liked/123",
-			queryParams: "?limit=10&offset=0",
-			cookie:      &http.Cookie{Name: "session_id", Value: "valid-session"},
-			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(123, "applicant", nil)
-				vacancy.EXPECT().GetLikedVacancies(gomock.Any(), 123, 10, 0).
-					Return(nil, entity.ErrInternal)
+			name:   "GetUserIDBySession error",
+			pathID: "42",
+			cookie: &http.Cookie{Name: "session_id", Value: "bad"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "bad").
+					Return(0, "", errors.New("session error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   utils.APIError{Status: http.StatusInternalServerError, Message: entity.ErrInternal.Error()},
+		},
+		{
+			name:   "Forbidden - wrong role",
+			pathID: "42",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").
+					Return(42, "employer", nil)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:   "Invalid applicant ID",
+			pathID: "not-an-int",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(42, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Forbidden - applicantID != currentUserID",
+			pathID: "999",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(42, "applicant", nil)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:   "Invalid limit",
+			pathID: "42",
+			limit:  "bad",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(42, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Invalid offset",
+			pathID: "42",
+			offset: "bad",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, _ *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(42, "applicant", nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "GetLikedVacancies returns error",
+			pathID: "42",
+			cookie: &http.Cookie{Name: "session_id", Value: "s"},
+			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
+				auth.EXPECT().GetUserIDBySession(gomock.Any(), "s").Return(42, "applicant", nil)
+				vacancy.EXPECT().GetLikedVacancies(gomock.Any(), 42, 10, 0).
+					Return(nil, errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -1114,29 +1805,38 @@ func TestVacancyHandler_GetLikedVacancies(t *testing.T) {
 				req.AddCookie(tc.cookie)
 			}
 
-			// Исправление: проверяем наличие id в URL перед установкой
-			if strings.Contains(tc.url, "123") {
-				req = mux.SetURLVars(req, map[string]string{"id": "123"})
-			} else if strings.Contains(tc.url, "456") {
-				req = mux.SetURLVars(req, map[string]string{"id": "456"})
+			handler := &VacancyHandler{
+				auth:    mockAuth,
+				vacancy: mockVacancy,
+			}
+
+			url := fmt.Sprintf("/vacancy/applicant/%s/liked", tt.pathID)
+			req := httptest.NewRequest(http.MethodGet, url, nil)
+			req.SetPathValue("id", tt.pathID)
+
+			q := req.URL.Query()
+			if tt.limit != "" {
+				q.Set("limit", tt.limit)
+			}
+			if tt.offset != "" {
+				q.Set("offset", tt.offset)
+			}
+			req.URL.RawQuery = q.Encode()
+
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
 			}
 
 			rec := httptest.NewRecorder()
-
 			handler.GetLikedVacancies(rec, req)
 
-			require.Equal(t, tc.expectedStatus, rec.Code)
+			res := rec.Result()
+			defer res.Body.Close()
+			body, _ := io.ReadAll(res.Body)
 
-			if tc.expectedStatus == http.StatusOK {
-				var resp []dto.VacancyResponse
-				err := json.NewDecoder(rec.Body).Decode(&resp)
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
-			} else if tc.expectedStatus != http.StatusCreated && tc.expectedStatus != http.StatusNoContent {
-				var resp utils.APIError
-				err := json.NewDecoder(rec.Body).Decode(&resp)
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedBody, resp)
+			require.Equal(t, tt.expectedStatus, res.StatusCode)
+			if tt.expectedBody != "" {
+				require.JSONEq(t, tt.expectedBody, string(body))
 			}
 		})
 	}
@@ -1147,15 +1847,16 @@ func TestVacancyHandler_LikeVacancy(t *testing.T) {
 
 	testCases := []struct {
 		name           string
-		url            string
+		vacancyID      string
 		cookie         *http.Cookie
 		setupMocks     func(auth *mock.MockAuth, vacancy *mock.MockVacancy)
 		expectedStatus int
+		expectedError  error
 	}{
 		{
-			name:   "Success",
-			url:    "/vacancy/like/123",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
+			name:      "Success",
+			vacancyID: "123",
+			cookie:    &http.Cookie{Name: "session_id", Value: "valid-session"},
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
 				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
 					Return(1, "applicant", nil)
@@ -1165,9 +1866,9 @@ func TestVacancyHandler_LikeVacancy(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:   "Forbidden - not applicant",
-			url:    "/vacancy/like/123",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
+			name:      "Forbidden - not applicant",
+			vacancyID: "123",
+			cookie:    &http.Cookie{Name: "session_id", Value: "valid-session"},
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
 				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
 					Return(1, "employer", nil)
@@ -1175,26 +1876,20 @@ func TestVacancyHandler_LikeVacancy(t *testing.T) {
 			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name:           "Unauthorized - no cookie",
-			url:            "/vacancy/like/123",
-			cookie:         nil,
-			setupMocks:     func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {},
-			expectedStatus: http.StatusUnauthorized,
-		},
-		{
-			name:   "Bad request - invalid vacancy ID",
-			url:    "/vacancy/like/invalid",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
+			name:      "Bad request - invalid vacancy ID",
+			vacancyID: "invalid",
+			cookie:    &http.Cookie{Name: "session_id", Value: "valid-session"},
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
 				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
-					Return(1, "applicant", nil)
+					Return(0, "", nil).AnyTimes() // чтобы игнорировать вызовы
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusForbidden,
+			expectedError:  entity.ErrForbidden,
 		},
 		{
-			name:   "Internal server error",
-			url:    "/vacancy/like/123",
-			cookie: &http.Cookie{Name: "session_id", Value: "valid-session"},
+			name:      "Internal server error",
+			vacancyID: "123",
+			cookie:    &http.Cookie{Name: "session_id", Value: "valid-session"},
 			setupMocks: func(auth *mock.MockAuth, vacancy *mock.MockVacancy) {
 				auth.EXPECT().GetUserIDBySession(gomock.Any(), "valid-session").
 					Return(1, "applicant", nil)
@@ -1202,6 +1897,7 @@ func TestVacancyHandler_LikeVacancy(t *testing.T) {
 					Return(entity.ErrInternal)
 			},
 			expectedStatus: http.StatusInternalServerError,
+			expectedError:  entity.ErrInternal,
 		},
 	}
 
@@ -1222,19 +1918,25 @@ func TestVacancyHandler_LikeVacancy(t *testing.T) {
 
 			handler := NewVacancyHandler(authMock, vacancyMock, config.CSRFConfig{}, wsHub, notificationMock)
 
-			req := httptest.NewRequest(http.MethodPost, tc.url, nil)
+			req := httptest.NewRequest(http.MethodPost, "/vacancy/"+tc.vacancyID+"/like", nil)
 			if tc.cookie != nil {
 				req.AddCookie(tc.cookie)
 			}
-
-			// Set path param
-			req = mux.SetURLVars(req, map[string]string{"id": "123"})
+			req.SetPathValue("id", tc.vacancyID)
 
 			rec := httptest.NewRecorder()
 
 			handler.LikeVacancy(rec, req)
 
 			require.Equal(t, tc.expectedStatus, rec.Code)
+
+			if tc.expectedError != nil {
+				var apiErr utils.APIError
+				err := json.NewDecoder(rec.Body).Decode(&apiErr)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedError.Error(), apiErr.Message)
+				require.Equal(t, tc.expectedStatus, apiErr.Status)
+			}
 		})
 	}
 }

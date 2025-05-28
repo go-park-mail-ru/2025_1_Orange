@@ -18,9 +18,25 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.1.2
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Prepare dependencies
+        run: go mod tidy
+      - name: Run tests with coverage
+        run: |
+          go test -coverprofile=coverage.out ./...
+          head -n 1 coverage.out > filtered_coverage.out
+          egrep -v "(^|/)(static/|postman/|docs/|docker/|db/|configs/|grpc/auth/proto/|grpc/static/proto/|mock_[^/]*|[^/]*_easyjson\.go|[^/]*_generated\.go|vendor/)" coverage.out | tail -n +2 >> filtered_coverage.out
+          go tool cover -func filtered_coverage.out | grep total
 
   deploy:
-    needs: lint
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

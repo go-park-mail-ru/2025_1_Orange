@@ -150,7 +150,7 @@ func LoadAppConfig(vaultClient *vault.VaultClient) (*Config, error) {
 		return nil, fmt.Errorf("error parsing YAML: %w", err)
 	}
 
-	secret, err := vaultClient.GetSecret("http")
+	secret, err := vaultClient.GetSecret("resumatch/http")
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения секрета HTTP: %w", err)
 	}
@@ -202,7 +202,7 @@ func LoadAuthConfig(vaultClient *vault.VaultClient) (*AuthConfig, error) {
 		return nil, fmt.Errorf("ошибка парсинга YAML: %w", err)
 	}
 
-	secret, err := vaultClient.GetSecret("redis")
+	secret, err := vaultClient.GetSecret("resumatch/redis")
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения секрета Redis: %w", err)
 	}

@@ -1,12 +1,9 @@
 package vault
 
 import (
-	"crypto/tls"
 	"fmt"
 	"github.com/hashicorp/vault/api"
-	"net/http"
 	"strings"
-	"time"
 )
 
 type VaultConfig struct {
@@ -33,17 +30,6 @@ func NewVaultClient(cfg *VaultConfig) (*VaultClient, error) {
 func (v *VaultClient) Connect() error {
 	c := api.DefaultConfig()
 	c.Address = v.Config.Scheme + "://" + v.Config.Host + ":" + v.Config.Port
-
-	tlsTransport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-
-	c.HttpClient = &http.Client{
-		Transport: tlsTransport,
-		Timeout:   10 * time.Second,
-	}
 
 	client, err := api.NewClient(c)
 	if err != nil {

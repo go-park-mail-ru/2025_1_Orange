@@ -746,10 +746,6 @@ func TestVacancyHandler_GetAllVacancies(t *testing.T) {
 func TestVacancyHandler_ApplyToVacancy(t *testing.T) {
 	t.Parallel()
 
-	type applicationBody struct {
-		Message string `json:"message"`
-	}
-
 	tests := []struct {
 		name           string
 		vacancyID      string
@@ -759,23 +755,7 @@ func TestVacancyHandler_ApplyToVacancy(t *testing.T) {
 		setupMock      func(auth *mock.MockAuth, vacancy *mock.MockVacancy, notif *mock.MockNotification)
 		expectedStatus int
 	}{
-		// {
-		// 	name:      "Success",
-		// 	vacancyID: "1",
-		// 	resumeID:  "2",
-		// 	cookie:    &http.Cookie{Name: "session_id", Value: "session123"},
-		// 	body:      applicationBody{Message: "I am interested!"},
-		// 	setupMock: func(auth *mock.MockAuth, vacancy *mock.MockVacancy, notif *mock.MockNotification) {
-		// 		auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
-		// 		vacancy.EXPECT().ApplyToVacancy(gomock.Any(), 1, 1, 2).Return(entity.Notification{
-		// 			ReceiverID: 2,
-		// 			SenderID:   1,
-		// 			Type:       "application",
-		// 		}, nil)
-		// 		notif.EXPECT().CreateNotification(gomock.Any(), gomock.Any()).Return(&entity.NotificationPreview{}, nil)
-		// 	},
-		// 	expectedStatus: http.StatusCreated,
-		// },
+
 		{
 			name:           "No cookie - unauthorized",
 			vacancyID:      "1",

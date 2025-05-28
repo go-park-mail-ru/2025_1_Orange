@@ -1949,7 +1949,11 @@ func TestVacancyRepository_Update(t *testing.T) {
 
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
+				mock.ExpectClose()
+				err := db.Close()
+				require.NoError(t, err)
+			}(db, mock)
 
 			tc.setupMock(mock, tc.inputVacancy)
 
@@ -4067,223 +4071,6 @@ func TestVacancyRepository_SearchVacancies(t *testing.T) {
 	}
 }
 
-// func TestVacancyRepository_GetVacanciesByApplicantID(t *testing.T) {
-// 	t.Parallel()
-
-// 	query := regexp.QuoteMeta(`
-// 		SELECT v.id, v.title, v.employer_id, v.specialization_id, v.work_format,
-// 			v.employment, v.schedule, v.working_hours, v.salary_from, v.salary_to,
-// 			v.taxes_included, v.experience, v.description, v.tasks, v.requirements,
-// 			v.optional_requirements, v.city, v.created_at, v.updated_at
-// 		FROM vacancy v
-// 		JOIN (
-// 			SELECT vacancy_id, MAX(applied_at) as last_applied_at
-// 			FROM vacancy_response
-// 			WHERE applicant_id = $1
-// 			GROUP BY vacancy_id
-// 		) vr ON v.id = vr.vacancy_id
-// 		ORDER BY vr.last_applied_at DESC
-// 		LIMIT $2 OFFSET $3
-// 	`)
-
-// 	createdAt := time.Now().Add(-48 * time.Hour)
-// 	updatedAt := time.Now()
-
-// 	columns := []string{
-// 		"id", "title", "employer_id", "specialization_id", "work_format", "employment",
-// 		"schedule", "working_hours", "salary_from", "salary_to", "taxes_included", "experience",
-// 		"description", "tasks", "requirements", "optional_requirements", "city", "created_at", "updated_at",
-// 	}
-
-// 	testCases := []struct {
-// 		name           string
-// 		applicantID    int
-// 		limit          int
-// 		offset         int
-// 		expectedResult []*entity.Vacancy
-// 		expectedErr    error
-// 		setupMock      func(mock sqlmock.Sqlmock, applicantID int, limit, offset int)
-// 	}{
-// 		{
-// 			name:        "Успешное получение вакансий",
-// 			applicantID: 1,
-// 			limit:       2,
-// 			offset:      0,
-// 			expectedResult: []*entity.Vacancy{
-// 				{
-// 					ID:                   1,
-// 					Title:                "Senior Go Developer",
-// 					EmployerID:           1,
-// 					SpecializationID:     2,
-// 					WorkFormat:           "remote",
-// 					Employment:           "full_time",
-// 					Schedule:             "5/2",
-// 					WorkingHours:         40,
-// 					SalaryFrom:           150000,
-// 					SalaryTo:             200000,
-// 					TaxesIncluded:        true,
-// 					Experience:           "3_6_years",
-// 					Description:          "Develop backend services",
-// 					Tasks:                "Write clean code",
-// 					Requirements:         "Go, SQL",
-// 					OptionalRequirements: "Docker",
-// 					City:                 "Москва",
-// 					CreatedAt:            createdAt,
-// 					UpdatedAt:            updatedAt,
-// 				},
-// 				{
-// 					ID:                   2,
-// 					Title:                "DevOps Engineer",
-// 					EmployerID:           1,
-// 					SpecializationID:     3,
-// 					WorkFormat:           "hybrid",
-// 					Employment:           "full_time",
-// 					Schedule:             "5/2",
-// 					WorkingHours:         40,
-// 					SalaryFrom:           180000,
-// 					SalaryTo:             250000,
-// 					TaxesIncluded:        false,
-// 					Experience:           "3_6_years",
-// 					Description:          "Manage CI/CD pipelines",
-// 					Tasks:                "Automate deployments",
-// 					Requirements:         "Kubernetes, AWS",
-// 					OptionalRequirements: "Terraform",
-// 					City:                 "Санкт-Петербург",
-// 					CreatedAt:            createdAt,
-// 					UpdatedAt:            updatedAt,
-// 				},
-// 			},
-// 			expectedErr: nil,
-// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int, limit, offset int) {
-// 				rows := sqlmock.NewRows(columns).
-// 					AddRow(
-// 						1, "Senior Go Developer", 1, 2, "remote", "full_time",
-// 						"5/2", 40, 150000, 200000, true, "3_6_years",
-// 						"Develop backend services", "Write clean code", "Go, SQL", "Docker",
-// 						"Москва", createdAt, updatedAt,
-// 					).
-// 					AddRow(
-// 						2, "DevOps Engineer", 1, 3, "hybrid", "full_time",
-// 						"5/2", 40, 180000, 250000, false, "3_6_years",
-// 						"Manage CI/CD pipelines", "Automate deployments", "Kubernetes, AWS", "Terraform",
-// 						"Санкт-Петербург", createdAt, updatedAt,
-// 					)
-// 				mock.ExpectQuery(query).
-// 					WithArgs(applicantID).
-// 					WillReturnRows(rows)
-// 			},
-// 		},
-// 		{
-// 			name:           "Успешное получение - пустой список",
-// 			applicantID:    2,
-// 			limit:          2,
-// 			offset:         0,
-// 			expectedResult: []*entity.Vacancy{},
-// 			expectedErr:    nil,
-// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int, limit, offset int) {
-// 				rows := sqlmock.NewRows(columns)
-// 				mock.ExpectQuery(query).
-// 					WithArgs(applicantID).
-// 					WillReturnRows(rows)
-// 			},
-// 		},
-// 		{
-// 			name:           "Ошибка - ошибка при выполнении запроса",
-// 			applicantID:    1,
-// 			limit:          2,
-// 			offset:         0,
-// 			expectedResult: nil,
-// 			expectedErr: entity.NewError(
-// 				entity.ErrInternal,
-// 				fmt.Errorf("ошибка при получении списка вакансий: %w", errors.New("database error")),
-// 			),
-// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int, limit, offset int) {
-// 				mock.ExpectQuery(query).
-// 					WithArgs(applicantID).
-// 					WillReturnError(errors.New("database error"))
-// 			},
-// 		},
-// 		{
-// 			name:           "Ошибка - ошибка при сканировании",
-// 			applicantID:    1,
-// 			limit:          2,
-// 			offset:         0,
-// 			expectedResult: nil,
-// 			expectedErr: entity.NewError(
-// 				entity.ErrInternal,
-// 				fmt.Errorf("ошибка обработки данных вакансии: %w", errors.New("sql: Scan error on column index 0, name \"id\": converting driver.Value type string (\"invalid\") to a int: invalid syntax")),
-// 			),
-// 			setupMock: func(mock sqlmock.Sqlmock, applicantID int, limit, offset int) {
-// 				rows := sqlmock.NewRows(columns).
-// 					AddRow(
-// 						"invalid", "Senior Go Developer", 1, 2, "remote", "full_time",
-// 						"5/2", 40, 150000, 200000, true, "3_6_years",
-// 						"Develop backend services", "Write clean code", "Go, SQL", "Docker",
-// 						"Москва", createdAt, updatedAt,
-// 					)
-// 				mock.ExpectQuery(query).
-// 					WithArgs(applicantID).
-// 					WillReturnRows(rows)
-// 			},
-// 		},
-// 	}
-
-// 	for _, tc := range testCases {
-// 		tc := tc
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			t.Parallel()
-
-// 			db, mock, err := sqlmock.New()
-// 			require.NoError(t, err)
-// 			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
-// 				mock.ExpectClose()
-// 				err := db.Close()
-// 				require.NoError(t, err)
-// 			}(db, mock)
-
-// 			tc.setupMock(mock, tc.applicantID, 2, 0)
-
-// 			repo := &VacancyRepository{DB: db}
-// 			ctx := context.Background()
-
-// 			result, err := repo.GetVacanciesByApplicantID(ctx, tc.applicantID, tc.limit, tc.offset)
-
-// 			if tc.expectedErr != nil {
-// 				require.Error(t, err)
-// 				var repoErr entity.Error
-// 				require.ErrorAs(t, err, &repoErr)
-// 				require.Equal(t, tc.expectedErr.Error(), err.Error())
-// 				require.Nil(t, result)
-// 			} else {
-// 				require.NoError(t, err)
-// 				require.Equal(t, len(tc.expectedResult), len(result))
-// 				for i, expectedVacancy := range tc.expectedResult {
-// 					require.Equal(t, expectedVacancy.ID, result[i].ID)
-// 					require.Equal(t, expectedVacancy.Title, result[i].Title)
-// 					require.Equal(t, expectedVacancy.EmployerID, result[i].EmployerID)
-// 					require.Equal(t, expectedVacancy.SpecializationID, result[i].SpecializationID)
-// 					require.Equal(t, expectedVacancy.WorkFormat, result[i].WorkFormat)
-// 					require.Equal(t, expectedVacancy.Employment, result[i].Employment)
-// 					require.Equal(t, expectedVacancy.Schedule, result[i].Schedule)
-// 					require.Equal(t, expectedVacancy.WorkingHours, result[i].WorkingHours)
-// 					require.Equal(t, expectedVacancy.SalaryFrom, result[i].SalaryFrom)
-// 					require.Equal(t, expectedVacancy.SalaryTo, result[i].SalaryTo)
-// 					require.Equal(t, expectedVacancy.TaxesIncluded, result[i].TaxesIncluded)
-// 					require.Equal(t, expectedVacancy.Experience, result[i].Experience)
-// 					require.Equal(t, expectedVacancy.Description, result[i].Description)
-// 					require.Equal(t, expectedVacancy.Tasks, result[i].Tasks)
-// 					require.Equal(t, expectedVacancy.Requirements, result[i].Requirements)
-// 					require.Equal(t, expectedVacancy.OptionalRequirements, result[i].OptionalRequirements)
-// 					require.Equal(t, expectedVacancy.City, result[i].City)
-// 					require.Equal(t, expectedVacancy.CreatedAt, result[i].CreatedAt)
-// 					require.Equal(t, expectedVacancy.UpdatedAt, result[i].UpdatedAt)
-// 				}
-// 			}
-// 			require.NoError(t, mock.ExpectationsWereMet())
-// 		})
-// 	}
-// }
-
 func TestVacancyRepository_SearchVacanciesByEmployerID(t *testing.T) {
 	t.Parallel()
 
@@ -5148,6 +4935,7 @@ func TestVacancyRepository_CreateLike(t *testing.T) {
 			t.Parallel()
 
 			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
 			defer func(db *sql.DB, mock sqlmock.Sqlmock) {
 				mock.ExpectClose()
 				err := db.Close()

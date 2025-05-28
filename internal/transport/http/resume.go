@@ -165,7 +165,6 @@ func (h *ResumeHandler) GetResume(w http.ResponseWriter, r *http.Request) {
 	resumeIDStr := r.PathValue("id")
 	resumeID, err := strconv.Atoi(resumeIDStr)
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetResume").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -207,7 +206,6 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "UpdateResume").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -233,7 +231,6 @@ func (h *ResumeHandler) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	resumeIDStr := r.PathValue("id")
 	resumeID, err := strconv.Atoi(resumeIDStr)
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "UpdateResume").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -307,7 +304,6 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "DeleteResume").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -333,7 +329,6 @@ func (h *ResumeHandler) DeleteResume(w http.ResponseWriter, r *http.Request) {
 	resumeIDStr := r.PathValue("id")
 	resumeID, err := strconv.Atoi(resumeIDStr)
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "DeleteResume").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -370,7 +365,6 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		//		metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetAllResumes").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -394,7 +388,6 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			//			metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetAllResumes").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -404,7 +397,6 @@ func (h *ResumeHandler) GetAllResumes(w http.ResponseWriter, r *http.Request) {
 	if offsetStr != "" {
 		offset, err = strconv.Atoi(offsetStr)
 		if err != nil {
-			//			metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "GetAllResumes").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -494,7 +486,6 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			//			metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "SearchResumes").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -504,7 +495,6 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 	if offsetStr != "" {
 		offset, err = strconv.Atoi(offsetStr)
 		if err != nil {
-			//			metrics.LayerErrorCounter.WithLabelValues("Resume Handler", "SearchResumes").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}

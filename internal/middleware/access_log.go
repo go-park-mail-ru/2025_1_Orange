@@ -3,15 +3,11 @@ package middleware
 import (
 	"ResuMatch/internal/utils"
 	l "ResuMatch/pkg/logger"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
-)
 
-type customResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
+	"github.com/sirupsen/logrus"
+)
 
 func AccessLogMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

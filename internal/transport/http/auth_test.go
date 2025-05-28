@@ -8,12 +8,13 @@ import (
 	"ResuMatch/internal/usecase/mock"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestAuthHandler_IsAuth(t *testing.T) {

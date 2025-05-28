@@ -144,7 +144,6 @@ func (h *EmployerHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	requestedID := r.PathValue("id")
 	employerID, err := strconv.Atoi(requestedID)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "GetProfile").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -181,7 +180,6 @@ func (h *EmployerHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) 
 	// проверяем сессию
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UpdateProfile").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -232,7 +230,6 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -250,7 +247,6 @@ func (h *EmployerHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 
 	file, _, err := r.FormFile("logo")
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Employer Handler", "UploadLogo").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}

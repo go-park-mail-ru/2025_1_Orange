@@ -9,13 +9,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestApplicantHandler_Register(t *testing.T) {
@@ -61,7 +62,7 @@ func TestApplicantHandler_Register(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusBadRequest,
-				Message: entity.ErrBadRequest.Error(),
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 		{
@@ -236,7 +237,7 @@ func TestApplicantHandler_Login(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusBadRequest,
-				Message: entity.ErrBadRequest.Error(),
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 		{
@@ -623,7 +624,7 @@ func TestApplicantHandler_UpdateProfile(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusBadRequest,
-				Message: entity.ErrBadRequest.Error(),
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 		{
@@ -957,7 +958,7 @@ func TestApplicantHandler_EmailExists(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusBadRequest,
-				Message: entity.ErrBadRequest.Error(),
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 	}

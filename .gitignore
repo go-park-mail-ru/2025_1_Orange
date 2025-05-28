@@ -5,4 +5,8 @@ go.sum
 cover.out
 coverage.out
 coverage.html
+coverage
 assets
+
+filtered_coverage.out
+filtered_coverage.html

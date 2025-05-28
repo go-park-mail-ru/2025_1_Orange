@@ -64,7 +64,6 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "CreateVacancy").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -87,7 +86,6 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 
 	var vacancyCreate dto.VacancyCreate
 	if err := json.NewDecoder(r.Body).Decode(&vacancyCreate); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "CreateVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -141,7 +139,6 @@ func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	vacancyID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -167,7 +164,6 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	// Проверка сессии
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "UpdateVacancy").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -191,14 +187,12 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	vacancyID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "UpdateVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	var vacancyUpdate dto.VacancyUpdate
 	if err := json.NewDecoder(r.Body).Decode(&vacancyUpdate); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "UpdateVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -243,7 +237,6 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 	// Проверка сессии
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "DeleteVacancy").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -267,7 +260,6 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "DeleteVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -310,7 +302,6 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetAllVacancies").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -346,7 +337,6 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "ApplyToVacancy").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -354,7 +344,6 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	// Получаем ID вакансии из URL
 	vacancyID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "ApplyToVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -416,14 +405,12 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 	idStr := r.PathValue("id")
 	vacancyID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -446,7 +433,6 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -456,7 +442,6 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 	if offsetStr != "" {
 		offset, err = strconv.Atoi(offsetStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -486,7 +471,6 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 	idStr := r.PathValue("id")
 	employerID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -508,7 +492,6 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -518,7 +501,6 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 	if offsetStr != "" {
 		offset, err = strconv.Atoi(offsetStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetActiveVacanciesByEmployer").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -544,7 +526,6 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -563,7 +544,6 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 	idStr := r.PathValue("id")
 	applicantID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -581,7 +561,6 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -591,7 +570,6 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 	if offsetStr != "" {
 		offset, err = strconv.Atoi(offsetStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -644,7 +622,6 @@ func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request)
 	// Получаем параметры из URL
 	searchQuery := r.URL.Query().Get("query")
 	if searchQuery == "" {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacancies").Inc()
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("параметр query обязателен"))
 		return
 	}
@@ -733,7 +710,6 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 	// Декодируем тело запроса
 	var searchRequest dto.SearchBySpecializationsRequest
 	if err := json.NewDecoder(r.Body).Decode(&searchRequest); err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "SearchVacanciesBySpecializations").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -918,7 +894,6 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 		utils.WriteError(w, http.StatusUnauthorized, entity.ErrUnauthorized)
 		return
 	}
@@ -937,7 +912,6 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 	idStr := r.PathValue("id")
 	applicantID, err := strconv.Atoi(idStr)
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -954,7 +928,6 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -964,7 +937,6 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 	if offsetStr != "" {
 		offset, err = strconv.Atoi(offsetStr)
 		if err != nil {
-			metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "GetVacanciesByApplicant").Inc()
 			utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 			return
 		}
@@ -995,7 +967,6 @@ func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err != nil || cookie == nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "LikeVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}
@@ -1008,7 +979,6 @@ func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 
 	vacancyID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		metrics.LayerErrorCounter.WithLabelValues("Vacancy Handler", "LikeVacancy").Inc()
 		utils.WriteError(w, http.StatusBadRequest, entity.ErrBadRequest)
 		return
 	}

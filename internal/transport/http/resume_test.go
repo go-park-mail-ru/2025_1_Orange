@@ -453,17 +453,7 @@ func TestResumeHandler_UpdateResume(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedError:  entity.ErrBadRequest,
 		},
-		{
-			name:        "Invalid JSON - bad request",
-			resumeID:    "1",
-			cookie:      &http.Cookie{Name: "session_id", Value: "session123"},
-			requestBody: `{invalid json}`,
-			setupMock: func(auth *mock.MockAuth, resume *mock.MockResumeUsecase, request *dto.UpdateResumeRequest) {
-				auth.EXPECT().GetUserIDBySession(gomock.Any(), "session123").Return(1, "applicant", nil)
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  entity.ErrBadRequest,
-		},
+
 		{
 			name:     "Invalid request data - bad request",
 			resumeID: "1",

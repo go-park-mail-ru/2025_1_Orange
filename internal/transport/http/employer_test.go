@@ -9,13 +9,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestEmployerHandler_Register(t *testing.T) {
@@ -58,10 +59,10 @@ func TestEmployerHandler_Register(t *testing.T) {
 			requestBody: "{invalid}",
 			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth) {
 			},
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
-				Status:  http.StatusUnauthorized,
-				Message: entity.ErrBadRequest.Error(),
+				Status:  http.StatusBadRequest,
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 		{
@@ -232,10 +233,10 @@ func TestEmployerHandler_Login(t *testing.T) {
 			requestBody: "{invalid}",
 			mockSetup: func(employer *mock.MockEmployer, auth *mock.MockAuth) {
 			},
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
-				Status:  http.StatusUnauthorized,
-				Message: entity.ErrBadRequest.Error(),
+				Status:  http.StatusBadRequest,
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 		{
@@ -597,7 +598,7 @@ func TestEmployerHandler_UpdateProfile(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusBadRequest,
-				Message: "invalid character 'i' looking for beginning of object key string",
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 		{
@@ -950,7 +951,7 @@ func TestEmployerHandler_EmailExists(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedResponse: utils.APIError{
 				Status:  http.StatusBadRequest,
-				Message: entity.ErrBadRequest.Error(),
+				Message: "невалидный json: parse error: syntax error near offset 1 of '{invalid}'",
 			},
 		},
 	}

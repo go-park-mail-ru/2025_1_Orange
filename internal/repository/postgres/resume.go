@@ -460,7 +460,6 @@ func (r *ResumeRepository) GetWorkExperienceByResumeID(ctx context.Context, resu
 
 	rows, err := r.DB.QueryContext(ctx, query, resumeID)
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -905,7 +904,6 @@ func (r *ResumeRepository) DeleteSkills(ctx context.Context, resumeID int) error
 
 	_, err := r.DB.ExecContext(ctx, query, resumeID)
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -936,7 +934,6 @@ func (r *ResumeRepository) DeleteSpecializations(ctx context.Context, resumeID i
 
 	_, err := r.DB.ExecContext(ctx, query, resumeID)
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"resumeID":  resumeID,
@@ -1133,7 +1130,6 @@ func (r *ResumeRepository) DeleteWorkExperience(ctx context.Context, id int) err
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID":        requestID,
 			"workExperienceID": id,
@@ -1603,7 +1599,6 @@ func (r *ResumeRepository) CreateSkillIfNotExists(ctx context.Context, skillName
 	}
 
 	if !errors.Is(err, sql.ErrNoRows) {
-
 		// Произошла ошибка, отличная от "запись не найдена"
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
@@ -1625,7 +1620,6 @@ func (r *ResumeRepository) CreateSkillIfNotExists(ctx context.Context, skillName
     `
 	err = r.DB.QueryRowContext(ctx, query, skillName).Scan(&id)
 	if err != nil {
-
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code {
@@ -1900,7 +1894,6 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 
 	rows, err := r.DB.QueryContext(ctx, query, applicantID, "%"+profession+"%", limit, offset)
 	if err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,
@@ -1952,7 +1945,6 @@ func (r *ResumeRepository) SearchResumesByProfessionForApplicant(ctx context.Con
 	}
 
 	if err := rows.Err(); err != nil {
-
 		l.Log.WithFields(logrus.Fields{
 			"requestID": requestID,
 			"error":     err,

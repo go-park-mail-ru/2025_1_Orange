@@ -1358,7 +1358,6 @@ const docTemplate = `{
                 }
             }
         },
-<<<<<<< HEAD
         "/resume/pdf/{id}": {
             "get": {
                 "security": [
@@ -1433,8 +1432,6 @@ const docTemplate = `{
                 }
             }
         },
-=======
->>>>>>> 986c063 (Add vacancy swagger)
         "/resume/search": {
             "get": {
                 "security": [
@@ -1754,8 +1751,6 @@ const docTemplate = `{
                 }
             }
         },
-<<<<<<< HEAD
-=======
         "/vacancy/applicant/{id}/liked": {
             "get": {
                 "security": [
@@ -1789,6 +1784,12 @@ const docTemplate = `{
                         "description": "Смещение от начала списка",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id работодателя",
+                        "name": "id",
+                        "in": "path"
                     }
                 ],
                 "responses": {
@@ -1858,6 +1859,12 @@ const docTemplate = `{
                         "description": "Смещение от начала списка",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id работодателя",
+                        "name": "id",
+                        "in": "path"
                     }
                 ],
                 "responses": {
@@ -1969,7 +1976,6 @@ const docTemplate = `{
                 }
             }
         },
->>>>>>> 986c063 (Add vacancy swagger)
         "/vacancy/search": {
             "get": {
                 "description": "Ищет вакансии по заданному запросу. Поиск выполняется по названию должности, специализации и названию компании. Для работодателей возвращает только их собственные вакансии. Для других ролей - все вакансии.",
@@ -2025,8 +2031,6 @@ const docTemplate = `{
                     }
                 }
             }
-<<<<<<< HEAD
-=======
         },
         "/vacancy/search/combined": {
             "get": {
@@ -2556,6 +2560,14 @@ const docTemplate = `{
                     "Vacancy"
                 ],
                 "summary": "Создание лайка для вакансии",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id вакансии",
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Созданный лайк",
@@ -2744,7 +2756,6 @@ const docTemplate = `{
                     }
                 }
             }
->>>>>>> 986c063 (Add vacancy swagger)
         }
     },
     "definitions": {
@@ -3098,7 +3109,6 @@ const docTemplate = `{
                 }
             }
         },
-<<<<<<< HEAD
         "dto.MessageResponse": {
             "type": "object",
             "properties": {
@@ -3128,14 +3138,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ResumeChatResponse": {
-            "type": "object",
-            "properties": {
-                "applicant_id": {
-                    "type": "integer"
-                },
-                "avatar_path": {
-=======
         "dto.ResumeApplicantShortResponse": {
             "type": "object",
             "properties": {
@@ -3146,7 +3148,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "created_at": {
->>>>>>> 986c063 (Add vacancy swagger)
                     "type": "string"
                 },
                 "id": {
@@ -3154,8 +3155,6 @@ const docTemplate = `{
                 },
                 "profession": {
                     "type": "string"
-<<<<<<< HEAD
-=======
                 },
                 "skills": {
                     "description": "Добавлено поле навыков",
@@ -3172,7 +3171,23 @@ const docTemplate = `{
                 },
                 "work_experiences": {
                     "$ref": "#/definitions/dto.WorkExperienceShort"
->>>>>>> 986c063 (Add vacancy swagger)
+                }
+            }
+        },
+        "dto.ResumeChatResponse": {
+            "type": "object",
+            "properties": {
+                "applicant_id": {
+                    "type": "integer"
+                },
+                "avatar_path": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "profession": {
+                    "type": "string"
                 }
             }
         },
@@ -3264,8 +3279,6 @@ const docTemplate = `{
                 }
             }
         },
-<<<<<<< HEAD
-=======
         "dto.SearchBySpecializationsRequest": {
             "type": "object",
             "properties": {
@@ -3277,7 +3290,6 @@ const docTemplate = `{
                 }
             }
         },
->>>>>>> 986c063 (Add vacancy swagger)
         "dto.SpecializationNamesResponse": {
             "type": "object",
             "properties": {
@@ -3372,7 +3384,6 @@ const docTemplate = `{
                 }
             }
         },
-<<<<<<< HEAD
         "dto.VacancyChatResponse": {
             "type": "object",
             "properties": {
@@ -3390,8 +3401,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.VacancyShortResponse": {
-=======
         "dto.VacancyCreate": {
             "type": "object",
             "properties": {
@@ -3449,7 +3458,6 @@ const docTemplate = `{
             }
         },
         "dto.VacancyResponse": {
->>>>>>> 986c063 (Add vacancy swagger)
             "type": "object",
             "properties": {
                 "city": {
@@ -3458,41 +3466,30 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-<<<<<<< HEAD
-                "employer": {
-                    "$ref": "#/definitions/dto.EmployerProfileResponse"
-=======
                 "description": {
                     "type": "string"
                 },
                 "employer_id": {
                     "type": "integer"
->>>>>>> 986c063 (Add vacancy swagger)
                 },
                 "employment": {
                     "type": "string"
                 },
-<<<<<<< HEAD
-=======
                 "experience": {
                     "type": "string"
                 },
->>>>>>> 986c063 (Add vacancy swagger)
                 "id": {
                     "type": "integer"
                 },
                 "liked": {
                     "type": "boolean"
                 },
-<<<<<<< HEAD
-=======
                 "optional_requirements": {
                     "type": "string"
                 },
                 "requirements": {
                     "type": "string"
                 },
->>>>>>> 986c063 (Add vacancy swagger)
                 "responded": {
                     "type": "boolean"
                 },
@@ -3502,11 +3499,6 @@ const docTemplate = `{
                 "salary_to": {
                     "type": "integer"
                 },
-<<<<<<< HEAD
-                "specialization": {
-                    "type": "string"
-                },
-=======
                 "schedule": {
                     "type": "string"
                 },
@@ -3522,7 +3514,6 @@ const docTemplate = `{
                 "tasks": {
                     "type": "string"
                 },
->>>>>>> 986c063 (Add vacancy swagger)
                 "taxes_included": {
                     "type": "boolean"
                 },
@@ -3537,8 +3528,6 @@ const docTemplate = `{
                 },
                 "working_hours": {
                     "type": "integer"
-<<<<<<< HEAD
-=======
                 }
             }
         },
@@ -3645,7 +3634,6 @@ const docTemplate = `{
                 },
                 "working_hours": {
                     "type": "integer"
->>>>>>> 986c063 (Add vacancy swagger)
                 }
             }
         },
@@ -3755,27 +3743,12 @@ const docTemplate = `{
                 "PhD"
             ]
         },
-<<<<<<< HEAD
-        "entity.NotificationPreview": {
-            "type": "object",
-            "properties": {
-                "applicant_name": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "employer_name": {
-                    "type": "string"
-                },
-=======
         "entity.Notification": {
             "type": "object",
             "properties": {
                 "created_at": {
                     "type": "string"
                 },
->>>>>>> 986c063 (Add vacancy swagger)
                 "id": {
                     "type": "integer"
                 },
@@ -3788,25 +3761,55 @@ const docTemplate = `{
                 "receiver_id": {
                     "type": "integer"
                 },
-<<<<<<< HEAD
-=======
                 "receiver_role": {
                     "$ref": "#/definitions/entity.UserRole"
                 },
->>>>>>> 986c063 (Add vacancy swagger)
                 "resume_id": {
                     "type": "integer"
                 },
                 "sender_id": {
                     "type": "integer"
                 },
-<<<<<<< HEAD
-                "title": {
-                    "type": "string"
-=======
                 "sender_role": {
                     "$ref": "#/definitions/entity.UserRole"
->>>>>>> 986c063 (Add vacancy swagger)
+                },
+                "type": {
+                    "$ref": "#/definitions/entity.NotificationType"
+                }
+            }
+        },
+        "entity.NotificationPreview": {
+            "type": "object",
+            "properties": {
+                "applicant_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "employer_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_viewed": {
+                    "type": "boolean"
+                },
+                "object_id": {
+                    "type": "integer"
+                },
+                "receiver_id": {
+                    "type": "integer"
+                },
+                "resume_id": {
+                    "type": "integer"
+                },
+                "sender_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
                 },
                 "type": {
                     "$ref": "#/definitions/entity.NotificationType"
@@ -3824,8 +3827,6 @@ const docTemplate = `{
                 "DownloadResumeType"
             ]
         },
-<<<<<<< HEAD
-=======
         "entity.UserRole": {
             "type": "string",
             "enum": [
@@ -3854,7 +3855,6 @@ const docTemplate = `{
                 }
             }
         },
->>>>>>> 986c063 (Add vacancy swagger)
         "utils.APIError": {
             "type": "object",
             "properties": {

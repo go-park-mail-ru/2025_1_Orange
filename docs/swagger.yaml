@@ -228,7 +228,6 @@ definitions:
       password:
         type: string
     type: object
-<<<<<<< HEAD
   dto.MessageResponse:
     properties:
       avatar:
@@ -248,12 +247,6 @@ definitions:
       sent_at:
         type: string
     type: object
-  dto.ResumeChatResponse:
-    properties:
-      applicant_id:
-        type: integer
-      avatar_path:
-=======
   dto.ResumeApplicantShortResponse:
     properties:
       applicant:
@@ -261,14 +254,11 @@ definitions:
       applicant_id:
         type: integer
       created_at:
->>>>>>> 986c063 (Add vacancy swagger)
         type: string
       id:
         type: integer
       profession:
         type: string
-<<<<<<< HEAD
-=======
       skills:
         description: Добавлено поле навыков
         items:
@@ -280,7 +270,17 @@ definitions:
         type: string
       work_experiences:
         $ref: '#/definitions/dto.WorkExperienceShort'
->>>>>>> 986c063 (Add vacancy swagger)
+    type: object
+  dto.ResumeChatResponse:
+    properties:
+      applicant_id:
+        type: integer
+      avatar_path:
+        type: string
+      id:
+        type: integer
+      profession:
+        type: string
     type: object
   dto.ResumeResponse:
     properties:
@@ -339,8 +339,6 @@ definitions:
       work_experiences:
         $ref: '#/definitions/dto.WorkExperienceShort'
     type: object
-<<<<<<< HEAD
-=======
   dto.SearchBySpecializationsRequest:
     properties:
       specializations:
@@ -348,7 +346,6 @@ definitions:
           type: string
         type: array
     type: object
->>>>>>> 986c063 (Add vacancy swagger)
   dto.SpecializationNamesResponse:
     properties:
       specializations:
@@ -410,7 +407,6 @@ definitions:
       path:
         type: string
     type: object
-<<<<<<< HEAD
   dto.VacancyChatResponse:
     properties:
       employer_id:
@@ -422,8 +418,6 @@ definitions:
       title:
         type: string
     type: object
-  dto.VacancyShortResponse:
-=======
   dto.VacancyCreate:
     properties:
       city:
@@ -462,18 +456,11 @@ definitions:
         type: integer
     type: object
   dto.VacancyResponse:
->>>>>>> 986c063 (Add vacancy swagger)
     properties:
       city:
         type: string
       created_at:
         type: string
-<<<<<<< HEAD
-      employer:
-        $ref: '#/definitions/dto.EmployerProfileResponse'
-      employment:
-        type: string
-=======
       description:
         type: string
       employer_id:
@@ -482,28 +469,20 @@ definitions:
         type: string
       experience:
         type: string
->>>>>>> 986c063 (Add vacancy swagger)
       id:
         type: integer
       liked:
         type: boolean
-<<<<<<< HEAD
-=======
       optional_requirements:
         type: string
       requirements:
         type: string
->>>>>>> 986c063 (Add vacancy swagger)
       responded:
         type: boolean
       salary_from:
         type: integer
       salary_to:
         type: integer
-<<<<<<< HEAD
-      specialization:
-        type: string
-=======
       schedule:
         type: string
       skills:
@@ -514,7 +493,6 @@ definitions:
         type: string
       tasks:
         type: string
->>>>>>> 986c063 (Add vacancy swagger)
       taxes_included:
         type: boolean
       title:
@@ -525,8 +503,6 @@ definitions:
         type: string
       working_hours:
         type: integer
-<<<<<<< HEAD
-=======
     type: object
   dto.VacancyShortResponse:
     properties:
@@ -597,7 +573,6 @@ definitions:
         type: string
       working_hours:
         type: integer
->>>>>>> 986c063 (Add vacancy swagger)
     type: object
   dto.WorkExperienceDTO:
     properties:
@@ -672,21 +647,10 @@ definitions:
     - Bachelor
     - Master
     - PhD
-<<<<<<< HEAD
-  entity.NotificationPreview:
-    properties:
-      applicant_name:
-        type: string
-      created_at:
-        type: string
-      employer_name:
-        type: string
-=======
   entity.Notification:
     properties:
       created_at:
         type: string
->>>>>>> 986c063 (Add vacancy swagger)
       id:
         type: integer
       is_viewed:
@@ -695,22 +659,39 @@ definitions:
         type: integer
       receiver_id:
         type: integer
-<<<<<<< HEAD
-=======
       receiver_role:
         $ref: '#/definitions/entity.UserRole'
->>>>>>> 986c063 (Add vacancy swagger)
       resume_id:
         type: integer
       sender_id:
         type: integer
-<<<<<<< HEAD
-      title:
-        type: string
-=======
       sender_role:
         $ref: '#/definitions/entity.UserRole'
->>>>>>> 986c063 (Add vacancy swagger)
+      type:
+        $ref: '#/definitions/entity.NotificationType'
+    type: object
+  entity.NotificationPreview:
+    properties:
+      applicant_name:
+        type: string
+      created_at:
+        type: string
+      employer_name:
+        type: string
+      id:
+        type: integer
+      is_viewed:
+        type: boolean
+      object_id:
+        type: integer
+      receiver_id:
+        type: integer
+      resume_id:
+        type: integer
+      sender_id:
+        type: integer
+      title:
+        type: string
       type:
         $ref: '#/definitions/entity.NotificationType'
     type: object
@@ -722,8 +703,6 @@ definitions:
     x-enum-varnames:
     - ApplyNotificationType
     - DownloadResumeType
-<<<<<<< HEAD
-=======
   entity.UserRole:
     enum:
     - applicant
@@ -743,7 +722,6 @@ definitions:
       vacancy_id:
         type: integer
     type: object
->>>>>>> 986c063 (Add vacancy swagger)
   utils.APIError:
     properties:
       message:
@@ -1737,7 +1715,6 @@ paths:
       summary: Создание нового резюме
       tags:
       - Resume
-<<<<<<< HEAD
   /resume/pdf/{id}:
     get:
       description: |-
@@ -1788,8 +1765,6 @@ paths:
       summary: Получить резюме в формате PDF
       tags:
       - Resume
-=======
->>>>>>> 986c063 (Add vacancy swagger)
   /resume/search:
     get:
       description: Ищет резюме по профессии. Для соискателей возвращает только их
@@ -1869,8 +1844,6 @@ paths:
       summary: Получение вилок зарплат по специализациям
       tags:
       - Specialization
-<<<<<<< HEAD
-=======
   /vacancy/applicant/{id}/liked:
     get:
       consumes:
@@ -1885,6 +1858,10 @@ paths:
       - description: Смещение от начала списка
         in: query
         name: offset
+        type: integer
+      - description: id работодателя
+        in: path
+        name: id
         type: integer
       produces:
       - application/json
@@ -1929,6 +1906,10 @@ paths:
       - description: Смещение от начала списка
         in: query
         name: offset
+        type: integer
+      - description: id работодателя
+        in: path
+        name: id
         type: integer
       produces:
       - application/json
@@ -2007,7 +1988,6 @@ paths:
       summary: Получение всех активных вакансий роботодателя
       tags:
       - Vacancy
->>>>>>> 986c063 (Add vacancy swagger)
   /vacancy/search:
     get:
       description: Ищет вакансии по заданному запросу. Поиск выполняется по названию
@@ -2047,8 +2027,6 @@ paths:
       summary: Поиск вакансий
       tags:
       - Vacancy
-<<<<<<< HEAD
-=======
   /vacancy/search/combined:
     get:
       consumes:
@@ -2383,6 +2361,11 @@ paths:
       - application/json
       description: Создает лайк на вакансию для авторизованного соискателя. Требует
         авторизации и CSRF-токена.
+      parameters:
+      - description: id вакансии
+        in: path
+        name: id
+        type: integer
       produces:
       - application/json
       responses:
@@ -2512,7 +2495,6 @@ paths:
       summary: Получение всех резюме которыми откликнулись на вакансии роботодателя
       tags:
       - Vacancy
->>>>>>> 986c063 (Add vacancy swagger)
 securityDefinitions:
   csrf_token:
     in: header

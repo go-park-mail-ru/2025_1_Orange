@@ -503,7 +503,6 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 // @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателя)"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /vacancy/vacancy/{id}/response/list [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -583,7 +582,6 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 // @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателя)"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /vacancy/employer/{id}/vacancies [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -659,7 +657,6 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 // @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателя)"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /vacancy/applicant/{id}/vacancies [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -743,6 +740,7 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 // @Failure 400 {object} utils.APIError "Неверные параметры запроса"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /vacancy/search [get]
+// @Security session_cookie
 func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -917,7 +915,6 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 // @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателей)"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /vacancy/search/combined [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -1080,7 +1077,6 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 // @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателей)"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /vacancy/applicant/{id}/liked [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

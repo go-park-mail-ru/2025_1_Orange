@@ -5,6 +5,7 @@ import (
 	"ResuMatch/internal/entity/dto"
 	"ResuMatch/internal/repository"
 	"ResuMatch/internal/usecase"
+	"ResuMatch/pkg/sanitizer"
 	"context"
 	"errors"
 	"fmt"
@@ -134,7 +135,9 @@ func (s *ChatService) SendMessage(ctx context.Context, chatID, senderID int, rol
 		return nil, err
 	}
 
-	resp, err := s.MessageRepo.CreateMessage(ctx, chatID, senderID, fromApplicant, payload)
+	sanitizedPayload := sanitizer.StrictPolicy.Sanitize(payload)
+
+	resp, err := s.MessageRepo.CreateMessage(ctx, chatID, senderID, fromApplicant, sanitizedPayload)
 	if err != nil {
 		return nil, err
 	}

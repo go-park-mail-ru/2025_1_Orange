@@ -92,7 +92,6 @@ func (h *ChatHandler) GetVacancyChat(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} utils.APIError "Чат не найден"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /chat/{id} [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *ChatHandler) GetChatByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -137,7 +136,6 @@ func (h *ChatHandler) GetChatByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} utils.APIError "Не авторизован"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /chat/user [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *ChatHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -178,7 +176,6 @@ func (h *ChatHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} utils.APIError "Чат не найден"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /chat/{id}/messages [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *ChatHandler) GetChatMessages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

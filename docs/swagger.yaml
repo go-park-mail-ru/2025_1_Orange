@@ -864,7 +864,6 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIError'
       security:
-      - csrf_token: []
       - session_cookie: []
       summary: Получить чат по ID
       tags:
@@ -905,7 +904,6 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIError'
       security:
-      - csrf_token: []
       - session_cookie: []
       summary: Получить сообщения чата
       tags:
@@ -931,7 +929,6 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIError'
       security:
-      - csrf_token: []
       - session_cookie: []
       summary: Получить чаты пользователя
       tags:
@@ -1306,7 +1303,6 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIError'
       security:
-      - csrf_token: []
       - session_cookie: []
       summary: Получить все уведомления пользователя
       tags:
@@ -1562,7 +1558,6 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIError'
       security:
-      - csrf_token: []
       - session_cookie: []
       summary: Получить резюме в формате PDF
       tags:

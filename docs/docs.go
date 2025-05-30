@@ -500,9 +500,6 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "csrf_token": []
-                    },
-                    {
                         "session_cookie": []
                     }
                 ],
@@ -604,9 +601,6 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "csrf_token": []
-                    },
-                    {
                         "session_cookie": []
                     }
                 ],
@@ -658,9 +652,6 @@ const docTemplate = `{
         "/chat/{id}/messages": {
             "get": {
                 "security": [
-                    {
-                        "csrf_token": []
-                    },
                     {
                         "session_cookie": []
                     }
@@ -1214,9 +1205,6 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "csrf_token": []
-                    },
-                    {
                         "session_cookie": []
                     }
                 ],
@@ -1373,9 +1361,6 @@ const docTemplate = `{
         "/resume/pdf/{id}": {
             "get": {
                 "security": [
-                    {
-                        "csrf_token": []
-                    },
                     {
                         "session_cookie": []
                     }

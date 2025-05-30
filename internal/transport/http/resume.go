@@ -531,7 +531,6 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} utils.APIError "Резюме не найдено"
 // @Failure 500 {object} utils.APIError "Ошибка генерации PDF"
 // @Router /resume/pdf/{id} [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

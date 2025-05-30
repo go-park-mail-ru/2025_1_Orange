@@ -493,9 +493,6 @@
             "get": {
                 "security": [
                     {
-                        "csrf_token": []
-                    },
-                    {
                         "session_cookie": []
                     }
                 ],
@@ -597,9 +594,6 @@
             "get": {
                 "security": [
                     {
-                        "csrf_token": []
-                    },
-                    {
                         "session_cookie": []
                     }
                 ],
@@ -651,9 +645,6 @@
         "/chat/{id}/messages": {
             "get": {
                 "security": [
-                    {
-                        "csrf_token": []
-                    },
                     {
                         "session_cookie": []
                     }
@@ -1207,9 +1198,6 @@
             "get": {
                 "security": [
                     {
-                        "csrf_token": []
-                    },
-                    {
                         "session_cookie": []
                     }
                 ],
@@ -1366,9 +1354,6 @@
         "/resume/pdf/{id}": {
             "get": {
                 "security": [
-                    {
-                        "csrf_token": []
-                    },
                     {
                         "session_cookie": []
                     }

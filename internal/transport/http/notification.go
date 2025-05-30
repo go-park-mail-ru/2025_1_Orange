@@ -42,7 +42,6 @@ func (h *NotificationHandler) Configure(r *http.ServeMux) {
 // @Failure 401 {object} utils.APIError "Не авторизован"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /notification/user [get]
-// @Security csrf_token
 // @Security session_cookie
 func (h *NotificationHandler) GetNotificationsForUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

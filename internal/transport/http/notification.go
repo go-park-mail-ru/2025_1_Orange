@@ -33,6 +33,17 @@ func (h *NotificationHandler) Configure(r *http.ServeMux) {
 	r.Handle("/notification/", http.StripPrefix("/notification", notificationMux))
 }
 
+// GetNotificationsForUser godoc
+// @Tags Notification
+// @Summary Получить все уведомления пользователя
+// @Description Получаем список уведомлений для соискателя или работодателя. Требует авторизации.
+// @Produce json
+// @Success 200 {object} entity.NotificationsList "Список уведомлений"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /notification/user [get]
+// @Security csrf_token
+// @Security session_cookie
 func (h *NotificationHandler) GetNotificationsForUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cookie, err := r.Cookie("session_id")
@@ -60,6 +71,18 @@ func (h *NotificationHandler) GetNotificationsForUser(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusOK)
 }
 
+// ReadNotification godoc
+// @Tags Notification
+// @Summary Прочитать уведомление
+// @Description Прочитать конкретное уведомление по id. Требует авторизации.
+// @Produce json
+// @Param id path int true "ID уведомления"
+// @Success 200
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /notification/read/{id} [put]
+// @Security csrf_token
+// @Security session_cookie
 func (h *NotificationHandler) ReadNotification(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cookie, err := r.Cookie("session_id")
@@ -87,6 +110,17 @@ func (h *NotificationHandler) ReadNotification(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusOK)
 }
 
+// ReadAllNotifications godoc
+// @Tags Notification
+// @Summary Прочитать все уведомления
+// @Description Прочитать все уведомления пользователя. Требует авторизации.
+// @Produce json
+// @Success 200
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /notification/readAll [put]
+// @Security csrf_token
+// @Security session_cookie
 func (h *NotificationHandler) ReadAllNotifications(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cookie, err := r.Cookie("session_id")
@@ -108,6 +142,17 @@ func (h *NotificationHandler) ReadAllNotifications(w http.ResponseWriter, r *htt
 	w.WriteHeader(http.StatusOK)
 }
 
+// DeleteAllNotifications godoc
+// @Tags Notification
+// @Summary Удалить все уведомления
+// @Description Удалить все уведомления пользователя. Требует авторизации.
+// @Produce json
+// @Success 200
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /notification/clear [delete]
+// @Security csrf_token
+// @Security session_cookie
 func (h *NotificationHandler) DeleteAllNotifications(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cookie, err := r.Cookie("session_id")

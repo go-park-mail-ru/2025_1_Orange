@@ -1974,6 +1974,10 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: id вакансии
+        in: path
+        name: id
+        type: integer
       produces:
       - application/json
       responses:

@@ -576,6 +576,7 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 // @Produce json
 // @Param limit query int false "Количество вакансий на странице"
 // @Param offset query int false "Смещение от начала списка"
+// @Param id path int false "id вакансии"
 // @Success 201 {object} dto.VacancyShortResponse "Полученная вакансия"
 // @Failure 400 {object} utils.APIError "Неверный формат запроса"
 // @Failure 401 {object} utils.APIError "Не авторизован"
@@ -651,6 +652,7 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 // @Produce json
 // @Param limit query int false "Количество вакансий на странице"
 // @Param offset query int false "Смещение от начала списка"
+// @Param id path int false "id работодателя"
 // @Success 201 {object} dto.VacancyShortResponse "Полученная вакансия"
 // @Failure 400 {object} utils.APIError "Неверный формат запроса"
 // @Failure 401 {object} utils.APIError "Не авторизован"
@@ -1071,6 +1073,7 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 // @Produce json
 // @Param limit query int false "Количество вакансий на странице"
 // @Param offset query int false "Смещение от начала списка"
+// @Param id path int false "id работодателя"
 // @Success 201 {object} dto.VacancyShortResponse "Список вакансий"
 // @Failure 400 {object} utils.APIError "Неверный формат запроса"
 // @Failure 401 {object} utils.APIError "Не авторизован"
@@ -1158,6 +1161,7 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 // @Description Создает лайк на вакансию для авторизованного соискателя. Требует авторизации и CSRF-токена.
 // @Accept json
 // @Produce json
+// @Param id path int false "id вакансии"
 // @Success 201 {object} entity.VacancyLike "Созданный лайк"
 // @Failure 400 {object} utils.APIError "Неверный формат запроса"
 // @Failure 401 {object} utils.APIError "Не авторизован"

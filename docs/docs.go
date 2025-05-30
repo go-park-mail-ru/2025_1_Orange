@@ -1927,6 +1927,12 @@ const docTemplate = `{
                         "description": "Смещение от начала списка",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id вакансии",
+                        "name": "id",
+                        "in": "path"
                     }
                 ],
                 "responses": {

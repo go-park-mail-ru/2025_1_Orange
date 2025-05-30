@@ -22,3 +22,5 @@
 - [Деплой](https://resumatch.tech/)
 
 - [Figma](https://www.figma.com/design/tpgG82sgFDfodZ4TRE9mxo/ResuMatch?node-id=202-705&p=f&t=fEqYP2W01gbKOdnH-0)
+
+- [Swagger](https://resumatch.tech/api/v1/swagger/)

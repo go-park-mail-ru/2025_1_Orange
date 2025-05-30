@@ -59,6 +59,21 @@ func (h *VacancyHandler) Configure(r *http.ServeMux) {
 	r.Handle("/vacancy/", http.StripPrefix("/vacancy", vacancyMux))
 }
 
+// CreateVacancy godoc
+// @Tags Vacancy
+// @Summary Создание новой вакансии
+// @Description Создает новую вакансию для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param vacancyCreate body dto.VacancyCreate true "Данные для создания вакансии"
+// @Success 201 {object} dto.VacancyResponse "Созданная вакансия"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для работодателей)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancies [post]
+// @Security csrf_token
+// @Security session_cookie
 func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -121,6 +136,19 @@ func (h *VacancyHandler) CreateVacancy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetVacancy godoc
+// @Tags Vacancy
+// @Summary Получение вакансии по ID
+// @Description Возвращает полную информацию о вакансии по его ID. Доступно всем авторизованным пользователям.
+// @Produce json
+// @Param id path int true "ID вакансии"
+// @Success 200 {object} dto.VacancyResponse "Информация о резюме"
+// @Failure 400 {object} utils.APIError "Неверный ID"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 404 {object} utils.APIError "Вакансия не найдена"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancy/{id} [get]
+// @Security session_cookie
 func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -158,6 +186,23 @@ func (h *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateVacancy godoc
+// @Tags Vacancy
+// @Summary Обновление вакансии
+// @Description Обновляет информацию о вакансии. Доступно только владельцу вакансии (работодателю). Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param id path int true "ID вакансии"
+// @Param vacancyUpdate body dto.VacancyUpdate true "Данные для обновления"
+// @Success 200 {object} dto.VacancyResponse "Обновленная вакансия"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (не владелец)"
+// @Failure 404 {object} utils.APIError "Вакансия не найдена"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancy/{id} [put]
+// @Security session_cookie
+// @Security csrf_token
 func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -231,6 +276,21 @@ func (h *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeleteVacancy godoc
+// @Tags Vacancy
+// @Summary Удаление вакансии
+// @Description Удаляет вакансию по ID. Доступно только владельцу вакансии (работодателю). Требует авторизации и CSRF-токена.
+// @Produce json
+// @Param id path int true "ID вакансии"
+// @Success 200 {object} dto.DeleteVacancy "Результат удаления"
+// @Failure 400 {object} utils.APIError "Неверный ID"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (не владелец)"
+// @Failure 404 {object} utils.APIError "Вакансия не найдена"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancy/{id} [delete]
+// @Security session_cookie
+// @Security csrf_token
 func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -279,6 +339,18 @@ func (h *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetAllVacancies godoc
+// @Tags Vacancy
+// @Summary Получение всех вакансий
+// @Description Возвращает список вакансий. Для работодателей возвращает только их собственные вакансии. Для других ролей - все вакансии. Требует авторизации.
+// @Produce json
+// @Param limit query int false "Количество вакансий на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Success 200 {object} dto.VacancyShortResponse "Список вакансий"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancies [get]
+// @Security session_cookie
 func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -332,6 +404,23 @@ func (h *VacancyHandler) GetAllVacancies(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// ApplyToVacancy godoc
+// @Tags Vacancy
+// @Summary Отклик на вакансию
+// @Description Создает отклик на вакансию для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param id path int true "ID вакансии"
+// @Param resume_id path int true "ID резюме"
+// @Param notification body entity.Notification true "Данные для создания отклика"
+// @Success 201 {object} dto.VacancyResponse "Созданное резюме"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для работодателей)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancy/{id}/response/{resume_id} [post]
+// @Security csrf_token
+// @Security session_cookie
 func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -399,6 +488,22 @@ func (h *VacancyHandler) ApplyToVacancy(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusCreated)
 }
 
+// GetResponsesOnVacancy godoc
+// @Tags Vacancy
+// @Summary Получение всех резюме которыми откликнулись на вакансии роботодателя
+// @Description Получаем все резюме которыми откликнулись на вакансии роботодателя для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param id path int false "id вакансии"
+// @Param limit query int false "Количество резюме на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Success 201 {object} dto.ResumeApplicantShortResponse "Полученные резюме"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателя)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancy/{id}/response/list [get]
+// @Security session_cookie
 func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -462,6 +567,22 @@ func (h *VacancyHandler) GetResponsesOnVacancy(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// GetActiveVacanciesByEmployer godoc
+// @Tags Vacancy
+// @Summary Получение всех активных вакансий роботодателя
+// @Description Получаем все активные вакансии работодателя для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param limit query int false "Количество вакансий на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Param id path int false "id вакансии"
+// @Success 201 {object} dto.VacancyShortResponse "Полученная вакансия"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателя)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/employer/{id}/vacancies [get]
+// @Security session_cookie
 func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -521,6 +642,22 @@ func (h *VacancyHandler) GetActiveVacanciesByEmployer(w http.ResponseWriter, r *
 	}
 }
 
+// GetVacanciesByApplicant godoc
+// @Tags Vacancy
+// @Summary Получение всех вакансий на которые откликнулся соискатель
+// @Description Получаем все вакансии на которые откликнулся соискатель для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param limit query int false "Количество вакансий на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Param id path int false "id работодателя"
+// @Success 201 {object} dto.VacancyShortResponse "Полученная вакансия"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателя)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/applicant/{id}/vacancies [get]
+// @Security session_cookie
 func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -603,6 +740,7 @@ func (h *VacancyHandler) GetVacanciesByApplicant(w http.ResponseWriter, r *http.
 // @Failure 400 {object} utils.APIError "Неверные параметры запроса"
 // @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
 // @Router /vacancy/search [get]
+// @Security session_cookie
 func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -666,7 +804,23 @@ func (h *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// SearchVacanciesBySpecializations обрабатывает запрос на поиск вакансий по специализациям
+// SearchVacanciesBySpecializations godoc
+// @Tags Vacancy
+// @Summary Поиск вакансии по спецализации
+// @Description Ищет вакансию по специализации для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param searchRequest body dto.SearchBySpecializationsRequest true "Данные для поиска вакансии"
+// @Param limit query int false "Количество вакансий на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Success 201 {object} dto.VacancyShortResponse "Найденная вакансия"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателей)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/search/specializations [post]
+// @Security csrf_token
+// @Security session_cookie
 func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -742,7 +896,26 @@ func (h *VacancyHandler) SearchVacanciesBySpecializations(w http.ResponseWriter,
 	}
 }
 
-// SearchVacanciesByQueryAndSpecializations обрабатывает запрос на комбинированный поиск вакансий
+// SearchVacanciesByQueryAndSpecializations godoc
+// @Tags Vacancy
+// @Summary Поиск вакансии по параметру
+// @Description Ищет вакансию по параметру для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param searchQuery body string true "Параметр поиска вакансии"
+// @Param limit query int false "Количество вакансий на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Param specsParam body string true "Специализация для поиска вакансии"
+// @Param minSalaryStr body string true "Тип занятости для поиска вакансии"
+// @Param empParam body string true "Специализация для поиска вакансии"
+// @Param expParam body string true "Опыт работы для поиска вакансии"
+// @Success 201 {object} dto.VacancyShortResponse "Найденная вакансия"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателей)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/search/combined [get]
+// @Security session_cookie
 func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -789,7 +962,7 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 	var specializations []string
 	// Получаем специализации из URL параметра
 	if specsParam := r.URL.Query().Get("specializations"); specsParam != "" {
-		specializations = strings.Split(specsParam, ",")
+		specializations = strings.Split(specsParam, ";")
 
 		// Очищаем от пустых значений
 		var cleanedSpecs []string
@@ -889,6 +1062,22 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 	}
 }
 
+// GetLikedVacancies godoc
+// @Tags Vacancy
+// @Summary Получение списка понравившихся вакансии
+// @Description Отдает список понравившихся вакансий для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param limit query int false "Количество вакансий на странице"
+// @Param offset query int false "Смещение от начала списка"
+// @Param id path int false "id работодателя"
+// @Success 201 {object} dto.VacancyShortResponse "Список вакансий"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателей)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/applicant/{id}/liked [get]
+// @Security session_cookie
 func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -962,6 +1151,21 @@ func (h *VacancyHandler) GetLikedVacancies(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// LikeVacancy godoc
+// @Tags Vacancy
+// @Summary Создание лайка для вакансии
+// @Description Создает лайк на вакансию для авторизованного соискателя. Требует авторизации и CSRF-токена.
+// @Accept json
+// @Produce json
+// @Param id path int false "id вакансии"
+// @Success 201 {object} entity.VacancyLike "Созданный лайк"
+// @Failure 400 {object} utils.APIError "Неверный формат запроса"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещен (только для соискателей)"
+// @Failure 500 {object} utils.APIError "Внутренняя ошибка сервера"
+// @Router /vacancy/vacancy/{id}/like [post]
+// @Security csrf_token
+// @Security session_cookie
 func (h *VacancyHandler) LikeVacancy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

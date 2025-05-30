@@ -1751,6 +1751,231 @@ const docTemplate = `{
                 }
             }
         },
+        "/vacancy/applicant/{id}/liked": {
+            "get": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Отдает список понравившихся вакансий для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Получение списка понравившихся вакансии",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Количество вакансий на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id работодателя",
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Список вакансий",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyShortResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателей)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/applicant/{id}/vacancies": {
+            "get": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Получаем все вакансии на которые откликнулся соискатель для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Получение всех вакансий на которые откликнулся соискатель",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Количество вакансий на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id работодателя",
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Полученная вакансия",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyShortResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателя)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/employer/{id}/vacancies": {
+            "get": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Получаем все активные вакансии работодателя для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Получение всех активных вакансий роботодателя",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Количество вакансий на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id вакансии",
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Полученная вакансия",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyShortResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателя)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/vacancy/search": {
             "get": {
                 "description": "Ищет вакансии по заданному запросу. Поиск выполняется по названию должности, специализации и названию компании. Для работодателей возвращает только их собственные вакансии. Для других ролей - все вакансии.",
@@ -1794,6 +2019,731 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Неверные параметры запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/search/combined": {
+            "get": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Ищет вакансию по параметру для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Поиск вакансии по параметру",
+                "parameters": [
+                    {
+                        "description": "Параметр поиска вакансии",
+                        "name": "searchQuery",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество вакансий на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Специализация для поиска вакансии",
+                        "name": "specsParam",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Тип занятости для поиска вакансии",
+                        "name": "minSalaryStr",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Специализация для поиска вакансии",
+                        "name": "empParam",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Опыт работы для поиска вакансии",
+                        "name": "expParam",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Найденная вакансия",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyShortResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателей)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/search/specializations": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Ищет вакансию по специализации для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Поиск вакансии по спецализации",
+                "parameters": [
+                    {
+                        "description": "Данные для поиска вакансии",
+                        "name": "searchRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SearchBySpecializationsRequest"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество вакансий на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Найденная вакансия",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyShortResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателей)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/vacancies": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Возвращает список вакансий. Для работодателей возвращает только их собственные вакансии. Для других ролей - все вакансии. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Получение всех вакансий",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Количество вакансий на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список вакансий",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyShortResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Создает новую вакансию для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Создание новой вакансии",
+                "parameters": [
+                    {
+                        "description": "Данные для создания вакансии",
+                        "name": "vacancyCreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Созданная вакансия",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для работодателей)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/vacancy/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Возвращает полную информацию о вакансии по его ID. Доступно всем авторизованным пользователям.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Получение вакансии по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вакансии",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о резюме",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Вакансия не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    },
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Обновляет информацию о вакансии. Доступно только владельцу вакансии (работодателю). Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Обновление вакансии",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вакансии",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления",
+                        "name": "vacancyUpdate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Обновленная вакансия",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не владелец)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Вакансия не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    },
+                    {
+                        "csrf_token": []
+                    }
+                ],
+                "description": "Удаляет вакансию по ID. Доступно только владельцу вакансии (работодателю). Требует авторизации и CSRF-токена.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Удаление вакансии",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вакансии",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Результат удаления",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeleteVacancy"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не владелец)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Вакансия не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/vacancy/{id}/like": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Создает лайк на вакансию для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Создание лайка для вакансии",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id вакансии",
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Созданный лайк",
+                        "schema": {
+                            "$ref": "#/definitions/entity.VacancyLike"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателей)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/vacancy/{id}/response/list": {
+            "get": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Получаем все резюме которыми откликнулись на вакансии роботодателя для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Получение всех резюме которыми откликнулись на вакансии роботодателя",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "id вакансии",
+                        "name": "id",
+                        "in": "path"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество резюме на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Полученные резюме",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResumeApplicantShortResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для соискателя)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/vacancy/{id}/response/{resume_id}": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Создает отклик на вакансию для авторизованного соискателя. Требует авторизации и CSRF-токена.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Отклик на вакансию",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вакансии",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID резюме",
+                        "name": "resume_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для создания отклика",
+                        "name": "notification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entity.Notification"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Созданное резюме",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (только для работодателей)",
                         "schema": {
                             "$ref": "#/definitions/utils.APIError"
                         }
@@ -2028,6 +2978,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DeleteVacancy": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "dto.EmailExistsRequest": {
             "type": "object",
             "properties": {
@@ -2177,6 +3138,42 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ResumeApplicantShortResponse": {
+            "type": "object",
+            "properties": {
+                "applicant": {
+                    "$ref": "#/definitions/dto.ApplicantProfileResponse"
+                },
+                "applicant_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "profession": {
+                    "type": "string"
+                },
+                "skills": {
+                    "description": "Добавлено поле навыков",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "work_experiences": {
+                    "$ref": "#/definitions/dto.WorkExperienceShort"
+                }
+            }
+        },
         "dto.ResumeChatResponse": {
             "type": "object",
             "properties": {
@@ -2279,6 +3276,17 @@ const docTemplate = `{
                 },
                 "work_experiences": {
                     "$ref": "#/definitions/dto.WorkExperienceShort"
+                }
+            }
+        },
+        "dto.SearchBySpecializationsRequest": {
+            "type": "object",
+            "properties": {
+                "specializations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -2393,6 +3401,136 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.VacancyCreate": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "employment": {
+                    "type": "string"
+                },
+                "experience": {
+                    "type": "string"
+                },
+                "optional_requirements": {
+                    "type": "string"
+                },
+                "requirements": {
+                    "type": "string"
+                },
+                "salary_from": {
+                    "type": "integer"
+                },
+                "salary_to": {
+                    "type": "integer"
+                },
+                "schedule": {
+                    "type": "string"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "tasks": {
+                    "type": "string"
+                },
+                "taxes_included": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "work_format": {
+                    "type": "string"
+                },
+                "working_hours": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.VacancyResponse": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "employer_id": {
+                    "type": "integer"
+                },
+                "employment": {
+                    "type": "string"
+                },
+                "experience": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "liked": {
+                    "type": "boolean"
+                },
+                "optional_requirements": {
+                    "type": "string"
+                },
+                "requirements": {
+                    "type": "string"
+                },
+                "responded": {
+                    "type": "boolean"
+                },
+                "salary_from": {
+                    "type": "integer"
+                },
+                "salary_to": {
+                    "type": "integer"
+                },
+                "schedule": {
+                    "type": "string"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "tasks": {
+                    "type": "string"
+                },
+                "taxes_included": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "work_format": {
+                    "type": "string"
+                },
+                "working_hours": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.VacancyShortResponse": {
             "type": "object",
             "properties": {
@@ -2433,6 +3571,62 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "work_format": {
+                    "type": "string"
+                },
+                "working_hours": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.VacancyUpdate": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "employment": {
+                    "type": "string"
+                },
+                "experience": {
+                    "type": "string"
+                },
+                "optional_requirements": {
+                    "type": "string"
+                },
+                "requirements": {
+                    "type": "string"
+                },
+                "salary_from": {
+                    "type": "integer"
+                },
+                "salary_to": {
+                    "type": "integer"
+                },
+                "schedule": {
+                    "type": "string"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "tasks": {
+                    "type": "string"
+                },
+                "taxes_included": {
+                    "type": "boolean"
+                },
+                "title": {
                     "type": "string"
                 },
                 "work_format": {
@@ -2549,6 +3743,41 @@ const docTemplate = `{
                 "PhD"
             ]
         },
+        "entity.Notification": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_viewed": {
+                    "type": "boolean"
+                },
+                "object_id": {
+                    "type": "integer"
+                },
+                "receiver_id": {
+                    "type": "integer"
+                },
+                "receiver_role": {
+                    "$ref": "#/definitions/entity.UserRole"
+                },
+                "resume_id": {
+                    "type": "integer"
+                },
+                "sender_id": {
+                    "type": "integer"
+                },
+                "sender_role": {
+                    "$ref": "#/definitions/entity.UserRole"
+                },
+                "type": {
+                    "$ref": "#/definitions/entity.NotificationType"
+                }
+            }
+        },
         "entity.NotificationPreview": {
             "type": "object",
             "properties": {
@@ -2597,6 +3826,34 @@ const docTemplate = `{
                 "ApplyNotificationType",
                 "DownloadResumeType"
             ]
+        },
+        "entity.UserRole": {
+            "type": "string",
+            "enum": [
+                "applicant",
+                "employer"
+            ],
+            "x-enum-varnames": [
+                "ApplicantRole",
+                "EmployerRole"
+            ]
+        },
+        "entity.VacancyLike": {
+            "type": "object",
+            "properties": {
+                "applicant_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "liked_at": {
+                    "type": "string"
+                },
+                "vacancy_id": {
+                    "type": "integer"
+                }
+            }
         },
         "utils.APIError": {
             "type": "object",

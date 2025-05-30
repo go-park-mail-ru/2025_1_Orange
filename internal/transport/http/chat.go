@@ -207,11 +207,12 @@ func (h *ChatHandler) GetChatMessages(w http.ResponseWriter, r *http.Request) {
 
 	hasAccess := false
 
-	if role == "applicant" {
+	switch role {
+	case "applicant":
 		if chat.Resume != nil && chat.Resume.ApplicantID == userID {
 			hasAccess = true
 		}
-	} else if role == "employer" {
+	case "employer":
 		if chat.Vacancy != nil && chat.Vacancy.EmployerID == userID {
 			hasAccess = true
 		}

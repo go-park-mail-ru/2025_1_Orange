@@ -1,11 +1,11 @@
 # Нагрузочное тестирование
 Команда для запусков тестов
 ```
-make gen-wrk-report 
+make perf-test-report 
 ```
 # Тест на создание вакансии
 ```
-wrk -t5 -c10 -d60m -s db/perf_test/post_vacancy.lua http://127.0.0.1:8000 > db/perf_test/outpost.txt  
+wrk -t5 -c10 -d60m -s db/perf_test/load_data.lua http://localhost:8000 > db/perf_test/result.txt  
 ```
 ```
 Running 60m test @ http://localhost:8000
@@ -21,7 +21,7 @@ Transfer/sec:     32.83KB
 # Тест на получение вакансии
 #
 ```
-wrk -t5 -c10 -d60m -s db/perf_test/get_vacancy.lua http://localhost:8000 > db/perf_test/outget.txt
+wrk -t5 -c10 -d60m -s db/perf_test/get_data.lua http://localhost:8000 > db/perf_test/getresult.csv
 ```
 ```
 Running 60m test @ http://localhost:8000
@@ -33,7 +33,7 @@ Running 60m test @ http://localhost:8000
 Requests/sec:     38.91
 Transfer/sec:     35.52KB
 ```
-Команда выполняет нагрузочные тесты из файлов post_vacancy.lua и get_vacancy.lua, сохраняет результаты в perf_test/outpost.txt и perf_test/outget.txt, затем выводит их содержимое в консоль. При повторном запуске файлы перезапишутся.
+Команда выполняет нагрузочные тесты из файлов load_data.lua и get_data.lua, сохраняет результаты в db/perf_test/result.csv и db/perf_test/getresult.csv, затем выводит их содержимое в консоль. При повторном запуске файлы перезапишутся.
 
 ## Анализ
 ### Система обрабатывает в среднем 34.30 запроса в секунду при создании вакансий.

@@ -143,6 +143,13 @@ definitions:
       success:
         type: boolean
     type: object
+  dto.DeleteVacancy:
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   dto.EmailExistsRequest:
     properties:
       email:
@@ -240,6 +247,30 @@ definitions:
       sent_at:
         type: string
     type: object
+  dto.ResumeApplicantShortResponse:
+    properties:
+      applicant:
+        $ref: '#/definitions/dto.ApplicantProfileResponse'
+      applicant_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      profession:
+        type: string
+      skills:
+        description: Добавлено поле навыков
+        items:
+          type: string
+        type: array
+      specialization:
+        type: string
+      updated_at:
+        type: string
+      work_experiences:
+        $ref: '#/definitions/dto.WorkExperienceShort'
+    type: object
   dto.ResumeChatResponse:
     properties:
       applicant_id:
@@ -307,6 +338,13 @@ definitions:
         type: string
       work_experiences:
         $ref: '#/definitions/dto.WorkExperienceShort'
+    type: object
+  dto.SearchBySpecializationsRequest:
+    properties:
+      specializations:
+        items:
+          type: string
+        type: array
     type: object
   dto.SpecializationNamesResponse:
     properties:
@@ -380,6 +418,92 @@ definitions:
       title:
         type: string
     type: object
+  dto.VacancyCreate:
+    properties:
+      city:
+        type: string
+      description:
+        type: string
+      employment:
+        type: string
+      experience:
+        type: string
+      optional_requirements:
+        type: string
+      requirements:
+        type: string
+      salary_from:
+        type: integer
+      salary_to:
+        type: integer
+      schedule:
+        type: string
+      skills:
+        items:
+          type: string
+        type: array
+      specialization:
+        type: string
+      tasks:
+        type: string
+      taxes_included:
+        type: boolean
+      title:
+        type: string
+      work_format:
+        type: string
+      working_hours:
+        type: integer
+    type: object
+  dto.VacancyResponse:
+    properties:
+      city:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      employer_id:
+        type: integer
+      employment:
+        type: string
+      experience:
+        type: string
+      id:
+        type: integer
+      liked:
+        type: boolean
+      optional_requirements:
+        type: string
+      requirements:
+        type: string
+      responded:
+        type: boolean
+      salary_from:
+        type: integer
+      salary_to:
+        type: integer
+      schedule:
+        type: string
+      skills:
+        items:
+          type: string
+        type: array
+      specialization:
+        type: string
+      tasks:
+        type: string
+      taxes_included:
+        type: boolean
+      title:
+        type: string
+      updated_at:
+        type: string
+      work_format:
+        type: string
+      working_hours:
+        type: integer
+    type: object
   dto.VacancyShortResponse:
     properties:
       city:
@@ -407,6 +531,43 @@ definitions:
       title:
         type: string
       updated_at:
+        type: string
+      work_format:
+        type: string
+      working_hours:
+        type: integer
+    type: object
+  dto.VacancyUpdate:
+    properties:
+      city:
+        type: string
+      description:
+        type: string
+      employment:
+        type: string
+      experience:
+        type: string
+      optional_requirements:
+        type: string
+      requirements:
+        type: string
+      salary_from:
+        type: integer
+      salary_to:
+        type: integer
+      schedule:
+        type: string
+      skills:
+        items:
+          type: string
+        type: array
+      specialization:
+        type: string
+      tasks:
+        type: string
+      taxes_included:
+        type: boolean
+      title:
         type: string
       work_format:
         type: string
@@ -486,6 +647,29 @@ definitions:
     - Bachelor
     - Master
     - PhD
+  entity.Notification:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_viewed:
+        type: boolean
+      object_id:
+        type: integer
+      receiver_id:
+        type: integer
+      receiver_role:
+        $ref: '#/definitions/entity.UserRole'
+      resume_id:
+        type: integer
+      sender_id:
+        type: integer
+      sender_role:
+        $ref: '#/definitions/entity.UserRole'
+      type:
+        $ref: '#/definitions/entity.NotificationType'
+    type: object
   entity.NotificationPreview:
     properties:
       applicant_name:
@@ -519,6 +703,25 @@ definitions:
     x-enum-varnames:
     - ApplyNotificationType
     - DownloadResumeType
+  entity.UserRole:
+    enum:
+    - applicant
+    - employer
+    type: string
+    x-enum-varnames:
+    - ApplicantRole
+    - EmployerRole
+  entity.VacancyLike:
+    properties:
+      applicant_id:
+        type: integer
+      id:
+        type: integer
+      liked_at:
+        type: string
+      vacancy_id:
+        type: integer
+    type: object
   utils.APIError:
     properties:
       message:
@@ -1641,6 +1844,150 @@ paths:
       summary: Получение вилок зарплат по специализациям
       tags:
       - Specialization
+  /vacancy/applicant/{id}/liked:
+    get:
+      consumes:
+      - application/json
+      description: Отдает список понравившихся вакансий для авторизованного соискателя.
+        Требует авторизации и CSRF-токена.
+      parameters:
+      - description: Количество вакансий на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      - description: id работодателя
+        in: path
+        name: id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Список вакансий
+          schema:
+            $ref: '#/definitions/dto.VacancyShortResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателей)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Получение списка понравившихся вакансии
+      tags:
+      - Vacancy
+  /vacancy/applicant/{id}/vacancies:
+    get:
+      consumes:
+      - application/json
+      description: Получаем все вакансии на которые откликнулся соискатель для авторизованного
+        соискателя. Требует авторизации и CSRF-токена.
+      parameters:
+      - description: Количество вакансий на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      - description: id работодателя
+        in: path
+        name: id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Полученная вакансия
+          schema:
+            $ref: '#/definitions/dto.VacancyShortResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателя)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Получение всех вакансий на которые откликнулся соискатель
+      tags:
+      - Vacancy
+  /vacancy/employer/{id}/vacancies:
+    get:
+      consumes:
+      - application/json
+      description: Получаем все активные вакансии работодателя для авторизованного
+        соискателя. Требует авторизации и CSRF-токена.
+      parameters:
+      - description: Количество вакансий на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      - description: id вакансии
+        in: path
+        name: id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Полученная вакансия
+          schema:
+            $ref: '#/definitions/dto.VacancyShortResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателя)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Получение всех активных вакансий роботодателя
+      tags:
+      - Vacancy
   /vacancy/search:
     get:
       description: Ищет вакансии по заданному запросу. Поиск выполняется по названию
@@ -1678,6 +2025,474 @@ paths:
           schema:
             $ref: '#/definitions/utils.APIError'
       summary: Поиск вакансий
+      tags:
+      - Vacancy
+  /vacancy/search/combined:
+    get:
+      consumes:
+      - application/json
+      description: Ищет вакансию по параметру для авторизованного соискателя. Требует
+        авторизации и CSRF-токена.
+      parameters:
+      - description: Параметр поиска вакансии
+        in: body
+        name: searchQuery
+        required: true
+        schema:
+          type: string
+      - description: Количество вакансий на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      - description: Специализация для поиска вакансии
+        in: body
+        name: specsParam
+        required: true
+        schema:
+          type: string
+      - description: Тип занятости для поиска вакансии
+        in: body
+        name: minSalaryStr
+        required: true
+        schema:
+          type: string
+      - description: Специализация для поиска вакансии
+        in: body
+        name: empParam
+        required: true
+        schema:
+          type: string
+      - description: Опыт работы для поиска вакансии
+        in: body
+        name: expParam
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Найденная вакансия
+          schema:
+            $ref: '#/definitions/dto.VacancyShortResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателей)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Поиск вакансии по параметру
+      tags:
+      - Vacancy
+  /vacancy/search/specializations:
+    post:
+      consumes:
+      - application/json
+      description: Ищет вакансию по специализации для авторизованного соискателя.
+        Требует авторизации и CSRF-токена.
+      parameters:
+      - description: Данные для поиска вакансии
+        in: body
+        name: searchRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SearchBySpecializationsRequest'
+      - description: Количество вакансий на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Найденная вакансия
+          schema:
+            $ref: '#/definitions/dto.VacancyShortResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателей)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Поиск вакансии по спецализации
+      tags:
+      - Vacancy
+  /vacancy/vacancies:
+    get:
+      description: Возвращает список вакансий. Для работодателей возвращает только
+        их собственные вакансии. Для других ролей - все вакансии. Требует авторизации.
+      parameters:
+      - description: Количество вакансий на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список вакансий
+          schema:
+            $ref: '#/definitions/dto.VacancyShortResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получение всех вакансий
+      tags:
+      - Vacancy
+    post:
+      consumes:
+      - application/json
+      description: Создает новую вакансию для авторизованного соискателя. Требует
+        авторизации и CSRF-токена.
+      parameters:
+      - description: Данные для создания вакансии
+        in: body
+        name: vacancyCreate
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VacancyCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная вакансия
+          schema:
+            $ref: '#/definitions/dto.VacancyResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для работодателей)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Создание новой вакансии
+      tags:
+      - Vacancy
+  /vacancy/vacancy/{id}:
+    delete:
+      description: Удаляет вакансию по ID. Доступно только владельцу вакансии (работодателю).
+        Требует авторизации и CSRF-токена.
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Результат удаления
+          schema:
+            $ref: '#/definitions/dto.DeleteVacancy'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (не владелец)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Вакансия не найдена
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Удаление вакансии
+      tags:
+      - Vacancy
+    get:
+      description: Возвращает полную информацию о вакансии по его ID. Доступно всем
+        авторизованным пользователям.
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о резюме
+          schema:
+            $ref: '#/definitions/dto.VacancyResponse'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Вакансия не найдена
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получение вакансии по ID
+      tags:
+      - Vacancy
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о вакансии. Доступно только владельцу вакансии
+        (работодателю). Требует авторизации и CSRF-токена.
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: vacancyUpdate
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VacancyUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная вакансия
+          schema:
+            $ref: '#/definitions/dto.VacancyResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (не владелец)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Вакансия не найдена
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      - csrf_token: []
+      summary: Обновление вакансии
+      tags:
+      - Vacancy
+  /vacancy/vacancy/{id}/like:
+    post:
+      consumes:
+      - application/json
+      description: Создает лайк на вакансию для авторизованного соискателя. Требует
+        авторизации и CSRF-токена.
+      parameters:
+      - description: id вакансии
+        in: path
+        name: id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданный лайк
+          schema:
+            $ref: '#/definitions/entity.VacancyLike'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателей)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Создание лайка для вакансии
+      tags:
+      - Vacancy
+  /vacancy/vacancy/{id}/response/{resume_id}:
+    post:
+      consumes:
+      - application/json
+      description: Создает отклик на вакансию для авторизованного соискателя. Требует
+        авторизации и CSRF-токена.
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID резюме
+        in: path
+        name: resume_id
+        required: true
+        type: integer
+      - description: Данные для создания отклика
+        in: body
+        name: notification
+        required: true
+        schema:
+          $ref: '#/definitions/entity.Notification'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданное резюме
+          schema:
+            $ref: '#/definitions/dto.VacancyResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для работодателей)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Отклик на вакансию
+      tags:
+      - Vacancy
+  /vacancy/vacancy/{id}/response/list:
+    get:
+      consumes:
+      - application/json
+      description: Получаем все резюме которыми откликнулись на вакансии роботодателя
+        для авторизованного соискателя. Требует авторизации и CSRF-токена.
+      parameters:
+      - description: id вакансии
+        in: path
+        name: id
+        type: integer
+      - description: Количество резюме на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Полученные резюме
+          schema:
+            $ref: '#/definitions/dto.ResumeApplicantShortResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещен (только для соискателя)
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Получение всех резюме которыми откликнулись на вакансии роботодателя
       tags:
       - Vacancy
 securityDefinitions:

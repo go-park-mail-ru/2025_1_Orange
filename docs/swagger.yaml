@@ -78,6 +78,37 @@ definitions:
       user_id:
         type: integer
     type: object
+  dto.ChatResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      resume:
+        $ref: '#/definitions/dto.ResumeChatResponse'
+      updated_at:
+        type: string
+      vacancy:
+        $ref: '#/definitions/dto.VacancyChatResponse'
+    type: object
+  dto.ChatShortResponse:
+    properties:
+      id:
+        type: integer
+      user:
+        $ref: '#/definitions/dto.ChatUserPreview'
+      vacancy_title:
+        type: string
+    type: object
+  dto.ChatUserPreview:
+    properties:
+      avatar_path:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   dto.CreateResumeRequest:
     properties:
       about_me:
@@ -91,6 +122,8 @@ definitions:
       educational_institution:
         type: string
       graduation_year:
+        type: string
+      profession:
         type: string
       skills:
         items:
@@ -188,6 +221,36 @@ definitions:
       password:
         type: string
     type: object
+  dto.MessageResponse:
+    properties:
+      avatar:
+        type: string
+      chat_id:
+        type: integer
+      from_applicant:
+        type: boolean
+      id:
+        type: integer
+      payload:
+        type: string
+      receiver_id:
+        type: integer
+      sender_id:
+        type: integer
+      sent_at:
+        type: string
+    type: object
+  dto.ResumeChatResponse:
+    properties:
+      applicant_id:
+        type: integer
+      avatar_path:
+        type: string
+      id:
+        type: integer
+      profession:
+        type: string
+    type: object
   dto.ResumeResponse:
     properties:
       about_me:
@@ -208,6 +271,8 @@ definitions:
         type: string
       id:
         type: integer
+      profession:
+        type: string
       skills:
         items:
           type: string
@@ -234,12 +299,41 @@ definitions:
         type: string
       id:
         type: integer
+      profession:
+        type: string
       specialization:
         type: string
       updated_at:
         type: string
-      work_experience:
+      work_experiences:
         $ref: '#/definitions/dto.WorkExperienceShort'
+    type: object
+  dto.SpecializationNamesResponse:
+    properties:
+      specializations:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.SpecializationSalaryRange:
+    properties:
+      avgSalary:
+        type: integer
+      id:
+        type: integer
+      maxSalary:
+        type: integer
+      minSalary:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.SpecializationSalaryRangesResponse:
+    properties:
+      specializations:
+        items:
+          $ref: '#/definitions/dto.SpecializationSalaryRange'
+        type: array
     type: object
   dto.UpdateResumeRequest:
     properties:
@@ -255,6 +349,8 @@ definitions:
         type: string
       graduation_year:
         type: string
+      profession:
+        type: string
       skills:
         items:
           type: string
@@ -268,14 +364,54 @@ definitions:
     type: object
   dto.UploadStaticResponse:
     properties:
-      created_at:
-        type: string
       id:
         type: integer
       path:
         type: string
+    type: object
+  dto.VacancyChatResponse:
+    properties:
+      employer_id:
+        type: integer
+      id:
+        type: integer
+      logo_path:
+        type: string
+      title:
+        type: string
+    type: object
+  dto.VacancyShortResponse:
+    properties:
+      city:
+        type: string
+      created_at:
+        type: string
+      employer:
+        $ref: '#/definitions/dto.EmployerProfileResponse'
+      employment:
+        type: string
+      id:
+        type: integer
+      liked:
+        type: boolean
+      responded:
+        type: boolean
+      salary_from:
+        type: integer
+      salary_to:
+        type: integer
+      specialization:
+        type: string
+      taxes_included:
+        type: boolean
+      title:
+        type: string
       updated_at:
         type: string
+      work_format:
+        type: string
+      working_hours:
+        type: integer
     type: object
   dto.WorkExperienceDTO:
     properties:
@@ -350,6 +486,39 @@ definitions:
     - Bachelor
     - Master
     - PhD
+  entity.NotificationPreview:
+    properties:
+      applicant_name:
+        type: string
+      created_at:
+        type: string
+      employer_name:
+        type: string
+      id:
+        type: integer
+      is_viewed:
+        type: boolean
+      object_id:
+        type: integer
+      receiver_id:
+        type: integer
+      resume_id:
+        type: integer
+      sender_id:
+        type: integer
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/entity.NotificationType'
+    type: object
+  entity.NotificationType:
+    enum:
+    - apply
+    - download_resume
+    type: string
+    x-enum-varnames:
+    - ApplyNotificationType
+    - DownloadResumeType
   utils.APIError:
     properties:
       message:
@@ -666,6 +835,143 @@ paths:
       summary: Выход со всех устройств
       tags:
       - Auth
+  /chat/{id}:
+    get:
+      description: Получить чат по его идентификатору. Требует авторизации.
+      parameters:
+      - description: ID чата
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Чат
+          schema:
+            $ref: '#/definitions/dto.ChatResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Чат не найден
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получить чат по ID
+      tags:
+      - Chat
+  /chat/{id}/messages:
+    get:
+      description: Получить все сообщения из указанного чата. Требует авторизации
+        и доступа к чату.
+      parameters:
+      - description: ID чата
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список сообщений
+          schema:
+            items:
+              $ref: '#/definitions/dto.MessageResponse'
+            type: array
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещён
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Чат не найден
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получить сообщения чата
+      tags:
+      - Chat
+  /chat/user:
+    get:
+      description: Получить все чаты текущего пользователя. Требует авторизации.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список чатов
+          schema:
+            items:
+              $ref: '#/definitions/dto.ChatShortResponse'
+            type: array
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получить чаты пользователя
+      tags:
+      - Chat
+  /chat/vacancy/{id}:
+    post:
+      description: Создать или получить существующий чат для вакансии. Только для
+        соискателей (applicant).
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Чат
+          schema:
+            $ref: '#/definitions/dto.ChatResponse'
+        "400":
+          description: Некорректный запрос
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещён
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Получить чат по вакансии
+      tags:
+      - Chat
   /employer/emailExists:
     post:
       consumes:
@@ -903,6 +1209,104 @@ paths:
       summary: Регистрация работодателя
       tags:
       - Employer
+  /notification/clear:
+    delete:
+      description: Удалить все уведомления пользователя. Требует авторизации.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Удалить все уведомления
+      tags:
+      - Notification
+  /notification/read/{id}:
+    put:
+      description: Прочитать конкретное уведомление по id. Требует авторизации.
+      parameters:
+      - description: ID уведомления
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Прочитать уведомление
+      tags:
+      - Notification
+  /notification/readAll:
+    put:
+      description: Прочитать все уведомления пользователя. Требует авторизации.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - csrf_token: []
+      - session_cookie: []
+      summary: Прочитать все уведомления
+      tags:
+      - Notification
+  /notification/user:
+    get:
+      description: Получаем список уведомлений для соискателя или работодателя. Требует
+        авторизации.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список уведомлений
+          schema:
+            items:
+              $ref: '#/definitions/entity.NotificationPreview'
+            type: array
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получить все уведомления пользователя
+      tags:
+      - Notification
   /resume/{id}:
     delete:
       description: Удаляет резюме по ID. Доступно только владельцу резюме (соискателю).
@@ -1037,6 +1441,15 @@ paths:
     get:
       description: Возвращает список резюме. Для соискателей возвращает только их
         собственные резюме. Для других ролей - все резюме. Требует авторизации.
+      parameters:
+      - description: Количество резюме на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -1099,6 +1512,174 @@ paths:
       summary: Создание нового резюме
       tags:
       - Resume
+  /resume/pdf/{id}:
+    get:
+      description: |-
+        Скачивает резюме по ID в формате PDF. Требует авторизации.
+        При успешном скачивании отправляет уведомление владельцу резюме через WebSocket.
+      parameters:
+      - description: ID резюме
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: PDF-файл резюме
+          headers:
+            Content-Disposition:
+              description: attachment; filename=resume.pdf
+              type: string
+            Content-Type:
+              description: application/pdf
+              type: string
+          schema:
+            type: file
+        "400":
+          description: Неверный ID резюме
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "403":
+          description: Доступ запрещён
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "404":
+          description: Резюме не найдено
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Ошибка генерации PDF
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Получить резюме в формате PDF
+      tags:
+      - Resume
+  /resume/search:
+    get:
+      description: Ищет резюме по профессии. Для соискателей возвращает только их
+        собственные резюме. Для других ролей - все резюме. Требует авторизации.
+      parameters:
+      - description: Строка поиска по профессии
+        in: query
+        name: profession
+        required: true
+        type: string
+      - description: Количество резюме на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список найденных резюме
+          schema:
+            items:
+              $ref: '#/definitions/dto.ResumeShortResponse'
+            type: array
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      security:
+      - session_cookie: []
+      summary: Поиск резюме по профессии
+      tags:
+      - Resume
+  /specialization/all:
+    get:
+      description: Возвращает список имен всех специализаций без ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список имен специализаций
+          schema:
+            $ref: '#/definitions/dto.SpecializationNamesResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      summary: Получение списка всех специализаций
+      tags:
+      - Specialization
+  /specialization/salaries:
+    get:
+      description: Возвращает минимальную, максимальную и среднюю зарплату для каждой
+        специализации
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Вилки зарплат по специализациям
+          schema:
+            $ref: '#/definitions/dto.SpecializationSalaryRangesResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      summary: Получение вилок зарплат по специализациям
+      tags:
+      - Specialization
+  /vacancy/search:
+    get:
+      description: Ищет вакансии по заданному запросу. Поиск выполняется по названию
+        должности, специализации и названию компании. Для работодателей возвращает
+        только их собственные вакансии. Для других ролей - все вакансии.
+      parameters:
+      - description: Строка поиска
+        in: query
+        name: query
+        required: true
+        type: string
+      - description: Количество вакансий на странице
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение от начала списка
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список найденных вакансий
+          schema:
+            items:
+              $ref: '#/definitions/dto.VacancyShortResponse'
+            type: array
+        "400":
+          description: Неверные параметры запроса
+          schema:
+            $ref: '#/definitions/utils.APIError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/utils.APIError'
+      summary: Поиск вакансий
+      tags:
+      - Vacancy
 securityDefinitions:
   csrf_token:
     in: header

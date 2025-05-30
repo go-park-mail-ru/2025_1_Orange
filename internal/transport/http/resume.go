@@ -515,6 +515,23 @@ func (h *ResumeHandler) SearchResumes(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetResumePDF godoc
+// @Tags Resume
+// @Summary Получить резюме в формате PDF
+// @Description Скачивает резюме по ID в формате PDF. Требует авторизации.
+// @Description При успешном скачивании отправляет уведомление владельцу резюме через WebSocket.
+// @Param id path int true "ID резюме"
+// @Produce application/pdf
+// @Success 200 {file} byte "PDF-файл резюме"
+// @Header 200 {string} Content-Disposition "attachment; filename=resume.pdf"
+// @Header 200 {string} Content-Type "application/pdf"
+// @Failure 400 {object} utils.APIError "Неверный ID резюме"
+// @Failure 401 {object} utils.APIError "Не авторизован"
+// @Failure 403 {object} utils.APIError "Доступ запрещён"
+// @Failure 404 {object} utils.APIError "Резюме не найдено"
+// @Failure 500 {object} utils.APIError "Ошибка генерации PDF"
+// @Router /resume/pdf/{id} [get]
+// @Security session_cookie
 func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -549,17 +566,12 @@ func (h *ResumeHandler) GetResumePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//err = h.wsHub.SendNotification(notificationPreview)
 	if notificationPreview != nil {
 		h.wsHub.Broadcast <- ws.Message{
 			Type:    ws.MessageTypeNotification,
 			Payload: notificationPreview,
 		}
 	}
-
-	//if err != nil {
-	//	l.Log.Warnf("Не удалось отправить уведомление: %v", err)
-	//}
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=resume.pdf")

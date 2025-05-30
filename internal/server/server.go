@@ -35,8 +35,7 @@ func (s *Server) SetupRoutes(routeConfig func(*http.ServeMux)) {
 	mainRouter.Handle("/metrics", middleware.PrometheusHandler())
 	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", subrouter))
 
-	mainRouter.HandleFunc("/swagger/", swagger.WrapHandler)
-	//subrouter.HandleFunc("GET /ws", h.HandleWebsocket)
+	mainRouter.HandleFunc("/api/v1/swagger/", swagger.WrapHandler)
 	routeConfig(subrouter)
 
 	handler := middleware.CreateMiddlewareChain(

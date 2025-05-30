@@ -496,6 +496,220 @@ const docTemplate = `{
                 }
             }
         },
+        "/chat/user": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Получить все чаты текущего пользователя. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Получить чаты пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Список чатов",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.ChatShortResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/vacancy/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Создать или получить существующий чат для вакансии. Только для соискателей (applicant).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Получить чат по вакансии",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID вакансии",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Чат",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ChatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещён",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Получить чат по его идентификатору. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Получить чат по ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID чата",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Чат",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ChatResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Чат не найден",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/{id}/messages": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Получить все сообщения из указанного чата. Требует авторизации и доступа к чату.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Получить сообщения чата",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID чата",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список сообщений",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.MessageResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещён",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Чат не найден",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/employer/emailExists": {
             "post": {
                 "security": [
@@ -867,6 +1081,166 @@ const docTemplate = `{
                 }
             }
         },
+        "/notification/clear": {
+            "delete": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Удалить все уведомления пользователя. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Удалить все уведомления",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/notification/read/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Прочитать конкретное уведомление по id. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Прочитать уведомление",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID уведомления",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/notification/readAll": {
+            "put": {
+                "security": [
+                    {
+                        "csrf_token": []
+                    },
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Прочитать все уведомления пользователя. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Прочитать все уведомления",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/notification/user": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Получаем список уведомлений для соискателя или работодателя. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Получить все уведомления пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Список уведомлений",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.NotificationPreview"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/resume/all": {
             "get": {
                 "security": [
@@ -882,6 +1256,20 @@ const docTemplate = `{
                     "Resume"
                 ],
                 "summary": "Получение всех резюме",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Количество резюме на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Список резюме",
@@ -957,6 +1345,147 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Доступ запрещен (только для соискателей)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/resume/pdf/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Скачивает резюме по ID в формате PDF. Требует авторизации.\nПри успешном скачивании отправляет уведомление владельцу резюме через WebSocket.",
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "Resume"
+                ],
+                "summary": "Получить резюме в формате PDF",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID резюме",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF-файл резюме",
+                        "schema": {
+                            "type": "file"
+                        },
+                        "headers": {
+                            "Content-Disposition": {
+                                "type": "string",
+                                "description": "attachment; filename=resume.pdf"
+                            },
+                            "Content-Type": {
+                                "type": "string",
+                                "description": "application/pdf"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный ID резюме",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещён",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Резюме не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка генерации PDF",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/resume/search": {
+            "get": {
+                "security": [
+                    {
+                        "session_cookie": []
+                    }
+                ],
+                "description": "Ищет резюме по профессии. Для соискателей возвращает только их собственные резюме. Для других ролей - все резюме. Требует авторизации.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resume"
+                ],
+                "summary": "Поиск резюме по профессии",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Строка поиска по профессии",
+                        "name": "profession",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество резюме на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список найденных резюме",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.ResumeShortResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверные параметры запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
                         "schema": {
                             "$ref": "#/definitions/utils.APIError"
                         }
@@ -1169,6 +1698,114 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/specialization/all": {
+            "get": {
+                "description": "Возвращает список имен всех специализаций без ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialization"
+                ],
+                "summary": "Получение списка всех специализаций",
+                "responses": {
+                    "200": {
+                        "description": "Список имен специализаций",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SpecializationNamesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialization/salaries": {
+            "get": {
+                "description": "Возвращает минимальную, максимальную и среднюю зарплату для каждой специализации",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialization"
+                ],
+                "summary": "Получение вилок зарплат по специализациям",
+                "responses": {
+                    "200": {
+                        "description": "Вилки зарплат по специализациям",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SpecializationSalaryRangesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancy/search": {
+            "get": {
+                "description": "Ищет вакансии по заданному запросу. Поиск выполняется по названию должности, специализации и названию компании. Для работодателей возвращает только их собственные вакансии. Для других ролей - все вакансии.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vacancy"
+                ],
+                "summary": "Поиск вакансий",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Строка поиска",
+                        "name": "query",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество вакансий на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение от начала списка",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список найденных вакансий",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.VacancyShortResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверные параметры запроса",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1291,6 +1928,54 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ChatResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "resume": {
+                    "$ref": "#/definitions/dto.ResumeChatResponse"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "vacancy": {
+                    "$ref": "#/definitions/dto.VacancyChatResponse"
+                }
+            }
+        },
+        "dto.ChatShortResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.ChatUserPreview"
+                },
+                "vacancy_title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ChatUserPreview": {
+            "type": "object",
+            "properties": {
+                "avatar_path": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateResumeRequest": {
             "type": "object",
             "properties": {
@@ -1310,6 +1995,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "graduation_year": {
+                    "type": "string"
+                },
+                "profession": {
                     "type": "string"
                 },
                 "skills": {
@@ -1460,6 +2148,52 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "chat_id": {
+                    "type": "integer"
+                },
+                "from_applicant": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "payload": {
+                    "type": "string"
+                },
+                "receiver_id": {
+                    "type": "integer"
+                },
+                "sender_id": {
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ResumeChatResponse": {
+            "type": "object",
+            "properties": {
+                "applicant_id": {
+                    "type": "integer"
+                },
+                "avatar_path": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "profession": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ResumeResponse": {
             "type": "object",
             "properties": {
@@ -1489,6 +2223,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "profession": {
+                    "type": "string"
                 },
                 "skills": {
                     "type": "array",
@@ -1531,14 +2268,59 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "profession": {
+                    "type": "string"
+                },
                 "specialization": {
                     "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
                 },
-                "work_experience": {
+                "work_experiences": {
                     "$ref": "#/definitions/dto.WorkExperienceShort"
+                }
+            }
+        },
+        "dto.SpecializationNamesResponse": {
+            "type": "object",
+            "properties": {
+                "specializations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.SpecializationSalaryRange": {
+            "type": "object",
+            "properties": {
+                "avgSalary": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "maxSalary": {
+                    "type": "integer"
+                },
+                "minSalary": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SpecializationSalaryRangesResponse": {
+            "type": "object",
+            "properties": {
+                "specializations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SpecializationSalaryRange"
+                    }
                 }
             }
         },
@@ -1563,6 +2345,9 @@ const docTemplate = `{
                 "graduation_year": {
                     "type": "string"
                 },
+                "profession": {
+                    "type": "string"
+                },
                 "skills": {
                     "type": "array",
                     "items": {
@@ -1583,17 +2368,78 @@ const docTemplate = `{
         "dto.UploadStaticResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
                 "path": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.VacancyChatResponse": {
+            "type": "object",
+            "properties": {
+                "employer_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "logo_path": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VacancyShortResponse": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "employer": {
+                    "$ref": "#/definitions/dto.EmployerProfileResponse"
+                },
+                "employment": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "liked": {
+                    "type": "boolean"
+                },
+                "responded": {
+                    "type": "boolean"
+                },
+                "salary_from": {
+                    "type": "integer"
+                },
+                "salary_to": {
+                    "type": "integer"
+                },
+                "specialization": {
+                    "type": "string"
+                },
+                "taxes_included": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "work_format": {
+                    "type": "string"
+                },
+                "working_hours": {
+                    "type": "integer"
                 }
             }
         },
@@ -1701,6 +2547,55 @@ const docTemplate = `{
                 "Bachelor",
                 "Master",
                 "PhD"
+            ]
+        },
+        "entity.NotificationPreview": {
+            "type": "object",
+            "properties": {
+                "applicant_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "employer_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_viewed": {
+                    "type": "boolean"
+                },
+                "object_id": {
+                    "type": "integer"
+                },
+                "receiver_id": {
+                    "type": "integer"
+                },
+                "resume_id": {
+                    "type": "integer"
+                },
+                "sender_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/entity.NotificationType"
+                }
+            }
+        },
+        "entity.NotificationType": {
+            "type": "string",
+            "enum": [
+                "apply",
+                "download_resume"
+            ],
+            "x-enum-varnames": [
+                "ApplyNotificationType",
+                "DownloadResumeType"
             ]
         },
         "utils.APIError": {

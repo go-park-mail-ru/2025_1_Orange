@@ -89,7 +89,7 @@ func (s *ChatService) GetChat(ctx context.Context, chatID int, userID int, role 
 
 	if (role == "applicant" && resp.ApplicantID != userID) ||
 		(role == "employer" && resp.EmployerID != userID) {
-		return nil, entity.NewError(entity.ErrForbidden, errors.New("У вас нет доступа к этому чату"))
+		return nil, entity.NewError(entity.ErrForbidden, errors.New("у вас нет доступа к этому чату"))
 	}
 
 	vacancy, err := s.VacancyUC.GetVacancy(ctx, resp.VacancyID, userID, role)

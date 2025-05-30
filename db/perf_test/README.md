@@ -33,7 +33,7 @@ Running 60m test @ http://localhost:8000
 Requests/sec:     38.91
 Transfer/sec:     35.52KB
 ```
-Команда выполняет нагрузочные тесты из файлов load_data.lua и get_data.lua, сохраняет результаты в db/perf_test/result.csv и db/perf_test/getresult.csv, затем выводит их содержимое в консоль. При повторном запуске файлы перезапишутся.
+Команда выполняет нагрузочные тесты из файлов load_data.lua и get_data.lua, сохраняет результаты в db/perf_test/result.csv и db/perf_test/getresult.csv. При повторном запуске файлы перезапишутся.
 
 ## Анализ
 ### Система обрабатывает в среднем 34.30 запроса в секунду при создании вакансий.

@@ -3,7 +3,6 @@ package main
 import (
 	"ResuMatch/internal/app"
 	"ResuMatch/internal/config"
-	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
 	"errors"
 	"net/http"
@@ -24,10 +23,8 @@ import (
 // @name session_id
 func main() {
 	// 1. создание vault client
-	vaultClient := connector.GetVaultClient()
-
 	// 2. Загрузка конфигурации
-	cfg, err := config.LoadAppConfig(vaultClient)
+	cfg, err := config.LoadAppConfig()
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}

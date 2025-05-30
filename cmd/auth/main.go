@@ -10,19 +10,19 @@ import (
 	"ResuMatch/internal/usecase/service"
 	"ResuMatch/pkg/connector"
 	l "ResuMatch/pkg/logger"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	vaultClient := connector.GetVaultClient()
 
-	cfg, err := config.LoadAuthConfig(vaultClient)
+	cfg, err := config.LoadAuthConfig()
 	if err != nil {
 		l.Log.Fatalf("Не удалось загрузить конфиг: %v", err)
 	}

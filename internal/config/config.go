@@ -1,10 +1,8 @@
 package config
 
 import (
-	"ResuMatch/internal/vault"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -136,7 +134,7 @@ type Config struct {
 	Resume        ResumeConfig        `yaml:"resume"`
 }
 
-func LoadAppConfig(vaultClient *vault.VaultClient) (*Config, error) {
+func LoadAppConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		return nil, fmt.Errorf("error loading .env: %w", err)
 	}
@@ -151,46 +149,6 @@ func LoadAppConfig(vaultClient *vault.VaultClient) (*Config, error) {
 		return nil, fmt.Errorf("error parsing YAML: %w", err)
 	}
 
-	secret, err := vaultClient.GetSecret("resumatch/http")
-	if err != nil {
-		return nil, fmt.Errorf("ошибка получения секрета HTTP: %w", err)
-	}
-
-	data, ok := secret.Data["data"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("не удалось привести secret.Data[\"data\"] к map[string]interface{}")
-	}
-
-	if val, ok := data["readTimeout"]; ok {
-		if strVal, ok := val.(string); ok {
-			duration, err := time.ParseDuration(strVal)
-			if err != nil {
-				return nil, fmt.Errorf("не удалось распарсить readTimeout: %w", err)
-			}
-			cfg.HTTP.ReadTimeout = duration
-		}
-	}
-
-	if val, ok := data["writeTimeout"]; ok {
-		if strVal, ok := val.(string); ok {
-			duration, err := time.ParseDuration(strVal)
-			if err != nil {
-				return nil, fmt.Errorf("не удалось распарсить writeTimeout: %w", err)
-			}
-			cfg.HTTP.WriteTimeout = duration
-		}
-	}
-
-	if val, ok := data["maxHeaderBytes"]; ok {
-		if strVal, ok := val.(string); ok {
-			intVal, err := strconv.Atoi(strVal)
-			if err != nil {
-				return nil, fmt.Errorf("не удалось преобразовать maxHeaderBytes в int: %w", err)
-			}
-			cfg.HTTP.MaxHeaderBytes = intVal
-		}
-	}
-
 	cfg.CSRF.Secret = os.Getenv("CSRF_SECRET")
 
 	cfg.Postgres = loadPostgresConfig()
@@ -198,7 +156,7 @@ func LoadAppConfig(vaultClient *vault.VaultClient) (*Config, error) {
 	return &cfg, nil
 }
 
-func LoadAuthConfig(vaultClient *vault.VaultClient) (*AuthConfig, error) {
+func LoadAuthConfig() (*AuthConfig, error) {
 	if err := godotenv.Load(); err != nil {
 		return nil, fmt.Errorf("ошибка загрузки .env: %w", err)
 	}
@@ -213,54 +171,13 @@ func LoadAuthConfig(vaultClient *vault.VaultClient) (*AuthConfig, error) {
 		return nil, fmt.Errorf("ошибка парсинга YAML: %w", err)
 	}
 
-	secret, err := vaultClient.GetSecret("resumatch/redis")
-	if err != nil {
-		return nil, fmt.Errorf("ошибка получения секрета Redis: %w", err)
-	}
-
-	data, ok := secret.Data["data"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("не удалось привести secret.Data[\"data\"] к map[string]interface{}")
-	}
-
-	pool := RedisPoolCfg{}
-	if val, ok := data["pool.maxIdle"]; ok {
-		if strVal, ok := val.(string); ok {
-			if intVal, err := strconv.Atoi(strVal); err == nil {
-				pool.MaxIdle = intVal
-			} else {
-				return nil, fmt.Errorf("не удалось преобразовать pool.maxIdle: %w", err)
-			}
-		}
-	}
-
-	if val, ok := data["pool.maxActive"]; ok {
-		if strVal, ok := val.(string); ok {
-			if intVal, err := strconv.Atoi(strVal); err == nil {
-				pool.MaxActive = intVal
-			} else {
-				return nil, fmt.Errorf("не удалось преобразовать pool.maxActive: %w", err)
-			}
-		}
-	}
-
-	if val, ok := data["pool.idleTimeout"]; ok {
-		if strVal, ok := val.(string); ok {
-			if duration, err := time.ParseDuration(strVal); err == nil {
-				pool.IdleTimeout = duration
-			} else {
-				return nil, fmt.Errorf("не удалось распарсить pool.idleTimeout: %w", err)
-			}
-		}
-	}
-
 	cfg.Redis = RedisConfig{
 		Host:     os.Getenv("REDIS_HOST"),
 		Port:     os.Getenv("REDIS_CONTAINER_PORT"),
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       cfg.Redis.DB,
 		TTL:      cfg.Redis.TTL,
-		Pool:     pool,
+		//Pool:     pool,
 	}
 	return &cfg, nil
 }

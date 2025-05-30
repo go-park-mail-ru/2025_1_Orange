@@ -962,7 +962,7 @@ func (h *VacancyHandler) SearchVacanciesByQueryAndSpecializations(w http.Respons
 	var specializations []string
 	// Получаем специализации из URL параметра
 	if specsParam := r.URL.Query().Get("specializations"); specsParam != "" {
-		specializations = strings.Split(specsParam, ",")
+		specializations = strings.Split(specsParam, ";")
 
 		// Очищаем от пустых значений
 		var cleanedSpecs []string
